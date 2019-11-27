@@ -1,0 +1,94 @@
+from unittest import mock
+
+import pytest
+
+from tests.const import TEST_DATA_DIR
+from viper.host import Host
+from viper.hosts import Hosts
+
+CSV_FILE = f"{TEST_DATA_DIR}/hosts.csv"
+JSON_FILE = f"{TEST_DATA_DIR}/hosts.json"
+
+
+def test_hosts_from_csv_file():
+    CSV_FILE = f"{TEST_DATA_DIR}/hosts.csv"
+
+    with open(CSV_FILE) as f:
+        hosts = Hosts.from_items(*(Host(ip.strip()) for ip in f.read().strip().split()))
+
+    assert (
+        hosts.sort()
+        == Hosts.from_file(CSV_FILE).sort()
+        == Hosts((Host("1.1.1.1"), Host("1.2.3.4"), Host("2.2.2.2"))).sort()
+    )
+
+
+def test_hosts_from_json_file():
+
+    from json import load
+
+    assert Hosts.from_file(CSV_FILE) == Hosts.from_file(
+        JSON_FILE, lambda f: Hosts.from_dicts(*load(f))
+    )
+
+
+def test_hosts_filter():
+    assert Hosts.from_file(CSV_FILE).filter(
+        lambda h: h.ip.startswith("1.")
+    ) == Hosts.from_items(Host("1.2.3.4"), Host("1.1.1.1"))
+
+
+def test_hosts_get():
+
+    with pytest.raises(LookupError) as e:
+        Hosts.from_file(CSV_FILE).get(lambda h: False)
+    assert "could not find" in str(e)
+
+    with pytest.raises(LookupError) as e:
+        Hosts.from_file(CSV_FILE).get(lambda h: True)
+    assert "multiple" in str(e)
+
+    assert Hosts.from_file(CSV_FILE).get(lambda h: h.ip == "1.1.1.1") == Host("1.1.1.1")
+
+
+def test_hosts_first():
+    assert Hosts.from_file(CSV_FILE).sort().first() == Host("1.1.1.1")
+
+
+def test_hosts_last():
+    assert Hosts.from_file(CSV_FILE).sort().last() == Host("2.2.2.2")
+
+
+def test_hosts_index():
+    assert (
+        Hosts.from_file(CSV_FILE).sort().index(1)
+        == Hosts.from_file(CSV_FILE).sort()[1]
+        == Host("1.2.3.4")
+    )
+
+
+def test_hosts_count():
+    len(Hosts.from_file(CSV_FILE)) == Hosts.from_file(CSV_FILE).count() == 3
+
+
+def test_hosts_sort():
+    assert (
+        Hosts.from_file(CSV_FILE).sort()
+        == Hosts.from_file(CSV_FILE).sort(lambda h: h.ip)
+        == Hosts((Host("1.1.1.1"), Host("1.2.3.4"), Host("2.2.2.2")))
+    )
+
+
+@mock.patch("viper.task.Task")
+def test_hosts_task(Task):
+
+    from viper.tasks import TasksRunner
+    from viper.tasks import TaskRunner
+
+    task = Task()
+    hosts = Hosts.from_file(CSV_FILE)
+
+    runner1 = hosts.task(task)
+    runner2 = TasksRunner.from_items(*(TaskRunner(h, task) for h in hosts.all()))
+
+    assert runner1 == runner2
