@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from pydoc import locate
 from dataclasses import dataclass, field
 from json import dumps as dumpjson
 from json import loads as loadjson
@@ -31,6 +32,19 @@ class Item:
         """Represent the item as JSON data."""
 
         return dumpjson(self.to_dict(), *args, **kwargs)
+
+    @classmethod
+    def from_obj(cls, objpath: str) -> Item:
+        """Load the item from the given Python object path."""
+
+        item = locate(objpath)
+        if not item:
+            raise ValueError(f"could not resolve {repr(objpath)}.")
+
+        if not isinstance(item, cls):
+            raise ValueError(f"{repr(objpath)} is not a valid {cls} instance.")
+
+        return item
 
     def hash(self):
         """Get the hash value"""
@@ -73,6 +87,19 @@ class Items:
         """Represent the item as JSON data."""
 
         return dumpjson(self.to_list(), *args, **kwargs)
+
+    @classmethod
+    def from_obj(cls, objpath: str) -> Item:
+        """Load the items from the given Python object path."""
+
+        items = locate(objpath)
+        if not items:
+            raise ValueError(f"could not resolve {repr(objpath)}.")
+
+        if not isinstance(items, cls):
+            raise ValueError(f"{repr(objpath)} is not a valid {cls} instance.")
+
+        return items
 
     def __getitem__(self, key: int) -> Item:
         return self._all[key]

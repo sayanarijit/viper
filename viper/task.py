@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from json import dumps as dumpjson
 from json import loads as loadjson
 from pydoc import locate
-from subprocess import PIPE, Popen
+from subprocess import PIPE, Popen, TimeoutExpired
 
 from viper import host
 from viper.collections import Item
@@ -18,7 +18,7 @@ class Task(Item):
     """An infra task."""
 
     name: str
-    command_factory: t.Callable[[host.Host], t.Tuple[str]]
+    command_factory: t.Callable[[host.Host], t.Sequence[str]]
     timeout: t.Optional[int] = None
     retry: int = 0
     stdout_processor: t.Optional[t.Callable[[str], str]] = None
@@ -186,9 +186,12 @@ class TaskRunner(Item):
         p = Popen(command, stdout=PIPE, stderr=PIPE)
 
         start = time.time()
-        out, err = p.communicate(timeout=self.task.timeout)
+        try:
+            out, err = p.communicate(timeout=self.task.timeout)
+            stdout, stderr = out.decode("latin1"), err.decode("latin1")
+        except TimeoutExpired as e:
+            stdout, stderr, p.returncode = "", str(e), 123
         end = time.time()
-        stdout, stderr = out.decode(), err.decode()
 
         if self.task.stderr_processor:
             stdout = self.task.stdout_processor(stdout)

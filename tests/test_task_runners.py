@@ -26,7 +26,7 @@ def test_task_runners_run_in_sequence():
     )
 
     task_runners = hosts.task(task)
-    results = task_runners.run_in_sequence()
+    results = task_runners.run()
 
     runner = task_runners.first()
     result = results.first()
@@ -43,7 +43,7 @@ def test_task_runners_run_in_sequence():
     assert not result.errored()
 
 
-def test_task_runners_run_in_sequence():
+def test_task_runners_run_in_parallel():
     host = Host("1.1.1.1")
     hosts = Hosts.from_items(host)
     task = Task(
@@ -54,7 +54,7 @@ def test_task_runners_run_in_sequence():
     )
 
     task_runners = hosts.task(task)
-    results = task_runners.run_in_parallel()
+    results = task_runners.run(max_workers=5)
 
     runner = task_runners.first()
     result = results.first()

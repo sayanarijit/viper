@@ -60,4 +60,5 @@ setup(
     packages=find_packages(exclude=["contrib", "docs", "tests", "examples"]),
     install_requires=install_requires,
     extras_require={"testing": testing_requires, "dev": dev_requires},
+    entry_points={"console_scripts": ["viper = viper.main:main"]},
 )

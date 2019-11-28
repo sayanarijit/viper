@@ -1,8 +1,9 @@
 import sys
+from viper.cli import run
 
 
 def main() -> int:
-    return 0
+    return run()
 
 
 if __name__ == "__main__":
