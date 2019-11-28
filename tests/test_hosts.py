@@ -1,3 +1,4 @@
+import json
 from unittest import mock
 
 import pytest
@@ -8,6 +9,25 @@ from viper.hosts import Hosts
 
 CSV_FILE = f"{TEST_DATA_DIR}/hosts.csv"
 JSON_FILE = f"{TEST_DATA_DIR}/hosts.json"
+
+
+def test_hosts_to_from_json():
+    hosts = Hosts.from_items(Host("1.1.1.1"))
+
+    hosts_json = json.dumps(
+        [
+            {
+                "ip": "1.1.1.1",
+                "hostname": None,
+                "domain": None,
+                "port": 22,
+                "login_name": None,
+                "identity_file": None,
+            }
+        ]
+    )
+
+    assert Hosts.from_json(hosts_json) == Hosts.from_json(hosts.to_json()) == hosts
 
 
 def test_hosts_from_csv_file():
@@ -25,10 +45,8 @@ def test_hosts_from_csv_file():
 
 def test_hosts_from_json_file():
 
-    from json import load
-
     assert Hosts.from_file(CSV_FILE) == Hosts.from_file(
-        JSON_FILE, lambda f: Hosts.from_dicts(*load(f))
+        JSON_FILE, lambda f: Hosts.from_json(f.read())
     )
 
 

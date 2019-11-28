@@ -3,11 +3,12 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass
 
-from viper.task import Task, TaskRunner
+from viper import task as task_
+from viper.collections import Item
 
 
 @dataclass(frozen=True, order=True)
-class Host:
+class Host(Item):
     """Infra host class."""
 
     ip: str
@@ -17,13 +18,9 @@ class Host:
     login_name: t.Optional[str] = None
     identity_file: t.Optional[str] = None
 
-    @classmethod
-    def from_dict(cls, dict_: t.Dict[str, t.Any]) -> Host:
-        """Initialize host from given dict."""
-        return cls(**dict_)
-
     def fqdn(self) -> str:
         """Get the FQDN from hostname and domainname."""
+
         if not self.hostname and not self.domain:
             raise UnboundLocalError("hostname and domain not set")
 
@@ -35,6 +32,7 @@ class Host:
 
         return f"{self.hostname}.{self.domain}"
 
-    def task(self, task: Task) -> TaskRunner:
+    def task(self, task: task_.Task) -> task_.TaskRunner:
         """Assigns a task to be run."""
-        return TaskRunner(self, task)
+
+        return task_.TaskRunner(self, task)

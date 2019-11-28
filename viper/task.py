@@ -1,18 +1,19 @@
 from __future__ import annotations
 
 import os
-import pickle
+import time
 import typing as t
 from dataclasses import dataclass
-from datetime import datetime
+from pydoc import locate
 from subprocess import PIPE, Popen
 
 from viper import host
+from viper.collections import Item
 from viper.const import DB_LOCATION
 
 
 @dataclass(frozen=True, order=True)
-class Task:
+class Task(Item):
     """An infra task."""
 
     name: str
@@ -22,9 +23,39 @@ class Task:
     stdout_processor: t.Optional[t.Callable[[str], str]] = None
     stderr_processor: t.Optional[t.Callable[[str], str]] = None
 
+    @classmethod
+    def from_dict(cls, dict_: t.Dict[str, t.Any]) -> Task:
+        """Overloading from_dict()."""
+
+        outp = dict_.get("stdout_processor")
+        errp = dict_.get("stderr_processor")
+
+        return cls(
+            **dict(
+                dict_,
+                command_factory=locate(dict_["command_factory"]),
+                stdout_processor=locate(outp) if outp else None,
+                stderr_processor=locate(errp) if errp else None,
+            )
+        )
+
+    def to_dict(self) -> t.Dict[str, t.Any]:
+        """Overloading to_dict()."""
+
+        cf = self.command_factory
+        outp = self.stdout_processor
+        errp = self.stderr_processor
+
+        return dict(
+            vars(self),
+            command_factory=f"{cf.__module__}.{cf.__qualname__}",
+            stdout_processor=f"{outp.__module__}.{outp.__qualname__}" if outp else None,
+            stderr_processor=f"{errp.__module__}.{errp.__qualname__}" if errp else None,
+        )
+
 
 @dataclass(frozen=True, order=True)
-class TaskResult:
+class TaskResult(Item):
     """The result of an executed task."""
 
     task: Task
@@ -33,18 +64,35 @@ class TaskResult:
     stdout: str
     stderr: str
     returncode: int
-    start: datetime
-    end: datetime
+    start: float
+    end: float
 
     @classmethod
     def from_file(cls, filepath: str) -> TaskResult:
         with open(filepath, "rb") as f:
-            return pickle.load(f)
+            return cls.from_json(f.read().decode())
 
     @classmethod
     def from_hash(cls, hash_: str) -> TaskResult:
-        with open(os.path.join(DB_LOCATION, hash_), "rb") as f:
-            return pickle.load(f)
+        return cls.from_file(os.path.join(DB_LOCATION, f"{hash_}.json"))
+
+    @classmethod
+    def from_dict(cls, dict_: t.Dict[str, t.Any]) -> Task:
+        """Overloading from_dict()."""
+
+        return cls(
+            **dict(
+                dict_,
+                command=tuple(dict_["command"]),
+                task=Task.from_dict(dict_["task"]),
+                host=host.Host.from_dict(dict_["host"]),
+            )
+        )
+
+    def to_dict(self) -> t.Dict[str, t.Any]:
+        """Overloading to_dict()."""
+
+        return dict(vars(self), task=self.task.to_dict(), host=self.host.to_dict(),)
 
     def ok(self) -> bool:
         """If the result is success."""
@@ -56,23 +104,40 @@ class TaskResult:
 
     def dump_location(self) -> str:
         """Get the data dump location."""
-        return os.path.join(DB_LOCATION, f"{hash(self)}.pickle")
+        return os.path.join(DB_LOCATION, f"{hash(self)}.json")
 
     def save(self) -> TaskResult:
         """Save the result dump."""
 
         with open(self.dump_location(), "wb") as f:
-            pickle.dump(self, f)
+            f.write(self.to_json().encode())
 
         return self
 
 
 @dataclass(frozen=True, order=True)
-class TaskRunner:
+class TaskRunner(Item):
     """A task runner."""
 
     host: host.Host
     task: Task
+
+    @classmethod
+    def from_dict(cls, dict_: t.Dict[str, t.Any]) -> Task:
+        """Overloading from_dict()."""
+
+        return cls(
+            **dict(
+                dict_,
+                task=Task.from_dict(dict_["task"]),
+                host=host.Host.from_dict(dict_["host"]),
+            )
+        )
+
+    def to_dict(self) -> t.Dict[str, t.Any]:
+        """Overloading to_dict()."""
+
+        return dict(vars(self), task=self.task.to_dict(), host=self.host.to_dict())
 
     def run(self) -> TaskResult:
         """Run the task on the host."""
@@ -80,9 +145,9 @@ class TaskRunner:
 
         p = Popen(command, stdout=PIPE, stderr=PIPE)
 
-        start = datetime.now()
+        start = time.time()
         out, err = p.communicate(timeout=self.task.timeout)
-        end = datetime.now()
+        end = time.time()
         stdout, stderr = out.decode(), err.decode()
 
         if self.task.stderr_processor:
