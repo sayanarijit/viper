@@ -3,8 +3,14 @@ from os import path
 
 from setuptools import find_packages, setup
 
-from viper import (__author__, __description__, __email__, __homepage__,
-                   __license__, __version__)
+from viper import (
+    __author__,
+    __description__,
+    __email__,
+    __homepage__,
+    __license__,
+    __version__,
+)
 
 here = path.abspath(path.dirname(__file__))
 
@@ -46,6 +52,7 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
     platforms=["Any"],
     zip_safe=False,

@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import os
 import time
 import typing as t
 from dataclasses import dataclass
+from json import dumps as dumpjson
+from json import loads as loadjson
 from pydoc import locate
 from subprocess import PIPE, Popen
 
 from viper import host
 from viper.collections import Item
-from viper.const import DB_LOCATION
+from viper.db import ViperDB
 
 
 @dataclass(frozen=True, order=True)
@@ -19,7 +20,7 @@ class Task(Item):
     name: str
     command_factory: t.Callable[[host.Host], t.Tuple[str]]
     timeout: t.Optional[int] = None
-    max_threads: t.Optional[int] = None
+    retry: int = 0
     stdout_processor: t.Optional[t.Callable[[str], str]] = None
     stderr_processor: t.Optional[t.Callable[[str], str]] = None
 
@@ -66,15 +67,35 @@ class TaskResult(Item):
     returncode: int
     start: float
     end: float
+    retry: int
 
     @classmethod
-    def from_file(cls, filepath: str) -> TaskResult:
-        with open(filepath, "rb") as f:
-            return cls.from_json(f.read().decode())
+    def from_hash(cls, hash_: int) -> TaskResult:
+        with ViperDB(ViperDB.url) as conn:
 
-    @classmethod
-    def from_hash(cls, hash_: str) -> TaskResult:
-        return cls.from_file(os.path.join(DB_LOCATION, f"{hash_}.json"))
+            data = next(
+                conn.execute(
+                    """
+                    SELECT
+                        task, host, command, stdout, stderr, returncode, start, end, retry
+                    FROM task_results WHERE hash = ?
+                    """,
+                    (hash_,),
+                )
+            )
+        return cls.from_dict(
+            dict(
+                task=loadjson(data[0]),
+                host=loadjson(data[1]),
+                command=loadjson(data[2]),
+                stdout=data[3],
+                stderr=data[4],
+                returncode=data[5],
+                start=data[6],
+                end=data[7],
+                retry=data[8],
+            )
+        )
 
     @classmethod
     def from_dict(cls, dict_: t.Dict[str, t.Any]) -> Task:
@@ -102,17 +123,36 @@ class TaskResult(Item):
         """If the result is failure."""
         return self.returncode != 0
 
-    def dump_location(self) -> str:
-        """Get the data dump location."""
-        return os.path.join(DB_LOCATION, f"{hash(self)}.json")
-
     def save(self) -> TaskResult:
         """Save the result dump."""
 
-        with open(self.dump_location(), "wb") as f:
-            f.write(self.to_json().encode())
+        with ViperDB() as conn:
+            conn.execute(
+                """
+                INSERT INTO task_results (
+                    hash, task, host, command, stdout, stderr, returncode, start, end, retry
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                )
+                """,
+                (
+                    self.hash(),
+                    self.task.to_json(),
+                    self.host.to_json(),
+                    dumpjson(self.command),
+                    self.stdout,
+                    self.stderr,
+                    self.returncode,
+                    self.start,
+                    self.end,
+                    self.retry,
+                ),
+            )
 
         return self
+
+    def then(self, func: t.Callable[[TaskResult], t.Any]) -> t.Any:
+        return func(self)
 
 
 @dataclass(frozen=True, order=True)
@@ -139,7 +179,7 @@ class TaskRunner(Item):
 
         return dict(vars(self), task=self.task.to_dict(), host=self.host.to_dict())
 
-    def run(self) -> TaskResult:
+    def run(self, retry=0) -> TaskResult:
         """Run the task on the host."""
         command = self.task.command_factory(self.host)
 
@@ -156,6 +196,19 @@ class TaskRunner(Item):
         if self.task.stderr_processor:
             stderr = self.task.stderr_processor(stderr)
 
-        return TaskResult(
-            self.task, self.host, command, stdout, stderr, p.returncode, start, end
+        result = TaskResult(
+            self.task,
+            self.host,
+            command,
+            stdout,
+            stderr,
+            p.returncode,
+            start,
+            end,
+            retry,
         ).save()
+
+        if result.errored() and self.task.retry > retry:
+            return self.run(retry=retry + 1)
+
+        return result

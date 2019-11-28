@@ -4,8 +4,12 @@ from viper.host import Host
 from viper.task import Task, TaskResult, TaskRunner
 
 
-def make_command(host):
+def make_echo_command(host):
     return ("echo", host.ip)
+
+
+def make_failing_command(host):
+    return ("false",)
 
 
 def process_stdout(out):
@@ -19,7 +23,7 @@ def process_stderr(err):
 def test_task_to_json():
     task = Task(
         "print IP address",
-        command_factory=make_command,
+        command_factory=make_echo_command,
         stdout_processor=process_stdout,
         stderr_processor=process_stderr,
     )
@@ -27,9 +31,9 @@ def test_task_to_json():
     assert task.to_json() == json.dumps(
         {
             "name": "print IP address",
-            "command_factory": "test_task.make_command",
+            "command_factory": "test_task.make_echo_command",
             "timeout": None,
-            "max_threads": None,
+            "retry": 0,
             "stdout_processor": "test_task.process_stdout",
             "stderr_processor": "test_task.process_stderr",
         }
@@ -39,7 +43,7 @@ def test_task_to_json():
 def test_task_from_json():
     task = Task(
         "print IP address",
-        command_factory=make_command,
+        command_factory=make_echo_command,
         stdout_processor=process_stdout,
         stderr_processor=process_stderr,
     )
@@ -48,9 +52,8 @@ def test_task_from_json():
         json.dumps(
             {
                 "name": "print IP address",
-                "command_factory": "test_task.make_command",
+                "command_factory": "test_task.make_echo_command",
                 "timeout": None,
-                "max_threads": None,
                 "stdout_processor": "test_task.process_stdout",
                 "stderr_processor": "test_task.process_stderr",
             }
@@ -62,7 +65,7 @@ def test_task_from_json():
 
 def test_task_result_to_from_json():
     result = TaskResult(
-        task=Task("print IP address", command_factory=make_command),
+        task=Task("print IP address", command_factory=make_echo_command),
         host=Host("1.1.1.1"),
         command=("foo",),
         stdout="out",
@@ -70,15 +73,16 @@ def test_task_result_to_from_json():
         returncode=0,
         start=1.1,
         end=1.2,
+        retry=0,
     )
 
     result_json = json.dumps(
         {
             "task": {
                 "name": "print IP address",
-                "command_factory": "test_task.make_command",
+                "command_factory": "test_task.make_echo_command",
                 "timeout": None,
-                "max_threads": None,
+                "retry": 0,
                 "stdout_processor": None,
                 "stderr_processor": None,
             },
@@ -96,6 +100,7 @@ def test_task_result_to_from_json():
             "returncode": 0,
             "start": 1.1,
             "end": 1.2,
+            "retry": 0,
         }
     )
 
@@ -105,7 +110,7 @@ def test_task_result_to_from_json():
 
 def test_task_runner_to_from_json():
     runner = TaskRunner(
-        task=Task("print IP address", command_factory=make_command),
+        task=Task("print IP address", command_factory=make_echo_command),
         host=Host("1.1.1.1"),
     )
 
@@ -121,9 +126,9 @@ def test_task_runner_to_from_json():
             },
             "task": {
                 "name": "print IP address",
-                "command_factory": "test_task.make_command",
+                "command_factory": "test_task.make_echo_command",
                 "timeout": None,
-                "max_threads": None,
+                "retry": 0,
                 "stdout_processor": None,
                 "stderr_processor": None,
             },
@@ -138,7 +143,7 @@ def test_task_runner_run_save_load():
     host = Host("1.1.1.1")
     task = Task(
         "print IP address",
-        command_factory=make_command,
+        command_factory=make_echo_command,
         stdout_processor=process_stdout,
         stderr_processor=process_stderr,
     )
@@ -157,5 +162,11 @@ def test_task_runner_run_save_load():
     assert result.end > result.start
     assert result.ok()
     assert not result.errored()
+    assert TaskResult.from_hash(hash(result)) == result
 
-    assert result == TaskResult.from_hash(hash(result))
+
+def test_tasks_runner_retry():
+    host = Host("1.1.1.1")
+    task = Task("Fail", command_factory=make_failing_command, retry=3)
+
+    assert host.task(task).run().retry == 3

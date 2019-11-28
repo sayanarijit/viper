@@ -32,6 +32,10 @@ class Item:
 
         return dumpjson(self.to_dict(), *args, **kwargs)
 
+    def hash(self):
+        """Get the hash value"""
+        return hash(self)
+
 
 @dataclass(frozen=True)
 class Items:
@@ -117,3 +121,7 @@ class Items:
     def all(self) -> t.Sequence[Item]:
         """Get a tuple of all the items."""
         return self._all
+
+    def hash(self):
+        """Get the hash value"""
+        return hash(self)

@@ -5,8 +5,8 @@ from dataclasses import dataclass, field
 
 from viper.collections import Items
 from viper.host import Host
-from viper.task import Task
-from viper.tasks import TasksRunner
+from viper.task import Task, TaskRunner
+from viper.task_runners import TaskRunners
 
 
 @dataclass(frozen=True)
@@ -33,7 +33,9 @@ class Hosts(Items):
         with open(filepath) as f:
             return loader(f)
 
-    def task(self, task: Task) -> TasksRunner:
+    def task(self, task: Task) -> TaskRunners:
         """Assigns a task to be run on all the hosts."""
 
-        return TasksRunner.from_items(*(h.task(task) for h in self._all))
+        return TaskRunners.from_items(
+            *(TaskRunner(task=task, host=h) for h in self._all)
+        )

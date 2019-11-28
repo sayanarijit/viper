@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from viper import task as task_
 from viper.collections import Item
+from viper.task_runners import TaskRunners
 
 
 @dataclass(frozen=True, order=True)
@@ -35,4 +36,4 @@ class Host(Item):
     def task(self, task: task_.Task) -> task_.TaskRunner:
         """Assigns a task to be run."""
 
-        return task_.TaskRunner(self, task)
+        return task_.TaskRunner(task=task, host=self)
