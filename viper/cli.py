@@ -207,6 +207,10 @@ def run() -> int:
 
     args = parser.parse_args()
 
+    if not hasattr(args, "handler"):
+        parser.print_usage()
+        return 2
+
     try:
         return args.handler(args)
     except Exception as e:
