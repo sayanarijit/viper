@@ -1,6 +1,8 @@
 from argparse import ArgumentParser
+import os
 import sys
 from viper import Hosts, Task, TaskRunners
+from viper.db import ViperDB
 from pydoc import locate
 import typing as t
 from viper import __version__
@@ -49,6 +51,25 @@ class SubParser:
 
     def __call__(self, args):
         raise NotImplementedError()
+
+
+class InitCommand(SubParser):
+    """initialize the current workspace"""
+
+    subcommand = "init"
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "-f",
+            "--force",
+            action="store_true",
+            help="remove or overwrite existing data",
+        )
+        parser.add_argument("--db_url", default=ViperDB.url)
+
+    def __call__(self, args) -> int:
+        ViperDB.init(args.db_url, force=args.force)
+        return 0
 
 
 class HostsFromObjCommand(SubParser):
@@ -167,6 +188,9 @@ def run() -> int:
     parser.add_argument("--version", action="version", version=__version__)
     parser.add_argument("--debug", action="store_true")
     subparsers = parser.add_subparsers()
+
+    # Init command
+    InitCommand.attach_to(subparsers)
 
     # Hosts commands
     HostsFromFileCommand.attach_to(subparsers)

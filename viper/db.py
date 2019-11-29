@@ -15,7 +15,12 @@ class ViperDB:
     engine: t.Optional[sqlite3.Connection] = field(init=False, default=None)
 
     @classmethod
-    def init(cls, url):
+    def init(cls, url, force=False):
+        if force:
+            with cls(url) as conn:
+                conn.execute("DELETE FROM task_results")
+                conn.execute("DROP TABLE task_results")
+
         with cls(url) as conn:
             conn.execute(
                 """

@@ -62,11 +62,12 @@ def test_task(Task):
     assert runner.task == task
 
 
-@mock.patch("viper.task.Task")
-@mock.patch("viper.host._task.TaskRunner")
-def test_run_task(TaskRunner, Task):
+def test_run_task():
 
-    task = Task()
-    Host("1.1.1.1").run_task(task)
+    from viper import Task
+    from viper.db import ViperDB
+    from viper.demo.tasks import ping
 
-    assert TaskRunner().run.called
+    ViperDB.init(ViperDB.url)
+
+    assert Host("8.8.8.8").run_task(ping).returncode == 0
