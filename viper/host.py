@@ -22,13 +22,13 @@ class Host(Item):
         """Get the FQDN from hostname and domainname."""
 
         if not self.hostname and not self.domain:
-            raise UnboundLocalError("hostname and domain not set")
+            raise AttributeError("hostname and domain not set")
 
         if not self.hostname:
-            raise UnboundLocalError("hostname not set")
+            raise AttributeError("hostname not set")
 
         if not self.domain:
-            raise UnboundLocalError("domain not set")
+            raise AttributeError("domain not set")
 
         return f"{self.hostname}.{self.domain}"
 
