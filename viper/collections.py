@@ -15,7 +15,10 @@ class Item:
     def from_dict(cls, dict_: t.Dict[str, t.Any]) -> Item:
         """Initialize item from given dict."""
 
-        return cls(**dict_)
+        try:
+            return cls(**dict_)
+        except Exception:
+            raise ValueError(f"invalid input data for {cls.__name__}")
 
     def to_dict(self) -> t.Dict[str, t.Any]:
         """Represent the item as dict."""
@@ -70,7 +73,10 @@ class Items:
         if cls._item_factory is None:
             raise NotImplementedError()
 
-        return cls.from_items(*map(cls._item_factory.from_dict, list_))
+        try:
+            return cls.from_items(*map(cls._item_factory.from_dict, list_))
+        except Exception:
+            raise ValueError(f"invalid input data for {cls.__name__}")
 
     def to_list(self) -> t.List[t.Dict[str, t.Any]]:
         """Represent the items as list."""
