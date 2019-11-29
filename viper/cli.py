@@ -1,6 +1,5 @@
-"""Viper CLI helpers."""
+"""Viper CLI library."""
 
-import os
 import sys
 import traceback
 import typing as t
@@ -74,7 +73,7 @@ class InitCommand(SubParser):
 
 
 class HostsFromObjCommand(SubParser):
-    """get a list of hosts from a Python object location"""
+    """get a group of hosts from a Python object location"""
 
     subcommand = "hosts:from_obj"
 
@@ -90,7 +89,7 @@ class HostsFromObjCommand(SubParser):
 
 
 class HostsFromFileCommand(SubParser):
-    """get a list of hosts from a file"""
+    """get a group of hosts from a file"""
 
     subcommand = "hosts:from_file"
 
@@ -113,7 +112,7 @@ class HostsFromFileCommand(SubParser):
 
 
 class HostsTaskCommand(SubParser):
-    """assign a task to the given list of hosts"""
+    """assign a task to each host"""
 
     subcommand = "hosts:task"
 
@@ -130,7 +129,7 @@ class HostsTaskCommand(SubParser):
 
 
 class HostsRunTaskCommand(SubParser):
-    """run the assigned tasks"""
+    """assign a task to each host and run"""
 
     subcommand = "hosts:run_task"
 
@@ -152,7 +151,7 @@ class HostsRunTaskCommand(SubParser):
 
 
 class HostsFilterCommand(SubParser):
-    """filter hosts by custom logic"""
+    """filter hosts by a given function"""
 
     subcommand = "hosts:filter"
 
@@ -169,7 +168,6 @@ class TaskRunnersRunCommand(SubParser):
     """run the assigned tasks"""
 
     subcommand = "task-runners:run"
-    aliases = ("runners:run",)
 
     def add_arguments(self, parser):
         parser.add_argument("--max-workers", type=int, default=0)

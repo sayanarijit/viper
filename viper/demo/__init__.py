@@ -31,16 +31,22 @@
 
     echo $hosts | viper hosts:filter viper.demo.filters.ip_starts_with_2 --indent 4
 
+
 ### Assign tasks to the given hosts
 
     echo $hosts | viper hosts:task viper.demo.tasks.ping --indent 4
 
 
-### Run assigned tasks
+### Run the assigned tasks
 
-    echo $hosts | viper hosts:task viper.demo.tasks.ping | viper runners:run --indent 4
+    echo $hosts | viper hosts:task viper.demo.tasks.ping | viper task-runners:run --indent 4
 
     # or use a shortcut
 
     echo $hosts | viper hosts:run_task viper.demo.tasks.ping --indent 4
+
+
+### Run tasks in parallel using multiple workers
+
+    echo $hosts | viper hosts:run_task viper.demo.tasks.ping --max-workers 50 --indent 4
 """

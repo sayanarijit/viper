@@ -1,6 +1,7 @@
 from viper.host import Host
 from viper.hosts import Hosts
-from viper.task import Task, TaskRunner
+from viper.task import Task
+from viper.task_runner import TaskRunner
 
 
 def make_command(host):

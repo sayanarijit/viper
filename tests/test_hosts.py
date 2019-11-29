@@ -97,15 +97,11 @@ def test_hosts_sort():
     )
 
 
-@mock.patch("viper.task.Task")
-def test_hosts_task(Task):
+def test_hosts_task():
 
-    from viper.task import Task
-    from viper.hosts import Hosts
-    from viper.task import TaskRunner
-    from viper.task_runners import TaskRunners
+    from viper import Task, Hosts, TaskRunner
 
-    task = Task()
+    task = mock.Mock()
     hosts = Hosts.from_file(CSV_FILE)
 
     assert hosts.task(task).sort(lambda x: x.host).first() == TaskRunner(
@@ -114,12 +110,12 @@ def test_hosts_task(Task):
 
 
 @mock.patch("viper.task.Task")
-@mock.patch("viper.hosts.TaskRunners")
+@mock.patch("viper.task_runners.TaskRunners")
 def test_hosts_run_task(TaskRunners, Task):
 
     task = Task()
     hosts = Hosts.from_file(CSV_FILE)
 
-    result = hosts.run_task(task, max_workers=3)
+    hosts.run_task(task, max_workers=3)
 
     TaskRunners.from_items().run.assert_called_with(max_workers=3)

@@ -1,3 +1,5 @@
+"""Base collection classes are defined here."""
+
 from __future__ import annotations
 
 import typing as t
@@ -95,7 +97,7 @@ class Items:
         return dumpjson(self.to_list(), *args, **kwargs)
 
     @classmethod
-    def from_obj(cls, objpath: str) -> Item:
+    def from_obj(cls, objpath: str) -> Items:
         """Load the items from the given Python object path."""
 
         items = locate(objpath)

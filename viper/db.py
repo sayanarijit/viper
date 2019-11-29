@@ -3,7 +3,6 @@ from __future__ import annotations
 import sqlite3
 import typing as t
 from dataclasses import dataclass, field
-from enum import Enum
 
 from viper.const import Config
 

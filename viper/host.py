@@ -1,15 +1,20 @@
+"""Host class is defined here."""
+
 from __future__ import annotations
 
 import typing as t
 from dataclasses import dataclass
 
 from viper import task as task_
+from viper import task_result as _task_result
+from viper import task_results as _task_results
+from viper import task_runner as _task_runner
 from viper.collections import Item
 
 
 @dataclass(frozen=True, order=True)
 class Host(Item):
-    """Infra host class."""
+    """Viper Host class."""
 
     ip: str
     hostname: t.Optional[str] = None
@@ -32,18 +37,16 @@ class Host(Item):
 
         return f"{self.hostname}.{self.domain}"
 
-    def task(self, task: task_.Task) -> task_.TaskRunner:
+    def task(self, task: task_.Task) -> _task_runner.TaskRunner:
         """Assigns a task to be run."""
 
-        return task_.TaskRunner(task=task, host=self)
+        return _task_runner.TaskRunner(task=task, host=self)
 
-    def run_task(self, task: task_.Task) -> task_.TaskResult:
+    def run_task(self, task: task_.Task) -> _task_result.TaskResult:
         """Assign the task to the host and then run it."""
 
         return self.task(task).run()
 
-    def recent_task_results(
-        self, task: task_.Task, limit: int, offset: t.Optional[int] = None,
-    ):
+    def task_results(self) -> _task_results.TaskResults:
         """Fetch recent task results of current host from database."""
-        pass
+        return _task_results.TaskResults.by_host(self)
