@@ -1,3 +1,5 @@
+"""Viper CLI helpers."""
+
 import os
 import sys
 import traceback
@@ -65,10 +67,9 @@ class InitCommand(SubParser):
             action="store_true",
             help="remove or overwrite existing data",
         )
-        parser.add_argument("--db_url", default=ViperDB.url)
 
     def __call__(self, args) -> int:
-        ViperDB.init(args.db_url, force=args.force)
+        ViperDB.init(ViperDB.url, force=args.force)
         return 0
 
 
