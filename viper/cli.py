@@ -1,12 +1,12 @@
-from argparse import ArgumentParser
 import os
 import sys
-from viper import Hosts, Task, TaskRunners
-from viper.db import ViperDB
-from pydoc import locate
-import typing as t
-from viper import __version__
 import traceback
+import typing as t
+from argparse import ArgumentParser
+from pydoc import locate
+
+from viper import Hosts, Task, TaskRunners, __version__
+from viper.db import ViperDB
 
 
 def func(objpath):

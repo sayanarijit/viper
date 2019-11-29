@@ -47,4 +47,3 @@ class Host(Item):
     ):
         """Fetch recent task results of current host from database."""
         pass
-

@@ -1,7 +1,7 @@
 from __future__ import annotations
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import typing as t
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 
 from viper import task

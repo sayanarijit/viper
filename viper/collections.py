@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import typing as t
-from pydoc import locate
 from dataclasses import dataclass, field
 from json import dumps as dumpjson
 from json import loads as loadjson
+from pydoc import locate
 
 
 @dataclass(frozen=True, order=True)

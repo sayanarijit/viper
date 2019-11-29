@@ -1,6 +1,6 @@
-from viper import Host, Task
 import typing as t
 
+from viper import Host, Task
 from viper.demo import __doc__
 
 

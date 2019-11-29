@@ -6,8 +6,8 @@ from dataclasses import dataclass, field
 from viper.collections import Items
 from viper.host import Host
 from viper.task import Task, TaskRunner
-from viper.task_runners import TaskRunners
 from viper.task_results import TaskResults
+from viper.task_runners import TaskRunners
 
 
 @dataclass(frozen=True)

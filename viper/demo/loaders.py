@@ -1,5 +1,6 @@
 import typing as t
 from json import loads as loadjson
+
 from viper import Hosts
 from viper.demo import __doc__
 
