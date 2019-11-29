@@ -16,7 +16,7 @@ class TaskRunners(Items):
     def run(self, max_workers=0) -> TaskResults:
         """Run the tasks."""
 
-        if max_workers < 1:
+        if max_workers <= 1:
             # Run in sequence
             return TaskResults.from_items(*(r.run() for r in self._all))
 
