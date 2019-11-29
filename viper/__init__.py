@@ -5,14 +5,16 @@ __homepage__ = "https://github.com/sayanarijit/viper"
 __license__ = "MIT"
 __version__ = "v0.0.1"
 
+from viper.collections import (
+    Host,
+    Hosts,
+    Task,
+    TaskResult,
+    TaskResults,
+    TaskRunner,
+    TaskRunners,
+)
 from viper.demo import __doc__ as __viper_cli_examples__
-from viper.host import Host
-from viper.hosts import Hosts
-from viper.task import Task
-from viper.task_result import TaskResult
-from viper.task_results import TaskResults
-from viper.task_runner import TaskRunner
-from viper.task_runners import TaskRunners
 
 __doc__ = f"""# Viper Infrastructure Commander
 

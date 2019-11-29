@@ -52,7 +52,7 @@ def test_tasks_runner_retry():
     assert host.task(task).run().retry == 3
 
 
-@mock.patch("viper.task_runner._task_results.TaskResults")
+@mock.patch("viper.collections.TaskResults")
 def test_task_runner_task_results(TaskResults):
     host = mock.Mock()
     task = mock.Mock()

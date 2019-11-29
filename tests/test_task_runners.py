@@ -1,7 +1,4 @@
-from viper.host import Host
-from viper.hosts import Hosts
-from viper.task import Task
-from viper.task_runner import TaskRunner
+from viper import Host, Hosts, Task, TaskRunner
 
 
 def make_command(host):
@@ -14,6 +11,19 @@ def process_stdout(out):
 
 def process_stderr(err):
     return f"error: {err}"
+
+
+def test_task_runners_hosts():
+    hosts = Hosts.from_items(Host("1.1.1.1"), Host("2.2.2.2"))
+    task = Task(
+        "print IP address",
+        command_factory=make_command,
+        stdout_processor=process_stdout,
+        stderr_processor=process_stderr,
+    )
+
+    task_runners = hosts.task(task)
+    assert task_runners.hosts() == hosts
 
 
 def test_task_runners_run_in_sequence():

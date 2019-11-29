@@ -4,8 +4,7 @@ from unittest import mock
 import pytest
 
 from tests.const import TEST_DATA_DIR
-from viper.host import Host
-from viper.hosts import Hosts
+from viper import Host, Hosts
 
 CSV_FILE = f"{TEST_DATA_DIR}/hosts.csv"
 JSON_FILE = f"{TEST_DATA_DIR}/hosts.json"
@@ -109,8 +108,8 @@ def test_hosts_task():
     )
 
 
-@mock.patch("viper.task.Task")
-@mock.patch("viper.task_runners.TaskRunners")
+@mock.patch("viper.collections.Task")
+@mock.patch("viper.collections.TaskRunners")
 def test_hosts_run_task(TaskRunners, Task):
 
     task = Task()

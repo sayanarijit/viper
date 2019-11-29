@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 
-from viper.host import Host
+from viper import Host
 
 
 def test_host_to_json():
@@ -50,7 +50,7 @@ def test_fqdn():
     assert Host("1.1.1.1", "host1", "domain.com").fqdn() == "host1.domain.com"
 
 
-@mock.patch("viper.task.Task")
+@mock.patch("viper.collections.Task")
 def test_task(Task):
 
     from viper import TaskRunner
@@ -72,7 +72,7 @@ def test_run_task():
     assert Host("8.8.8.8").run_task(ping).returncode == 0
 
 
-@mock.patch("viper.task_results.TaskResults")
+@mock.patch("viper.collections.TaskResults")
 def test_host_task_results(TaskResults):
     host = Host("1.1.1.1")
     host.task_results()
