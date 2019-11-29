@@ -14,7 +14,7 @@ class TaskRunners(Items):
     _item_factory: t.Type[task.TaskRunner] = field(init=False, default=task.TaskRunner)
 
     def run(self, max_workers=0) -> TaskResults:
-        """Run the tasks in sequence."""
+        """Run the tasks."""
 
         if max_workers < 1:
             # Run in sequence

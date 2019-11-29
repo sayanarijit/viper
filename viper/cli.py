@@ -38,7 +38,7 @@ class SubParser:
             for alias in cls.aliases:
                 cls(
                     subparsers.add_parser(
-                        alias, help=f"alias of {repr(cls.subcommand)}."
+                        alias, help=f"alias of {repr(cls.subcommand)}"
                     )
                 )
         return cls(subparser)
@@ -166,7 +166,7 @@ class HostsFilterCommand(SubParser):
 
 
 class TaskRunnersRunCommand(SubParser):
-    """Run the assigned tasks."""
+    """run the assigned tasks"""
 
     subcommand = "task-runners:run"
     aliases = ("runners:run",)
