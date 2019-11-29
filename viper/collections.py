@@ -243,6 +243,13 @@ class Hosts(Items):
 
         return self.task(task).run(max_workers=max_workers)
 
+    def task_results(self) -> TaskResults:
+        results = []
+        for h in self._all:
+            for r in h.task_results():
+                results.append(r)
+        return TaskResults.from_items(*results)
+
 
 @dataclass(frozen=True, order=True)
 class Task(Item):

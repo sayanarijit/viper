@@ -52,6 +52,7 @@ def test_task_runners_run_in_sequence():
     assert result.end > result.start
     assert result.ok()
     assert not result.errored()
+    assert results.hosts() == hosts
 
 
 def test_task_runners_run_in_parallel():
@@ -80,3 +81,4 @@ def test_task_runners_run_in_parallel():
     assert result.end > result.start
     assert result.ok()
     assert not result.errored()
+    assert results.hosts() == hosts
