@@ -111,3 +111,15 @@ def test_hosts_task(Task):
     assert hosts.task(task).sort(lambda x: x.host).first() == TaskRunner(
         task=task, host=hosts.sort().first()
     )
+
+
+@mock.patch("viper.task.Task")
+@mock.patch("viper.hosts.TaskRunners")
+def test_hosts_run_task(TaskRunners, Task):
+
+    task = Task()
+    hosts = Hosts.from_file(CSV_FILE)
+
+    result = hosts.run_task(task, max_workers=3)
+
+    TaskRunners.from_items().run.assert_called_with(max_workers=3)

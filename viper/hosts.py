@@ -7,6 +7,7 @@ from viper.collections import Items
 from viper.host import Host
 from viper.task import Task, TaskRunner
 from viper.task_runners import TaskRunners
+from viper.task_results import TaskResults
 
 
 @dataclass(frozen=True)
@@ -39,3 +40,8 @@ class Hosts(Items):
         return TaskRunners.from_items(
             *(TaskRunner(task=task, host=h) for h in self._all)
         )
+
+    def run_task(self, task: Task, max_workers=0) -> TaskResults:
+        """Run a task to be run on all hosts and then run it."""
+
+        return self.task(task).run(max_workers=max_workers)

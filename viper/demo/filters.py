@@ -1,21 +1,7 @@
 from viper import Host
+from viper.demo import __doc__
 
 
-def no_hostname(host: Host) -> bool:
+def ip_starts_with_2(host: Host) -> bool:
     """Show hosts with no hostname."""
-    return not host.hostname
-
-
-def has_hostname(host: Host) -> bool:
-    """Show hosts with hostname set."""
-    return bool(host.hostname)
-
-
-def no_login_name(host: Host) -> bool:
-    """Show hosts with no login_name."""
-    return not host.login_name
-
-
-def has_login_name(host: Host) -> bool:
-    """Show hosts with login_name set."""
-    return bool(host.login_name)
+    return host.ip.startswith("2")

@@ -60,3 +60,13 @@ def test_task(Task):
 
     assert isinstance(runner, TaskRunner)
     assert runner.task == task
+
+
+@mock.patch("viper.task.Task")
+@mock.patch("viper.host._task.TaskRunner")
+def test_run_task(TaskRunner, Task):
+
+    task = Task()
+    Host("1.1.1.1").run_task(task)
+
+    assert TaskRunner().run.called

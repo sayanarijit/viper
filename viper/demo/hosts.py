@@ -1,3 +1,4 @@
 from viper import Hosts
+from viper.demo import __doc__
 
-all_hosts = Hosts.from_file("tests/data/hosts.csv")
+group1 = Hosts.from_file("tests/data/hosts.csv")

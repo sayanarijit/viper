@@ -1,12 +1,9 @@
-import csv
 import typing as t
+from json import loads as loadjson
 from viper import Hosts
+from viper.demo import __doc__
 
 
-def basic_csv(f: t.TextIO) -> Hosts:
-    r = csv.reader(f)
-    rows = list(r)
-    keys, values = rows[0], rows[1:]
-    dicts = [dict(tuple(zip(keys, v))) for v in values]
+def json(f: t.TextIO) -> Hosts:
 
-    return Hosts.from_list(dicts)
+    return Hosts.from_json(f.read())

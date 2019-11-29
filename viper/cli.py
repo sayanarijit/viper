@@ -51,11 +51,10 @@ class SubParser:
         raise NotImplementedError()
 
 
-class HostsFromObj(SubParser):
+class HostsFromObjCommand(SubParser):
     """get a list of hosts from a Python object location"""
 
     subcommand = "hosts:from_obj"
-    aliases = ("from_obj",)
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -72,7 +71,6 @@ class HostsFromFileCommand(SubParser):
     """get a list of hosts from a file"""
 
     subcommand = "hosts:from_file"
-    aliases = ("from_file",)
 
     def add_arguments(self, parser):
         parser.add_argument("filepath")
@@ -96,49 +94,36 @@ class HostsTaskCommand(SubParser):
     """assign a task to the given list of hosts"""
 
     subcommand = "hosts:task"
-    aliases = ("task",)
 
     def add_arguments(self, parser):
         parser.add_argument(
             "task", type=Task.from_obj, help=Task.from_obj.__doc__.lower()
         )
-        parser.add_argument("-", "--stdin", action="store_true")
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args) -> int:
 
-        task = args.task
-
-        if args.stdin:
-            data = input()
-            print(Hosts.from_json(data).task(args.task).to_json(indent=args.indent))
-            return 0
-
-        print(task.to_json())
-
+        print(Hosts.from_json(input()).task(args.task).to_json(indent=args.indent))
         return 0
 
 
-class TasksRunCommand(SubParser):
+class HostsRunTaskCommand(SubParser):
     """run the assigned tasks"""
 
-    subcommand = "tasks:run"
-    aliases = ("run",)
+    subcommand = "hosts:run_task"
 
     def add_arguments(self, parser):
-        parser.add_argument("-", "--stdin", action="store_true")
+        parser.add_argument(
+            "task", type=Task.from_obj, help=Task.from_obj.__doc__.lower()
+        )
         parser.add_argument("--max-workers", type=int, default=0)
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args) -> int:
 
-        if not args.stdin:
-            raise RuntimeError("use `-` or `--stdin`")
-
-        data = input()
         print(
-            TaskRunners.from_json(data)
-            .run(max_workers=args.max_workers)
+            Hosts.from_json(input())
+            .run_task(args.task, max_workers=args.max_workers)
             .to_json(indent=args.indent)
         )
         return 0
@@ -148,35 +133,52 @@ class HostsFilterCommand(SubParser):
     """filter hosts by custom logic"""
 
     subcommand = "hosts:filter"
-    aliases = ("filter",)
 
     def add_arguments(self, parser):
         parser.add_argument("filter", type=func)
-        parser.add_argument("-", "--stdin", action="store_true")
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args):
+        print(Hosts.from_json(input()).filter(args.filter).to_json(indent=args.indent))
+        return 0
 
-        if not args.stdin:
-            print(f"{repr(args.filter)} {args.filter.__doc__}")
-            return 0
 
-        data = input()
-        print(Hosts.from_json(data).filter(args.filter).to_json(indent=args.indent))
+class TaskRunnersRunCommand(SubParser):
+    """Run the assigned tasks."""
+
+    subcommand = "task-runners:run"
+    aliases = ("runners:run",)
+
+    def add_arguments(self, parser):
+        parser.add_argument("--max-workers", type=int, default=0)
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args):
+        print(
+            TaskRunners.from_json(input())
+            .run(max_workers=args.max_workers)
+            .to_json(indent=args.indent)
+        )
         return 0
 
 
 def run() -> int:
-    parser = ArgumentParser("viper", description="Viper CLI")
+    parser = ArgumentParser("viper", description=f"Viper CLI {__version__}")
     parser.add_argument("--version", action="version", version=__version__)
     parser.add_argument("--debug", action="store_true")
     subparsers = parser.add_subparsers()
 
+    # Hosts commands
     HostsFromFileCommand.attach_to(subparsers)
-    HostsFromObj.attach_to(subparsers)
-    HostsTaskCommand.attach_to(subparsers)
+    HostsFromObjCommand.attach_to(subparsers)
+
     HostsFilterCommand.attach_to(subparsers)
-    TasksRunCommand.attach_to(subparsers)
+
+    HostsTaskCommand.attach_to(subparsers)
+    HostsRunTaskCommand.attach_to(subparsers)
+
+    # Task runners commands
+    TaskRunnersRunCommand.attach_to(subparsers)
 
     args = parser.parse_args()
 

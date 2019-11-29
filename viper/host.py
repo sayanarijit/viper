@@ -5,7 +5,6 @@ from dataclasses import dataclass
 
 from viper import task as task_
 from viper.collections import Item
-from viper.task_runners import TaskRunners
 
 
 @dataclass(frozen=True, order=True)
@@ -37,3 +36,15 @@ class Host(Item):
         """Assigns a task to be run."""
 
         return task_.TaskRunner(task=task, host=self)
+
+    def run_task(self, task: task_.Task) -> task_.TaskResult:
+        """Assign the task to the host and then run it."""
+
+        return self.task(task).run()
+
+    def recent_task_results(
+        self, task: task_.Task, limit: int, offset: t.Optional[int] = None,
+    ):
+        """Fetch recent task results of current host from database."""
+        pass
+

@@ -1,15 +1,17 @@
-from subprocess import Popen, PIPE
-from collections import namedtuple
-from viper.hosts import Hosts
-import json
+import subprocess
 
 
-def run(command):
-    p = Popen(command, stdout=PIPE, stderr=PIPE)
-    out, err = p.communicate(timeout=5)
-    stdout, stderr = out.decode("latin1"), err.decode("latin1")
-    return namedtuple("Result", "stdout stderr returncode")(
-        stdout, stderr, p.returncode
+def test_all_cli_examples():
+    from viper.demo import __doc__ as examples_doc
+
+    command = " && \\\n\n".join(
+        [
+            line.strip()
+            for line in examples_doc.splitlines()
+            if line.startswith("   ") and not line.strip().startswith("#")
+        ]
     )
 
+    print(command)
 
+    assert subprocess.run(command, shell=True).returncode == 0
