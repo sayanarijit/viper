@@ -119,7 +119,7 @@ usage: viper [-h] [--version] [--debug]
              {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:rttp,hosts:task-results,task-runners:filter,task-runners:count,task-runners:sort,task-runners:pipe,task-runners:run,task-runners:hosts,task-results:filter,task-results:count,task-results:sort,task-results:pipe,task-results:hosts,task-results:by-task}
              ...
 
-Viper CLI v0.2.0
+Viper CLI v0.2.1
 
 positional arguments:
   {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:rttp,hosts:task-results,task-runners:filter,task-runners:count,task-runners:sort,task-runners:pipe,task-runners:run,task-runners:hosts,task-results:filter,task-results:count,task-results:sort,task-results:pipe,task-results:hosts,task-results:by-task}
@@ -171,7 +171,7 @@ positional arguments:
                         number of task results
     task-results:sort   [TaskResults > task-results:sort > TaskResults] sort
                         the task results
-    task-results:pipe   [TaskResults > task-results:pipe HANDLER *ARGS> ?]
+    task-results:pipe   [TaskResults > task-results:pipe HANDLER *ARGS > ?]
                         pipe the task results to the given handler
     task-results:hosts  [TaskResults > task-results:hosts > Hosts] get the
                         hosts from the task results

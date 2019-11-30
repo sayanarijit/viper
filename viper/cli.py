@@ -438,7 +438,7 @@ class TaskResultsSortCommand(SubParser):
 
 
 class TaskResultsPipeCommand(SubParser):
-    """[TaskResults > task-results:pipe HANDLER *ARGS> ?] pipe the task results to the given handler"""
+    """[TaskResults > task-results:pipe HANDLER *ARGS > ?] pipe the task results to the given handler"""
 
     subcommand = "task-results:pipe"
 
