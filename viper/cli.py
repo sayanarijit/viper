@@ -88,6 +88,19 @@ class TaskFromObjCommand(SubParser):
         return 0
 
 
+class TaskResultsCommand(SubParser):
+    """get the task from a Python object location"""
+
+    subcommand = "task:results"
+
+    def add_arguments(self, parser):
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args) -> int:
+        print(Task.from_json(input()).results().to_json(indent=args.indent))
+        return 0
+
+
 class HostsFromObjCommand(SubParser):
     """get a group of hosts from a Python object location"""
 
@@ -207,6 +220,19 @@ class HostsSortCommand(SubParser):
         return 0
 
 
+class HostsPipeCommand(SubParser):
+    """pipe the hosts to the given function"""
+
+    subcommand = "hosts:pipe"
+
+    def add_arguments(self, parser):
+        parser.add_argument("func", type=func)
+
+    def __call__(self, args) -> int:
+        Hosts.from_json(input()).pipe(args.func)
+        return 0
+
+
 class HostsTaskResultsCommand(SubParser):
     """get the past task results of the hosts"""
 
@@ -266,6 +292,19 @@ class TaskRunnersSortCommand(SubParser):
             .sort(key=args.key)
             .to_json(indent=args.indent)
         )
+        return 0
+
+
+class TaskRunnersPipeCommand(SubParser):
+    """pipe the task runners to the given function"""
+
+    subcommand = "task-runners:pipe"
+
+    def add_arguments(self, parser):
+        parser.add_argument("func", type=func)
+
+    def __call__(self, args) -> int:
+        TaskRunners.from_json(input()).pipe(args.func)
         return 0
 
 
@@ -349,6 +388,19 @@ class TaskResultsSortCommand(SubParser):
         return 0
 
 
+class TaskResultsPipeCommand(SubParser):
+    """pipe the task results to the given function"""
+
+    subcommand = "task-results:pipe"
+
+    def add_arguments(self, parser):
+        parser.add_argument("func", type=func)
+
+    def __call__(self, args) -> int:
+        TaskResults.from_json(input()).pipe(args.func)
+        return 0
+
+
 class TaskResultsHostsCommand(SubParser):
     """get the hosts from the task results"""
 
@@ -386,6 +438,7 @@ def run() -> int:
 
     # Task commands
     TaskFromObjCommand.attach_to(subparsers)
+    TaskResultsCommand.attach_to(subparsers)
 
     # Hosts commands
     HostsFromFileCommand.attach_to(subparsers)
@@ -394,6 +447,7 @@ def run() -> int:
     HostsFilterCommand.attach_to(subparsers)
     HostsCountCommand.attach_to(subparsers)
     HostsSortCommand.attach_to(subparsers)
+    HostsPipeCommand.attach_to(subparsers)
 
     HostsTaskCommand.attach_to(subparsers)
     HostsRunTaskCommand.attach_to(subparsers)
@@ -403,6 +457,7 @@ def run() -> int:
     TaskRunnersFilterCommand.attach_to(subparsers)
     TaskRunnersCountCommand.attach_to(subparsers)
     TaskRunnersSortCommand.attach_to(subparsers)
+    TaskRunnersPipeCommand.attach_to(subparsers)
 
     TaskRunnersRunCommand.attach_to(subparsers)
     TaskRunnersHostsCommand.attach_to(subparsers)
@@ -411,6 +466,7 @@ def run() -> int:
     TaskResultsFilterCommand.attach_to(subparsers)
     TaskResultsCountCommand.attach_to(subparsers)
     TaskResultsSortCommand.attach_to(subparsers)
+    TaskResultsPipeCommand.attach_to(subparsers)
 
     TaskResultsHostsCommand.attach_to(subparsers)
     TaskResultsByTaskCommand.attach_to(subparsers)

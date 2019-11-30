@@ -60,6 +60,10 @@ class Item:
         """Get the hash value"""
         return hash(self)
 
+    def pipe(self, func: t.Callable[[Item], t.Any]) -> t.Any:
+        """Pipe this object to the given function"""
+        return func(self)
+
 
 @dataclass(frozen=True)
 class Items:
@@ -166,6 +170,10 @@ class Items:
         """Get the hash value"""
         return hash(self)
 
+    def pipe(self, func: t.Callable[[Items], t.Any]) -> t.Any:
+        """Pipe this object to the given function"""
+        return func(self)
+
 
 @dataclass(frozen=True, order=True)
 class Host(Item):
@@ -204,7 +212,7 @@ class Host(Item):
 
     def task_results(self) -> TaskResults:
         """Fetch recent task results of current host from database."""
-        return TaskResults.by_host(self)
+        return self.pipe(TaskResults.by_host)
 
 
 @dataclass(frozen=True)
@@ -292,6 +300,11 @@ class Task(Item):
             stderr_processor=f"{errp.__module__}.{errp.__qualname__}" if errp else None,
         )
 
+    def results(self) -> TaskResults:
+        """Get the past results of this task."""
+
+        return self.pipe(TaskResults.by_task)
+
 
 @dataclass(frozen=True, order=True)
 class TaskRunner(Item):
@@ -356,7 +369,7 @@ class TaskRunner(Item):
 
     def task_results(self) -> TaskResults:
         """Fetch recent task results of current task runner from database."""
-        return TaskResults.by_task_runner(self)
+        return self.pipe(TaskResults.by_task_runner)
 
 
 @dataclass(frozen=True)
@@ -477,9 +490,6 @@ class TaskResult(Item):
             )
 
         return self
-
-    def then(self, func: t.Callable[[TaskResult], t.Any]) -> t.Any:
-        return func(self)
 
 
 @dataclass(frozen=True)

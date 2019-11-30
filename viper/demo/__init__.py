@@ -22,55 +22,65 @@
 
     viper hosts:from-obj viper.demo.hosts.group1 --indent 4
 
+
 ### Let's save the hosts
 
-    hosts=$(viper hosts:from-obj viper.demo.hosts.group1)
+    viper hosts:from-obj viper.demo.hosts.group1 > /tmp/hosts.json
 
 
 ### Filter hosts
 
-    echo $hosts | viper hosts:filter viper.demo.filters.ip_starts_with_2 --indent 4
+    cat /tmp/hosts.json | viper hosts:filter viper.demo.filters.ip_starts_with_2 --indent 4
 
 
 ### Assign tasks to the given hosts
 
-    echo $hosts | viper hosts:task viper.demo.tasks.ping --indent 4
+    cat /tmp/hosts.json | viper hosts:task viper.demo.tasks.ping --indent 4
 
 
 ### Run the assigned tasks
 
-    echo $hosts | viper hosts:task viper.demo.tasks.ping | viper task-runners:run --indent 4
+    cat /tmp/hosts.json | viper hosts:task viper.demo.tasks.ping | viper task-runners:run --indent 4
 
     # or use a shortcut
 
-    echo $hosts | viper hosts:run-task viper.demo.tasks.ping --indent 4
+    cat /tmp/hosts.json | viper hosts:run-task viper.demo.tasks.ping --indent 4
 
 
 ### Run tasks in parallel using multiple workers
 
-    echo $hosts | viper hosts:run-task viper.demo.tasks.ping --max-workers 50 --indent 4
+    cat /tmp/hosts.json | viper hosts:run-task viper.demo.tasks.ping --max-workers 50 --indent 4
 
 
 ### Get the past task results of the hosts from DB
 
-    echo $hosts | viper hosts:task-results --indent 4 --debug
+    cat /tmp/hosts.json | viper hosts:task-results --indent 4 --debug
 
 
 ### Or get the past task results by task
 
     viper task:from-obj viper.demo.tasks.ping | viper task-results:by-task -i 4
 
+    # Or
+
+    viper task:from-obj viper.demo.tasks.ping | viper task:results -i 4
+
 
 ### Let's save the result
 
-    results=$(viper task:from-obj viper.demo.tasks.ping | viper task-results:by-task)
+    viper task:from-obj viper.demo.tasks.ping | viper task:results > /tmp/results.json
 
 
 ### Now filter the results by their status
 
     # success
-    echo $results | viper task-results:filter viper.demo.filters.result_ok -i 4
+    cat /tmp/results.json | viper task-results:filter viper.demo.filters.result_ok -i 4
 
     # failed
-    echo $results | viper task-results:filter viper.demo.filters.result_errored -i 4
+    cat /tmp/results.json | viper task-results:filter viper.demo.filters.result_errored -i 4
+
+
+### Pipe the results to a custom handler
+
+    cat /tmp/results.json | viper task-results:pipe viper.demo.handlers.print_status
 """
