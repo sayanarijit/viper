@@ -6,7 +6,7 @@ import typing as t
 from argparse import ArgumentParser
 from pydoc import locate
 
-from viper import Hosts, Task, TaskRunners, TaskResults, TaskRunners, __version__
+from viper import Hosts, Task, TaskResults, TaskRunners, __version__
 from viper.db import ViperDB
 
 

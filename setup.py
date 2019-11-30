@@ -29,7 +29,7 @@ testing_requires = install_requires + [
 dev_requires = testing_requires + ["tox>=3.12.1"]
 
 setup(
-    name="viper",
+    name="viper-infra-commander",
     version=__version__,
     description=__description__,
     long_description=long_description,

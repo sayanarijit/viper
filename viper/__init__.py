@@ -16,9 +16,7 @@ from viper.collections import (
 )
 from viper.demo import __doc__ as __viper_cli_examples__
 
-__doc__ = f"""# Viper Infrastructure Commander
-
-{__description__}
+__doc__ = f"""{__description__}
 
 {__viper_cli_examples__}
 """
