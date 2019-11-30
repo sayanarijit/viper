@@ -77,16 +77,16 @@ pip install -U viper-infra-commander
 
 ### Or get the past task results by task
 
-    viper task:from-func viper.demo.tasks.ping | viper task-results:by-task -i 4
+    viper task viper.demo.tasks.ping | viper task-results:by-task -i 4
 
     # Or
 
-    viper task:from-func viper.demo.tasks.ping | viper task:results -i 4
+    viper task viper.demo.tasks.ping | viper task:results -i 4
 
 
 ### Let's save the result
 
-    viper task:from-func viper.demo.tasks.ping | viper task:results > /tmp/results.json
+    viper task viper.demo.tasks.ping | viper task:results > /tmp/results.json
 
 
 ### Now filter the results by their status
