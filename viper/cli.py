@@ -77,19 +77,20 @@ class InitCommand(SubParser):
         return 0
 
 
-class TaskFromObjCommand(SubParser):
-    """get the task from a Python object location"""
+class TaskFromFuncCommand(SubParser):
+    """get the task from a Python function location"""
 
-    subcommand = "task:from-obj"
+    subcommand = "task:from-func"
+    aliases = ("task",)
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "obj", type=Task.from_obj, help=Task.from_obj.__doc__.lower()
+            "func", type=Task.from_func, help=Task.from_func.__doc__.lower()
         )
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args) -> int:
-        print(args.obj.to_json(indent=args.indent))
+        print(args.func.to_json(indent=args.indent))
         return 0
 
 
@@ -106,19 +107,20 @@ class TaskResultsCommand(SubParser):
         return 0
 
 
-class HostsFromObjCommand(SubParser):
-    """get a group of hosts from a Python object location"""
+class HostsFromFuncCommand(SubParser):
+    """get a group of hosts from a Python function location"""
 
-    subcommand = "hosts:from-obj"
+    subcommand = "hosts:from-func"
+    aliases = ("hosts",)
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "obj", type=Hosts.from_obj, help=Hosts.from_obj.__doc__.lower()
+            "func", type=Hosts.from_func, help=Hosts.from_func.__doc__.lower()
         )
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args) -> int:
-        print(args.obj.to_json(indent=args.indent))
+        print(args.func.to_json(indent=args.indent))
         return 0
 
 
@@ -152,7 +154,7 @@ class HostsTaskCommand(SubParser):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "task", type=Task.from_obj, help=Task.from_obj.__doc__.lower()
+            "task", type=Task.from_func, help=Task.from_func.__doc__.lower()
         )
         parser.add_argument("-i", "--indent", type=int, default=None)
 
@@ -169,7 +171,7 @@ class HostsRunTaskCommand(SubParser):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "task", type=Task.from_obj, help=Task.from_obj.__doc__.lower()
+            "task", type=Task.from_func, help=Task.from_func.__doc__.lower()
         )
         parser.add_argument("--max-workers", type=int, default=Config.max_workers.value)
         parser.add_argument("-i", "--indent", type=int, default=None)
@@ -191,7 +193,7 @@ class HostsRunTaskThenPipeCommand(SubParser):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "task", type=Task.from_obj, help=Task.from_obj.__doc__.lower()
+            "task", type=Task.from_func, help=Task.from_func.__doc__.lower()
         )
         parser.add_argument("handler", type=func, help="the result handler function")
         parser.add_argument("--max-workers", type=int, default=Config.max_workers.value)
@@ -465,12 +467,12 @@ def run() -> int:
     InitCommand.attach_to(subparsers)
 
     # Task commands
-    TaskFromObjCommand.attach_to(subparsers)
+    TaskFromFuncCommand.attach_to(subparsers)
     TaskResultsCommand.attach_to(subparsers)
 
     # Hosts commands
     HostsFromFileCommand.attach_to(subparsers)
-    HostsFromObjCommand.attach_to(subparsers)
+    HostsFromFuncCommand.attach_to(subparsers)
 
     HostsFilterCommand.attach_to(subparsers)
     HostsCountCommand.attach_to(subparsers)

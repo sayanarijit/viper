@@ -28,14 +28,14 @@ Viper is a handy tool for easily running infrastructure management tasks and com
     viper hosts:from-file tests/data/hosts.json --loader viper.demo.loaders.json --indent 4
 
 
-### Load hosts from Python object
+### Load hosts from a Python function
 
-    viper hosts:from-obj viper.demo.hosts.group1 --indent 4
+    viper hosts viper.demo.hosts.group1 --indent 4
 
 
 ### Let's save the hosts
 
-    viper hosts:from-obj viper.demo.hosts.group1 > /tmp/hosts.json
+    viper hosts viper.demo.hosts.group1 > /tmp/hosts.json
 
 
 ### Filter hosts
@@ -69,16 +69,16 @@ Viper is a handy tool for easily running infrastructure management tasks and com
 
 ### Or get the past task results by task
 
-    viper task:from-obj viper.demo.tasks.ping | viper task-results:by-task -i 4
+    viper task:from-func viper.demo.tasks.ping | viper task-results:by-task -i 4
 
     # Or
 
-    viper task:from-obj viper.demo.tasks.ping | viper task:results -i 4
+    viper task:from-func viper.demo.tasks.ping | viper task:results -i 4
 
 
 ### Let's save the result
 
-    viper task:from-obj viper.demo.tasks.ping | viper task:results > /tmp/results.json
+    viper task:from-func viper.demo.tasks.ping | viper task:results > /tmp/results.json
 
 
 ### Now filter the results by their status
@@ -96,7 +96,7 @@ Viper is a handy tool for easily running infrastructure management tasks and com
 
 
 ### Let's do that again in one go
-    viper hosts:from-obj viper.demo.hosts.group1 | viper hosts:run-task-then-pipe viper.demo.tasks.ping viper.demo.handlers.print_status
+    viper hosts viper.demo.hosts.group1 | viper hosts:run-task-then-pipe viper.demo.tasks.ping viper.demo.handlers.print_status
 
 
 
@@ -110,18 +110,20 @@ pip install -U viper-infra-commander
 
 ```
 usage: viper [-h] [--version] [--debug]
-             {init,task:from-obj,task:results,hosts:from-file,hosts:from-obj,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:task-results,task-runners:filter,task-runners:count,task-runners:sort,task-runners:pipe,task-runners:run,task-runners:hosts,task-results:filter,task-results:count,task-results:sort,task-results:pipe,task-results:hosts,task-results:by-task}
+             {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:task-results,task-runners:filter,task-runners:count,task-runners:sort,task-runners:pipe,task-runners:run,task-runners:hosts,task-results:filter,task-results:count,task-results:sort,task-results:pipe,task-results:hosts,task-results:by-task}
              ...
 
-Viper CLI v0.0.1
+Viper CLI v0.1.0
 
 positional arguments:
-  {init,task:from-obj,task:results,hosts:from-file,hosts:from-obj,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:task-results,task-runners:filter,task-runners:count,task-runners:sort,task-runners:pipe,task-runners:run,task-runners:hosts,task-results:filter,task-results:count,task-results:sort,task-results:pipe,task-results:hosts,task-results:by-task}
+  {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:task-results,task-runners:filter,task-runners:count,task-runners:sort,task-runners:pipe,task-runners:run,task-runners:hosts,task-results:filter,task-results:count,task-results:sort,task-results:pipe,task-results:hosts,task-results:by-task}
     init                initialize the current workspace
-    task:from-obj       get the task from a python object location
+    task:from-func      get the task from a python function location
+    task                alias of 'task:from-func'
     task:results        get the past task results of given task
     hosts:from-file     get a group of hosts from a file
-    hosts:from-obj      get a group of hosts from a python object location
+    hosts:from-func     get a group of hosts from a python function location
+    hosts               alias of 'hosts:from-func'
     hosts:filter        filter hosts by a given function
     hosts:count         count the number of hosts
     hosts:sort          sort the hosts

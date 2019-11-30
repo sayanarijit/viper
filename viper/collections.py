@@ -45,15 +45,19 @@ class Item:
         return dumpjson(self.to_dict(), *args, **kwargs)
 
     @classmethod
-    def from_obj(cls, objpath: str) -> Item:
-        """Load the item from the given Python object path."""
+    def from_func(cls, funcpath: str) -> Item:
+        """Load the item from the given Python function."""
 
-        item = locate(objpath)
-        if not item:
-            raise ValueError(f"could not resolve {repr(objpath)}.")
+        func: t.Optional[t.Callable[[], Items]] = locate(funcpath)
 
+        if not func:
+            raise ValueError(f"could not resolve {repr(funcpath)}.")
+
+        item = func()
         if not isinstance(item, cls):
-            raise ValueError(f"{repr(objpath)} is not a valid {cls} instance.")
+            raise ValueError(
+                f"{repr(funcpath)} does not produce a valid {cls} instance."
+            )
 
         return item
 
@@ -107,15 +111,16 @@ class Items:
         return dumpjson(self.to_list(), *args, **kwargs)
 
     @classmethod
-    def from_obj(cls, objpath: str) -> Items:
-        """Load the items from the given Python object path."""
+    def from_func(cls, funcpath: str) -> Items:
+        """Load the items from the given Python function."""
 
-        items = locate(objpath)
-        if not items:
-            raise ValueError(f"could not resolve {repr(objpath)}.")
+        func: t.Optional[t.Callable[[], Items]] = locate(funcpath)
+        if not func:
+            raise ValueError(f"could not resolve {repr(funcpath)}.")
 
+        items = func()
         if not isinstance(items, cls):
-            raise ValueError(f"{repr(objpath)} is not a valid {cls} instance.")
+            raise ValueError(f"{repr(funcpath)} does not produce a {cls} instance.")
 
         return items
 

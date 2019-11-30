@@ -69,7 +69,7 @@ def test_run_task():
 
     ViperDB.init(ViperDB.url)
 
-    assert Host("8.8.8.8").run_task(ping).returncode == 0
+    assert Host("8.8.8.8").run_task(ping()).returncode == 0
 
 
 @mock.patch("viper.collections.TaskResults")
