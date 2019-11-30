@@ -44,7 +44,6 @@ class SubParser:
 
     def __init__(self, subparser):
         self.add_arguments(subparser)
-        subparser.add_argument("--debug", action="store_true")
         subparser.set_defaults(handler=self)
 
     def add_arguments(self, parser):
@@ -89,7 +88,7 @@ class TaskFromObjCommand(SubParser):
 
 
 class TaskResultsCommand(SubParser):
-    """get the task from a Python object location"""
+    """get the past task results of given task"""
 
     subcommand = "task:results"
 
@@ -430,7 +429,11 @@ class TaskResultsByTaskCommand(SubParser):
 def run() -> int:
     parser = ArgumentParser("viper", description=f"Viper CLI {__version__}")
     parser.add_argument("--version", action="version", version=__version__)
-    parser.add_argument("--debug", action="store_true")
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="show traceback information when an exception is raised",
+    )
     subparsers = parser.add_subparsers()
 
     # Init command
