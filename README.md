@@ -8,6 +8,14 @@
 
 Viper is a handy tool for easily running infrastructure management tasks and commands.
 
+
+## Installation
+
+```
+pip install -U viper-infra-commander
+```
+
+
 ## Viper CLI Examples.
 
 ### Initialize current workspace (creates a `viperdb.sqlite3` file)
@@ -99,12 +107,6 @@ Viper is a handy tool for easily running infrastructure management tasks and com
     viper hosts viper.demo.hosts.group1 | viper hosts:run-task-then-pipe viper.demo.tasks.ping viper.demo.handlers.print_status
 
 
-
-## Installation
-
-```
-pip install -U viper-infra-commander
-```
 
 ## Viper CLI Reference
 
