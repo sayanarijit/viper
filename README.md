@@ -124,38 +124,60 @@ Viper CLI v0.2.0
 positional arguments:
   {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:rttp,hosts:task-results,task-runners:filter,task-runners:count,task-runners:sort,task-runners:pipe,task-runners:run,task-runners:hosts,task-results:filter,task-results:count,task-results:sort,task-results:pipe,task-results:hosts,task-results:by-task}
     init                initialize the current workspace
-    task:from-func      get the task from a python function location
+    task:from-func      [task:from-func FUNC > Task] get the task from a
+                        Python function location
     task                alias of 'task:from-func'
-    task:results        get the past task results of given task
-    hosts:from-file     get a group of hosts from a file
-    hosts:from-func     get a group of hosts from a python function location
+    task:results        [Task > task:results > TaskResults] get the past task
+                        results of given task
+    hosts:from-file     [hosts:from-file FILE > Hosts] get a group of hosts
+                        from a file
+    hosts:from-func     [hosts:from-func FUNC > Hosts] get a group of hosts
+                        from a Python function location
     hosts               alias of 'hosts:from-func'
-    hosts:filter        filter hosts by a given function
-    hosts:count         count the number of hosts
-    hosts:sort          sort the hosts
-    hosts:pipe          pipe the hosts to the given function
-    hosts:task          assign a task to each host
-    hosts:run-task      assign a task to each host and run
+    hosts:filter        [Hosts > hosts:filter FILTER *AGS > Hosts] filter
+                        hosts by a given function
+    hosts:count         [Hosts > hosts:count > int] count the number of hosts
+    hosts:sort          [Hosts > hosts:sort > Hosts] sort the hosts
+    hosts:pipe          [Hosts > hosts:pipe HANDLER *ARGS > ?] pipe the hosts
+                        to the given handler
+    hosts:task          [Hosts > hosts:task TASK > TaskRunners] assign a task
+                        to each host
+    hosts:run-task      [Hosts > hosts:run-task > TaskRunners] assign a task
+                        to each host and run
     hosts:run-task-then-pipe
-                        run the given task on the hosts and then pipe the
-                        result to the given function
+                        [Hosts > hosts:run-task-then-pipe TASK HANDLER *ARGS >
+                        ?] run the task on hosts and pipe the results to a
+                        handler
     hosts:rttp          alias of 'hosts:run-task-then-pipe'
-    hosts:task-results  get the past task results of the hosts
+    hosts:task-results  [Hosts > hosts:task-results > TaskResults] get the
+                        past task results of the hosts
     task-runners:filter
-                        filter task runners by a given function
-    task-runners:count  count the number of task runners
-    task-runners:sort   sort the task runners
-    task-runners:pipe   pipe the task runners to the given function
-    task-runners:run    run the assigned tasks
-    task-runners:hosts  get the hohsts from the task runners
+                        [TaskRunners > task-runners:filter FILTER *ARGS >
+                        TaskRunners] filter task runners by a given function
+    task-runners:count  [TaskRunners > task-runners:count > int] count the
+                        number of task runners
+    task-runners:sort   [TaskRunners > task-runners:sort > TaskRunners] sort
+                        the task runners
+    task-runners:pipe   [TaskRunners > task-runners:pipe HANDLER *ARGS > ?]
+                        pipe the task runners to the given handler
+    task-runners:run    [TaskRunners > task-runners:run > TaskResults] run the
+                        assigned tasks
+    task-runners:hosts  [TaskRunners > task-runners:hosts > Hosts] get the
+                        hohsts from the task runners
     task-results:filter
-                        filter task results by a given function
-    task-results:count  count the number of task results
-    task-results:sort   sort the task results
-    task-results:pipe   pipe the task results to the given function
-    task-results:hosts  get the hosts from the task results
+                        [TaskResults > task-results:filter FILTER *ARGS >
+                        TaskResults] filter task results by a given handler
+    task-results:count  [TaskResults > task-results:count > int] count the
+                        number of task results
+    task-results:sort   [TaskResults > task-results:sort > TaskResults] sort
+                        the task results
+    task-results:pipe   [TaskResults > task-results:pipe HANDLER *ARGS> ?]
+                        pipe the task results to the given handler
+    task-results:hosts  [TaskResults > task-results:hosts > Hosts] get the
+                        hosts from the task results
     task-results:by-task
-                        get the past task results of given task
+                        [Task > task-results:by-task > TaskResults] get the
+                        past task results of given task
 
 optional arguments:
   -h, --help            show this help message and exit

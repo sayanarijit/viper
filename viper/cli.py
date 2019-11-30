@@ -33,7 +33,7 @@ class SubParser:
 
     @classmethod
     def attach_to(cls, subparsers):
-        subparser = subparsers.add_parser(cls.subcommand, help=cls.__doc__.lower())
+        subparser = subparsers.add_parser(cls.subcommand, help=cls.__doc__)
         if cls.aliases:
             for alias in cls.aliases:
                 cls(
@@ -78,7 +78,7 @@ class InitCommand(SubParser):
 
 
 class TaskFromFuncCommand(SubParser):
-    """get the task from a Python function location"""
+    """[task:from-func FUNC > Task] get the task from a Python function location"""
 
     subcommand = "task:from-func"
     aliases = ("task",)
@@ -95,7 +95,7 @@ class TaskFromFuncCommand(SubParser):
 
 
 class TaskResultsCommand(SubParser):
-    """get the past task results of given task"""
+    """[Task > task:results > TaskResults] get the past task results of given task"""
 
     subcommand = "task:results"
 
@@ -108,7 +108,7 @@ class TaskResultsCommand(SubParser):
 
 
 class HostsFromFuncCommand(SubParser):
-    """get a group of hosts from a Python function location"""
+    """[hosts:from-func FUNC > Hosts] get a group of hosts from a Python function location"""
 
     subcommand = "hosts:from-func"
     aliases = ("hosts",)
@@ -125,7 +125,7 @@ class HostsFromFuncCommand(SubParser):
 
 
 class HostsFromFileCommand(SubParser):
-    """get a group of hosts from a file"""
+    """[hosts:from-file FILE > Hosts] get a group of hosts from a file"""
 
     subcommand = "hosts:from-file"
 
@@ -148,7 +148,7 @@ class HostsFromFileCommand(SubParser):
 
 
 class HostsTaskCommand(SubParser):
-    """assign a task to each host"""
+    """[Hosts > hosts:task TASK > TaskRunners] assign a task to each host"""
 
     subcommand = "hosts:task"
 
@@ -165,7 +165,7 @@ class HostsTaskCommand(SubParser):
 
 
 class HostsRunTaskCommand(SubParser):
-    """assign a task to each host and run"""
+    """[Hosts > hosts:run-task > TaskRunners] assign a task to each host and run"""
 
     subcommand = "hosts:run-task"
 
@@ -187,7 +187,7 @@ class HostsRunTaskCommand(SubParser):
 
 
 class HostsRunTaskThenPipeCommand(SubParser):
-    """run the given task on the hosts and then pipe the result to the given function"""
+    """[Hosts > hosts:run-task-then-pipe TASK HANDLER *ARGS > ?] run the task on hosts and pipe the results to a handler"""
 
     subcommand = "hosts:run-task-then-pipe"
     aliases = ("hosts:rttp",)
@@ -210,7 +210,7 @@ class HostsRunTaskThenPipeCommand(SubParser):
 
 
 class HostsFilterCommand(SubParser):
-    """filter hosts by a given function"""
+    """[Hosts > hosts:filter FILTER *AGS > Hosts] filter hosts by a given function"""
 
     subcommand = "hosts:filter"
 
@@ -231,7 +231,7 @@ class HostsFilterCommand(SubParser):
 
 
 class HostsCountCommand(SubParser):
-    """count the number of hosts"""
+    """[Hosts > hosts:count > int] count the number of hosts"""
 
     subcommand = "hosts:count"
 
@@ -244,7 +244,7 @@ class HostsCountCommand(SubParser):
 
 
 class HostsSortCommand(SubParser):
-    """sort the hosts"""
+    """[Hosts > hosts:sort > Hosts] sort the hosts"""
 
     subcommand = "hosts:sort"
 
@@ -258,7 +258,7 @@ class HostsSortCommand(SubParser):
 
 
 class HostsPipeCommand(SubParser):
-    """pipe the hosts to the given function"""
+    """[Hosts > hosts:pipe HANDLER *ARGS > ?] pipe the hosts to the given handler"""
 
     subcommand = "hosts:pipe"
 
@@ -274,7 +274,7 @@ class HostsPipeCommand(SubParser):
 
 
 class HostsTaskResultsCommand(SubParser):
-    """get the past task results of the hosts"""
+    """[Hosts > hosts:task-results > TaskResults] get the past task results of the hosts"""
 
     subcommand = "hosts:task-results"
 
@@ -287,7 +287,7 @@ class HostsTaskResultsCommand(SubParser):
 
 
 class TaskRunnersFilterCommand(SubParser):
-    """filter task runners by a given function"""
+    """[TaskRunners > task-runners:filter FILTER *ARGS > TaskRunners] filter task runners by a given function"""
 
     subcommand = "task-runners:filter"
 
@@ -308,7 +308,7 @@ class TaskRunnersFilterCommand(SubParser):
 
 
 class TaskRunnersCountCommand(SubParser):
-    """count the number of task runners"""
+    """[TaskRunners > task-runners:count > int] count the number of task runners"""
 
     subcommand = "task-runners:count"
 
@@ -321,7 +321,7 @@ class TaskRunnersCountCommand(SubParser):
 
 
 class TaskRunnersSortCommand(SubParser):
-    """sort the task runners"""
+    """[TaskRunners > task-runners:sort > TaskRunners] sort the task runners"""
 
     subcommand = "task-runners:sort"
 
@@ -339,7 +339,7 @@ class TaskRunnersSortCommand(SubParser):
 
 
 class TaskRunnersPipeCommand(SubParser):
-    """pipe the task runners to the given function"""
+    """[TaskRunners > task-runners:pipe HANDLER *ARGS > ?] pipe the task runners to the given handler"""
 
     subcommand = "task-runners:pipe"
 
@@ -355,7 +355,7 @@ class TaskRunnersPipeCommand(SubParser):
 
 
 class TaskRunnersRunCommand(SubParser):
-    """run the assigned tasks"""
+    """[TaskRunners > task-runners:run > TaskResults] run the assigned tasks"""
 
     subcommand = "task-runners:run"
 
@@ -373,7 +373,7 @@ class TaskRunnersRunCommand(SubParser):
 
 
 class TaskRunnersHostsCommand(SubParser):
-    """get the hohsts from the task runners"""
+    """[TaskRunners > task-runners:hosts > Hosts] get the hohsts from the task runners"""
 
     subcommand = "task-runners:hosts"
 
@@ -386,7 +386,7 @@ class TaskRunnersHostsCommand(SubParser):
 
 
 class TaskResultsFilterCommand(SubParser):
-    """filter task results by a given function"""
+    """[TaskResults > task-results:filter FILTER *ARGS > TaskResults] filter task results by a given handler"""
 
     subcommand = "task-results:filter"
 
@@ -407,7 +407,7 @@ class TaskResultsFilterCommand(SubParser):
 
 
 class TaskResultsCountCommand(SubParser):
-    """count the number of task results"""
+    """[TaskResults > task-results:count > int] count the number of task results"""
 
     subcommand = "task-results:count"
 
@@ -420,7 +420,7 @@ class TaskResultsCountCommand(SubParser):
 
 
 class TaskResultsSortCommand(SubParser):
-    """sort the task results"""
+    """[TaskResults > task-results:sort > TaskResults] sort the task results"""
 
     subcommand = "task-results:sort"
 
@@ -438,7 +438,7 @@ class TaskResultsSortCommand(SubParser):
 
 
 class TaskResultsPipeCommand(SubParser):
-    """pipe the task results to the given function"""
+    """[TaskResults > task-results:pipe HANDLER *ARGS> ?] pipe the task results to the given handler"""
 
     subcommand = "task-results:pipe"
 
@@ -454,7 +454,7 @@ class TaskResultsPipeCommand(SubParser):
 
 
 class TaskResultsHostsCommand(SubParser):
-    """get the hosts from the task results"""
+    """[TaskResults > task-results:hosts > Hosts] get the hosts from the task results"""
 
     subcommand = "task-results:hosts"
 
@@ -467,7 +467,7 @@ class TaskResultsHostsCommand(SubParser):
 
 
 class TaskResultsByTaskCommand(SubParser):
-    """get the past task results of given task"""
+    """[Task > task-results:by-task > TaskResults] get the past task results of given task"""
 
     subcommand = "task-results:by-task"
 
