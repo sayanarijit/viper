@@ -59,11 +59,12 @@ def test_hosts_get():
 
     with pytest.raises(LookupError) as e:
         Hosts.from_file(CSV_FILE).get(lambda h: False)
-    assert "could not find" in str(e)
+
+    assert "could not find" in str(vars(e))
 
     with pytest.raises(LookupError) as e:
         Hosts.from_file(CSV_FILE).get(lambda h: True)
-    assert "multiple" in str(e)
+    assert "multiple" in str(vars(e))
 
     assert Hosts.from_file(CSV_FILE).get(lambda h: h.ip == "1.1.1.1") == Host("1.1.1.1")
 

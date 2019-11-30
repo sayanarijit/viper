@@ -37,15 +37,15 @@ def test_from_json():
 def test_fqdn():
     with pytest.raises(AttributeError) as e:
         Host("1.1.1.1").fqdn()
-    assert "hostname and domain" in str(e)
+    assert "hostname and domain" in str(vars(e))
 
     with pytest.raises(AttributeError) as e:
         Host("1.1.1.1", "host1").fqdn()
-    assert "domain" in str(e)
+    assert "domain" in str(vars(e))
 
     with pytest.raises(AttributeError) as e:
         Host("1.1.1.1", domain="domain.com").fqdn()
-    assert "hostname" in str(e)
+    assert "hostname" in str(vars(e))
 
     assert Host("1.1.1.1", "host1", "domain.com").fqdn() == "host1.domain.com"
 
