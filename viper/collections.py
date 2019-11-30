@@ -11,6 +11,7 @@ from json import loads as loadjson
 from pydoc import locate
 from subprocess import PIPE, Popen, TimeoutExpired
 
+from viper.const import Config
 from viper.db import ViperDB
 
 
@@ -246,10 +247,20 @@ class Hosts(Items):
             *(TaskRunner(task=task, host=h) for h in self._all)
         )
 
-    def run_task(self, task: Task, max_workers=0) -> TaskResults:
+    def run_task(self, task: Task, max_workers=Config.max_workers.value) -> TaskResults:
         """Run a task to be run on all hosts and then run it."""
 
         return self.task(task).run(max_workers=max_workers)
+
+    def run_task_then_pipe(
+        self,
+        task: Task,
+        func: t.Callable[[TaskResults], t.Any],
+        max_workers=Config.max_workers.value,
+    ) -> t.Any:
+        """Assign the task to the host and then run it."""
+
+        return self.run_task(task, max_workers=max_workers).pipe(func)
 
     def task_results(self) -> TaskResults:
         results = []
@@ -376,7 +387,7 @@ class TaskRunner(Item):
 class TaskRunners(Items):
     _item_factory: t.Type[TaskRunner] = field(init=False, default=TaskRunner)
 
-    def run(self, max_workers=0) -> TaskResults:
+    def run(self, max_workers=Config.max_workers.value) -> TaskResults:
         """Run the tasks."""
 
         if max_workers <= 1:

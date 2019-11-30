@@ -101,18 +101,22 @@ Viper is a handy tool for easily running infrastructure management tasks and com
     cat /tmp/results.json | viper task-results:pipe viper.demo.handlers.print_status
 
 
+### Let's do that again in one go
+    viper hosts:from-obj viper.demo.hosts.group1 | viper hosts:run-task-then-pipe viper.demo.tasks.ping viper.demo.handlers.print_status
+
+
 
 ## Viper CLI Reference
 
 ```
 usage: viper [-h] [--version] [--debug]
-             {init,task:from-obj,task:results,hosts:from-file,hosts:from-obj,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:task-results,task-runners:filter,task-runners:count,task-runners:sort,task-runners:pipe,task-runners:run,task-runners:hosts,task-results:filter,task-results:count,task-results:sort,task-results:pipe,task-results:hosts,task-results:by-task}
+             {init,task:from-obj,task:results,hosts:from-file,hosts:from-obj,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:task-results,task-runners:filter,task-runners:count,task-runners:sort,task-runners:pipe,task-runners:run,task-runners:hosts,task-results:filter,task-results:count,task-results:sort,task-results:pipe,task-results:hosts,task-results:by-task}
              ...
 
 Viper CLI v0.0.0
 
 positional arguments:
-  {init,task:from-obj,task:results,hosts:from-file,hosts:from-obj,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:task-results,task-runners:filter,task-runners:count,task-runners:sort,task-runners:pipe,task-runners:run,task-runners:hosts,task-results:filter,task-results:count,task-results:sort,task-results:pipe,task-results:hosts,task-results:by-task}
+  {init,task:from-obj,task:results,hosts:from-file,hosts:from-obj,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:task-results,task-runners:filter,task-runners:count,task-runners:sort,task-runners:pipe,task-runners:run,task-runners:hosts,task-results:filter,task-results:count,task-results:sort,task-results:pipe,task-results:hosts,task-results:by-task}
     init                initialize the current workspace
     task:from-obj       get the task from a python object location
     task:results        get the past task results of given task
@@ -124,6 +128,9 @@ positional arguments:
     hosts:pipe          pipe the hosts to the given function
     hosts:task          assign a task to each host
     hosts:run-task      assign a task to each host and run
+    hosts:run-task-then-pipe
+                        run the given task on the hosts and then pipe the
+                        result to the given function
     hosts:task-results  get the past task results of the hosts
     task-runners:filter
                         filter task runners by a given function

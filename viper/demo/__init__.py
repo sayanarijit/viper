@@ -83,4 +83,8 @@
 ### Pipe the results to a custom handler
 
     cat /tmp/results.json | viper task-results:pipe viper.demo.handlers.print_status
+
+
+### Let's do that again in one go
+    viper hosts:from-obj viper.demo.hosts.group1 | viper hosts:run-task-then-pipe viper.demo.tasks.ping viper.demo.handlers.print_status
 """

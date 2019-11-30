@@ -7,6 +7,7 @@ from argparse import ArgumentParser
 from pydoc import locate
 
 from viper import Hosts, Task, TaskResults, TaskRunners, __version__
+from viper.const import Config
 from viper.db import ViperDB
 
 
@@ -44,7 +45,12 @@ class SubParser:
 
     def __init__(self, subparser):
         self.add_arguments(subparser)
-        subparser.set_defaults(handler=self)
+        subparser.set_defaults(_handler=self)
+        subparser.add_argument(
+            "--debug",
+            action="store_true",
+            help="show traceback information when an exception is raised",
+        )
 
     def add_arguments(self, parser):
         raise NotImplementedError()
@@ -165,7 +171,7 @@ class HostsRunTaskCommand(SubParser):
         parser.add_argument(
             "task", type=Task.from_obj, help=Task.from_obj.__doc__.lower()
         )
-        parser.add_argument("--max-workers", type=int, default=0)
+        parser.add_argument("--max-workers", type=int, default=Config.max_workers.value)
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args) -> int:
@@ -174,6 +180,25 @@ class HostsRunTaskCommand(SubParser):
             Hosts.from_json(input())
             .run_task(args.task, max_workers=args.max_workers)
             .to_json(indent=args.indent)
+        )
+        return 0
+
+
+class HostsRunTaskThenPipeCommand(SubParser):
+    """run the given task on the hosts and then pipe the result to the given function"""
+
+    subcommand = "hosts:run-task-then-pipe"
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "task", type=Task.from_obj, help=Task.from_obj.__doc__.lower()
+        )
+        parser.add_argument("handler", type=func, help="the result handler function")
+        parser.add_argument("--max-workers", type=int, default=Config.max_workers.value)
+
+    def __call__(self, args) -> int:
+        Hosts.from_json(input()).run_task_then_pipe(
+            args.task, args.handler, max_workers=args.max_workers
         )
         return 0
 
@@ -313,7 +338,7 @@ class TaskRunnersRunCommand(SubParser):
     subcommand = "task-runners:run"
 
     def add_arguments(self, parser):
-        parser.add_argument("--max-workers", type=int, default=0)
+        parser.add_argument("--max-workers", type=int, default=Config.max_workers.value)
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args):
@@ -454,6 +479,7 @@ def run() -> int:
 
     HostsTaskCommand.attach_to(subparsers)
     HostsRunTaskCommand.attach_to(subparsers)
+    HostsRunTaskThenPipeCommand.attach_to(subparsers)
     HostsTaskResultsCommand.attach_to(subparsers)
 
     # Task runners commands
@@ -476,12 +502,12 @@ def run() -> int:
 
     args = parser.parse_args()
 
-    if not hasattr(args, "handler"):
+    if not hasattr(args, "_handler"):
         parser.print_usage()
         return 2
 
     try:
-        return args.handler(args)
+        return args._handler(args)
     except Exception as e:
         print(f"error: {e}", file=sys.stderr)
         if args.debug:
