@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import time
+from time import time
 import typing as t
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
@@ -65,9 +65,9 @@ class Item:
         """Get the hash value"""
         return hash(self)
 
-    def pipe(self, func: t.Callable[[Item], t.Any]) -> t.Any:
+    def pipe(self, handler: t.Callable[[Item], t.Any], *args: str) -> t.Any:
         """Pipe this object to the given function"""
-        return func(self)
+        return handler(self, *args)
 
 
 @dataclass(frozen=True)
@@ -151,9 +151,9 @@ class Items:
         """Sort the items by given key/function."""
         return type(self)(tuple(sorted(self._all, key=key)))
 
-    def filter(self, func: t.Callable[[Item], bool]) -> Items:
+    def filter(self, handler, *args: str) -> Items:
         """Filter the items by a giver function."""
-        return type(self)(tuple(filter(func, self._all)))
+        return type(self)(tuple(filter(lambda i: handler(i, *args), self._all)))
 
     def get(self, func: t.Callable[[Item], bool]) -> Item:
         """Get one unique item by a filter function."""
@@ -176,9 +176,9 @@ class Items:
         """Get the hash value"""
         return hash(self)
 
-    def pipe(self, func: t.Callable[[Items], t.Any]) -> t.Any:
+    def pipe(self, func, *args: str) -> t.Any:
         """Pipe this object to the given function"""
-        return func(self)
+        return func(self, *args)
 
 
 @dataclass(frozen=True, order=True)
@@ -260,12 +260,13 @@ class Hosts(Items):
     def run_task_then_pipe(
         self,
         task: Task,
-        func: t.Callable[[TaskResults], t.Any],
+        handler: t.Callable[[TaskResults], t.Any],
+        *args,
         max_workers=Config.max_workers.value,
     ) -> t.Any:
         """Assign the task to the host and then run it."""
 
-        return self.run_task(task, max_workers=max_workers).pipe(func)
+        return self.run_task(task, max_workers=max_workers).pipe(handler, *args)
 
     def task_results(self) -> TaskResults:
         results = []
@@ -352,13 +353,13 @@ class TaskRunner(Item):
 
         p = Popen(command, stdout=PIPE, stderr=PIPE)
 
-        start = time.time()
+        start = time()
         try:
             out, err = p.communicate(timeout=self.task.timeout)
             stdout, stderr = out.decode("latin1"), err.decode("latin1")
         except TimeoutExpired as e:
             stdout, stderr, p.returncode = "", str(e), 123
-        end = time.time()
+        end = time()
 
         if self.task.stderr_processor:
             stdout = self.task.stdout_processor(stdout)

@@ -48,7 +48,7 @@ pip install -U viper-infra-commander
 
 ### Filter hosts
 
-    cat /tmp/hosts.json | viper hosts:filter viper.demo.filters.ip_starts_with_2 --indent 4
+    cat /tmp/hosts.json | viper hosts:filter viper.demo.filters.ip_is 8.8.8.8 --indent 4
 
 
 ### Assign tasks to the given hosts
@@ -79,7 +79,7 @@ pip install -U viper-infra-commander
 
     viper task viper.demo.tasks.ping | viper task-results:by-task -i 4
 
-    # Or
+    # or
 
     viper task viper.demo.tasks.ping | viper task:results -i 4
 
@@ -100,11 +100,15 @@ pip install -U viper-infra-commander
 
 ### Pipe the results to a custom handler
 
+    # print the status to terminal
     cat /tmp/results.json | viper task-results:pipe viper.demo.handlers.print_status
+
+    # export the results to a csv file
+    cat /tmp/results.json | viper task-results:pipe viper.demo.handlers.export_csv /tmp/results.csv
 
 
 ### Let's do that again in one go
-    viper hosts viper.demo.hosts.group1 | viper hosts:run-task-then-pipe viper.demo.tasks.ping viper.demo.handlers.print_status
+    viper hosts viper.demo.hosts.group1 | viper hosts:rttp viper.demo.tasks.ping viper.demo.handlers.export_csv /tmp/results.csv
 
 
 
@@ -112,13 +116,13 @@ pip install -U viper-infra-commander
 
 ```
 usage: viper [-h] [--version] [--debug]
-             {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:task-results,task-runners:filter,task-runners:count,task-runners:sort,task-runners:pipe,task-runners:run,task-runners:hosts,task-results:filter,task-results:count,task-results:sort,task-results:pipe,task-results:hosts,task-results:by-task}
+             {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:rttp,hosts:task-results,task-runners:filter,task-runners:count,task-runners:sort,task-runners:pipe,task-runners:run,task-runners:hosts,task-results:filter,task-results:count,task-results:sort,task-results:pipe,task-results:hosts,task-results:by-task}
              ...
 
-Viper CLI v0.1.0
+Viper CLI v0.2.0
 
 positional arguments:
-  {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:task-results,task-runners:filter,task-runners:count,task-runners:sort,task-runners:pipe,task-runners:run,task-runners:hosts,task-results:filter,task-results:count,task-results:sort,task-results:pipe,task-results:hosts,task-results:by-task}
+  {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:rttp,hosts:task-results,task-runners:filter,task-runners:count,task-runners:sort,task-runners:pipe,task-runners:run,task-runners:hosts,task-results:filter,task-results:count,task-results:sort,task-results:pipe,task-results:hosts,task-results:by-task}
     init                initialize the current workspace
     task:from-func      get the task from a python function location
     task                alias of 'task:from-func'
@@ -135,6 +139,7 @@ positional arguments:
     hosts:run-task-then-pipe
                         run the given task on the hosts and then pipe the
                         result to the given function
+    hosts:rttp          alias of 'hosts:run-task-then-pipe'
     hosts:task-results  get the past task results of the hosts
     task-runners:filter
                         filter task runners by a given function

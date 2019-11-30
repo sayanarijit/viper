@@ -30,7 +30,7 @@
 
 ### Filter hosts
 
-    cat /tmp/hosts.json | viper hosts:filter viper.demo.filters.ip_starts_with_2 --indent 4
+    cat /tmp/hosts.json | viper hosts:filter viper.demo.filters.ip_is 8.8.8.8 --indent 4
 
 
 ### Assign tasks to the given hosts
@@ -61,7 +61,7 @@
 
     viper task viper.demo.tasks.ping | viper task-results:by-task -i 4
 
-    # Or
+    # or
 
     viper task viper.demo.tasks.ping | viper task:results -i 4
 
@@ -82,9 +82,13 @@
 
 ### Pipe the results to a custom handler
 
+    # print the status to terminal
     cat /tmp/results.json | viper task-results:pipe viper.demo.handlers.print_status
+
+    # export the results to a csv file
+    cat /tmp/results.json | viper task-results:pipe viper.demo.handlers.export_csv /tmp/results.csv
 
 
 ### Let's do that again in one go
-    viper hosts viper.demo.hosts.group1 | viper hosts:run-task-then-pipe viper.demo.tasks.ping viper.demo.handlers.print_status
+    viper hosts viper.demo.hosts.group1 | viper hosts:rttp viper.demo.tasks.ping viper.demo.handlers.export_csv /tmp/results.csv
 """

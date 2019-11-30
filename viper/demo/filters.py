@@ -1,10 +1,12 @@
 from viper import Host, TaskResult
 from viper.demo import __doc__
 
+__doc__ = __doc__
 
-def ip_starts_with_2(host: Host) -> bool:
+
+def ip_is(host: Host, ip: str) -> bool:
     """Filter hosts IPs that start with 2."""
-    return host.ip.startswith("2")
+    return host.ip == ip
 
 
 def result_ok(result: TaskResult) -> bool:

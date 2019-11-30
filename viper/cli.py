@@ -190,17 +190,21 @@ class HostsRunTaskThenPipeCommand(SubParser):
     """run the given task on the hosts and then pipe the result to the given function"""
 
     subcommand = "hosts:run-task-then-pipe"
+    aliases = ("hosts:rttp",)
 
     def add_arguments(self, parser):
         parser.add_argument(
             "task", type=Task.from_func, help=Task.from_func.__doc__.lower()
         )
         parser.add_argument("handler", type=func, help="the result handler function")
+        parser.add_argument(
+            "args", nargs="*", help="arguments to be passed to the filter"
+        )
         parser.add_argument("--max-workers", type=int, default=Config.max_workers.value)
 
     def __call__(self, args) -> int:
         Hosts.from_json(input()).run_task_then_pipe(
-            args.task, args.handler, max_workers=args.max_workers
+            args.task, args.handler, *args.args, max_workers=args.max_workers,
         )
         return 0
 
@@ -212,10 +216,17 @@ class HostsFilterCommand(SubParser):
 
     def add_arguments(self, parser):
         parser.add_argument("filter", type=func)
+        parser.add_argument(
+            "args", nargs="*", help="arguments to be passed to the filter"
+        )
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args):
-        print(Hosts.from_json(input()).filter(args.filter).to_json(indent=args.indent))
+        print(
+            Hosts.from_json(input())
+            .filter(args.filter, *args.args)
+            .to_json(indent=args.indent)
+        )
         return 0
 
 
@@ -252,10 +263,13 @@ class HostsPipeCommand(SubParser):
     subcommand = "hosts:pipe"
 
     def add_arguments(self, parser):
-        parser.add_argument("func", type=func)
+        parser.add_argument("handler", type=func)
+        parser.add_argument(
+            "args", nargs="*", help="arguments to be passed to the filter"
+        )
 
     def __call__(self, args) -> int:
-        Hosts.from_json(input()).pipe(args.func)
+        Hosts.from_json(input()).pipe(args.handler, *args.args)
         return 0
 
 
@@ -279,12 +293,15 @@ class TaskRunnersFilterCommand(SubParser):
 
     def add_arguments(self, parser):
         parser.add_argument("filter", type=func)
+        parser.add_argument(
+            "args", nargs="*", help="arguments to be passed to the filter"
+        )
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args):
         print(
             TaskRunners.from_json(input())
-            .filter(args.filter)
+            .filter(args.filter, *args.args)
             .to_json(indent=args.indent)
         )
         return 0
@@ -327,10 +344,13 @@ class TaskRunnersPipeCommand(SubParser):
     subcommand = "task-runners:pipe"
 
     def add_arguments(self, parser):
-        parser.add_argument("func", type=func)
+        parser.add_argument("handler", type=func)
+        parser.add_argument(
+            "args", nargs="*", help="arguments to be passed to the filter"
+        )
 
     def __call__(self, args) -> int:
-        TaskRunners.from_json(input()).pipe(args.func)
+        TaskRunners.from_json(input()).pipe(args.handler, *args.args)
         return 0
 
 
@@ -372,12 +392,15 @@ class TaskResultsFilterCommand(SubParser):
 
     def add_arguments(self, parser):
         parser.add_argument("filter", type=func)
+        parser.add_argument(
+            "args", nargs="*", help="arguments to be passed to the filter"
+        )
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args):
         print(
             TaskResults.from_json(input())
-            .filter(args.filter)
+            .filter(args.filter, *args.args)
             .to_json(indent=args.indent)
         )
         return 0
@@ -420,10 +443,13 @@ class TaskResultsPipeCommand(SubParser):
     subcommand = "task-results:pipe"
 
     def add_arguments(self, parser):
-        parser.add_argument("func", type=func)
+        parser.add_argument("handler", type=func)
+        parser.add_argument(
+            "args", nargs="*", help="arguments to be passed to the filter"
+        )
 
     def __call__(self, args) -> int:
-        TaskResults.from_json(input()).pipe(args.func)
+        TaskResults.from_json(input()).pipe(args.handler, *args.args)
         return 0
 
 
