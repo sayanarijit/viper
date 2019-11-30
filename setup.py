@@ -18,7 +18,7 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
-install_requires = ["pyyaml"]
+install_requires = []
 testing_requires = install_requires + [
     "pytest>=4.4.1",
     "pytest-cov>=2.7.1",
@@ -26,7 +26,7 @@ testing_requires = install_requires + [
     "mypy>=0.710",
     "lxml>=4.3.4",
 ]
-dev_requires = testing_requires + ["tox>=3.12.1"]
+dev_requires = testing_requires + ["tox>=3.12.1", "twine>=3.1.1"]
 
 setup(
     name="viper-infra-commander",
@@ -47,6 +47,7 @@ setup(
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Intended Audience :: Information Technology",
+        "Intended Audience :: System Administrators ",
         "Intended Audience :: Other Audience",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
@@ -55,7 +56,7 @@ setup(
     ],
     platforms=["Any"],
     zip_safe=False,
-    keywords="html rendering framework",
+    keywords="viper infrastructure commander",
     packages=find_packages(exclude=["contrib", "docs", "tests", "examples"]),
     install_requires=install_requires,
     extras_require={"testing": testing_requires, "dev": dev_requires},
