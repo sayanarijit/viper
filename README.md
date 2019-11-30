@@ -6,6 +6,12 @@
 [![codecov](https://codecov.io/gh/sayanarijit/viper/branch/master/graph/badge.svg)](https://codecov.io/gh/sayanarijit/viper)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
+## Installation
+
+```
+pip install -U viper-infra-commander
+```
+
 Viper is a handy tool for easily running infrastructure management tasks and commands.
 
 ## Viper CLI Examples.
@@ -96,7 +102,7 @@ Viper is a handy tool for easily running infrastructure management tasks and com
 
 
 
-# Viper CLI Reference
+## Viper CLI Reference
 
 ```
 usage: viper [-h] [--version] [--debug]
