@@ -383,7 +383,7 @@ class RunnersRunCommand(SubParser):
 
 
 class RunnersHostsCommand(SubParser):
-    """[Runners > runners:hosts > Hosts] get the hohsts from the runners"""
+    """[Runners > runners:hosts > Hosts] get the hosts from the runners"""
 
     subcommand = "runners:hosts"
 
