@@ -315,6 +315,8 @@ class Task(Item):
     retry: int = 0
     stdout_processor: t.Optional[t.Callable[[str], str]] = None
     stderr_processor: t.Optional[t.Callable[[str], str]] = None
+    pre_run: t.Optional[t.Callable[[Runner], None]] = None
+    post_run: t.Optional[t.Callable[[Result], None]] = None
 
     @classmethod
     def from_dict(cls, dict_: t.Dict[str, object]) -> Task:
@@ -322,6 +324,8 @@ class Task(Item):
 
         outp = dict_.get("stdout_processor")
         errp = dict_.get("stderr_processor")
+        pre = dict_.get("pre_run")
+        post = dict_.get("post_run")
 
         return cls(
             **dict(
@@ -329,6 +333,8 @@ class Task(Item):
                 command_factory=locate(dict_["command_factory"]),
                 stdout_processor=locate(outp) if outp else None,
                 stderr_processor=locate(errp) if errp else None,
+                pre_run=locate(pre) if pre else None,
+                post_run=locate(post) if post else None,
             )
         )
 
@@ -338,12 +344,16 @@ class Task(Item):
         cf = self.command_factory
         outp = self.stdout_processor
         errp = self.stderr_processor
+        pre = self.pre_run
+        post = self.post_run
 
         return dict(
             vars(self),
             command_factory=f"{cf.__module__}.{cf.__qualname__}",
             stdout_processor=f"{outp.__module__}.{outp.__qualname__}" if outp else None,
             stderr_processor=f"{errp.__module__}.{errp.__qualname__}" if errp else None,
+            pre_run=f"{pre.__module__}.{pre.__qualname__}" if pre else None,
+            post_run=f"{post.__module__}.{post.__qualname__}" if post else None,
         )
 
     def results(self) -> Results:
@@ -378,9 +388,13 @@ class Runner(Item):
 
     def run(self, retry: int = 0) -> Result:
         """Run the task on the host."""
-        command = self.task.command_factory(self.host)
 
+        if self.task.pre_run:
+            self.task.pre_run(self)
+
+        command = self.task.command_factory(self.host)
         start = time()
+
         try:
             r = subprocess.run(
                 command,
@@ -391,6 +405,7 @@ class Runner(Item):
             stdout, stderr, returncode = r.stdout, r.stderr, r.returncode
         except Exception as e:
             stdout, stderr, returncode = "", str(e), 123
+
         end = time()
 
         if self.task.stderr_processor:
@@ -403,7 +418,10 @@ class Runner(Item):
             self.task, self.host, command, stdout, stderr, returncode, start, end, retry
         ).save()
 
-        if result.errored() and self.task.retry > retry:
+        if self.task.post_run:
+            self.task.post_run(result)
+
+        if result.errored() and result.retry_left():
             return self.run(retry=retry + 1)
 
         return result
@@ -503,6 +521,10 @@ class Result(Item):
     def errored(self) -> bool:
         """If the result is failure."""
         return self.returncode != 0
+
+    def retry_left(self) -> int:
+        """Get how many retries are left."""
+        return self.task.retry - self.retry
 
     def save(self) -> Result:
         """Save the result dump."""

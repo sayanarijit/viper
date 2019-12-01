@@ -16,6 +16,14 @@ def process_stderr(err):
     return f"error: {err}"
 
 
+def pre_run(task):
+    pass
+
+
+def post_run(result):
+    pass
+
+
 def test_runners_hosts():
     hosts = Hosts.from_items(Host("1.1.1.1"), Host("2.2.2.2"))
     task = Task(
@@ -23,6 +31,8 @@ def test_runners_hosts():
         command_factory=make_command,
         stdout_processor=process_stdout,
         stderr_processor=process_stderr,
+        pre_run=pre_run,
+        post_run=post_run,
     )
 
     runners = hosts.task(task)

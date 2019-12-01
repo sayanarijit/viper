@@ -37,6 +37,8 @@ def test_task_to_json():
             "retry": 0,
             "stdout_processor": "test_task.process_stdout",
             "stderr_processor": "test_task.process_stderr",
+            "pre_run": None,
+            "post_run": None,
         }
     )
 
@@ -57,6 +59,8 @@ def test_task_from_json():
                 "timeout": None,
                 "stdout_processor": "test_task.process_stdout",
                 "stderr_processor": "test_task.process_stderr",
+                "pre_run": None,
+                "post_run": None,
             }
         )
     )
@@ -87,6 +91,8 @@ def test_runner_to_from_json():
                 "retry": 0,
                 "stdout_processor": None,
                 "stderr_processor": None,
+                "pre_run": None,
+                "post_run": None,
             },
         }
     )

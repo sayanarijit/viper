@@ -21,13 +21,24 @@ def process_stderr(err):
     return f"error: {err}"
 
 
+def pre_run(task):
+    pass
+
+
+def post_run(result):
+    pass
+
+
 def test_runner_run_save_load():
     host = Host("1.1.1.1")
+
     task = Task(
         "print IP address",
         command_factory=make_echo_command,
         stdout_processor=process_stdout,
         stderr_processor=process_stderr,
+        pre_run=pre_run,
+        post_run=post_run,
     )
 
     runner = host.task(task)

@@ -43,6 +43,8 @@ def test_result_to_from_json():
                 "retry": 0,
                 "stdout_processor": None,
                 "stderr_processor": None,
+                "pre_run": None,
+                "post_run": None,
             },
             "host": {
                 "ip": "1.1.1.1",

@@ -4,6 +4,14 @@ viper.demo package
 Submodules
 ----------
 
+viper.demo.callbacks module
+---------------------------
+
+.. automodule:: viper.demo.callbacks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 viper.demo.filters module
 -------------------------
 
