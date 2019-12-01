@@ -1,8 +1,6 @@
 """Base collection classes are defined here."""
 
 from __future__ import annotations
-from collections import namedtuple
-from collections.abc import Mapping
 from concurrent.futures import as_completed
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -51,42 +49,6 @@ class FilterType:
     """TODO: This should be a protocol"""
 
     pass
-
-
-class Meta(Mapping):
-    """A low performance hashable frozen dict alternative."""
-
-    def __init__(self, data: t.Mapping[str, object]):
-        self._data = namedtuple("MetaData", data.keys())(
-            *(self.__class__(x) if isinstance(x, Mapping) else x for x in data.values())
-        )
-
-    def _asdict(self):
-        return {
-            k: v._data._asdict() if isinstance(v, type(self)) else v
-            for k, v in self._data._asdict().items()
-        }
-
-    def __getitem__(self, key) -> object:
-        return getattr(self._data, key)
-
-    def __len__(self):
-        return len(self._data)
-
-    def __iter__(self):
-        return iter(self._asdict())
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}({self._asdict()})"
-
-    def __eq__(self, value):
-        return type(self) == type(value) and self._data == value._data
-
-    def __hash__(self):
-        return hash(self._data)
-
-    def to_dict(self) -> t.Dict[str, object]:
-        return self._asdict()
 
 
 @dataclass(frozen=True, order=True)
@@ -260,22 +222,22 @@ class Host(Item):
     port: int = 22
     login_name: t.Optional[str] = None
     identity_file: t.Optional[str] = None
-    meta: Meta = Meta({})
+    meta: t.Sequence[t.Tuple[object, object]] = ()
 
     def __hash__(self) -> int:
         return hash(self.ip)
 
-    def __eq__(self, obj):
-        return type(self) == type(obj)
+    def __eq__(self, value):
+        return type(self) == type(value) and self.ip == value.ip
 
     @classmethod
     def from_dict(cls, dict_):
         """Overriding to_json"""
-        return cls(**dict(dict_, meta=Meta(dict_.get("meta", {}))))
+        return cls(**dict(dict_, meta=tuple(dict_.get("meta", {}).items())))
 
     def to_dict(self):
         """Overriding to_json"""
-        return dict(vars(self), meta=self.meta.to_dict())
+        return dict(vars(self), meta=dict(self.meta))
 
     def fqdn(self) -> str:
         """Get the FQDN from hostname and domainname."""
@@ -371,7 +333,7 @@ class Task(Item):
     stderr_processor: t.Optional[t.Callable[[str], str]] = None
     pre_run: t.Optional[t.Callable[[Runner], None]] = None
     post_run: t.Optional[t.Callable[[Result], None]] = None
-    meta: Meta = Meta({})
+    meta: t.Sequence[t.Tuple[object, object]] = ()
 
     @classmethod
     def from_dict(cls, dict_: t.Dict[str, object]) -> Task:
@@ -390,7 +352,7 @@ class Task(Item):
                 stderr_processor=locate(errp) if errp else None,
                 pre_run=locate(pre) if pre else None,
                 post_run=locate(post) if post else None,
-                meta=Meta(dict_.get("meta", {})),
+                meta=tuple(dict_.get("meta", {}).items()),
             )
         )
 
@@ -410,7 +372,7 @@ class Task(Item):
             stderr_processor=f"{errp.__module__}.{errp.__qualname__}" if errp else None,
             pre_run=f"{pre.__module__}.{pre.__qualname__}" if pre else None,
             post_run=f"{post.__module__}.{post.__qualname__}" if post else None,
-            meta=self.meta.to_dict(),
+            meta=dict(self.meta),
         )
 
     def results(self) -> Results:
