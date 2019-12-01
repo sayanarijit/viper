@@ -3,7 +3,7 @@ from viper import Result
 
 
 def ip_is(host: Host, ip: str) -> bool:
-    """Filter hosts IPs that start with 2."""
+    """Filter a host by IP address."""
     return host.ip == ip
 
 
