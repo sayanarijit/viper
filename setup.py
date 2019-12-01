@@ -28,7 +28,7 @@ testing_requires = install_requires + [
     "pre-commit>=1.20.0",
     "pre-commit-hooks>=2.4.0",
 ]
-dev_requires = testing_requires + ["tox>=3.12.1", "twine>=3.1.1"]
+dev_requires = testing_requires + ["tox>=3.12.1", "twine>=3.1.1", "sphinx>=2.2.1"]
 
 setup(
     name="viper-infra-commander",

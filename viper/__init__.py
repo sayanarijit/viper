@@ -18,11 +18,11 @@ __all__ = ["Host", "Hosts", "Result", "Results", "Runner", "Runners", "Task"]
 __doc__ = f"""{__description__}
 
 
-## Installation
+Installation
+============
 
-```
-pip install -U viper-infra-commander
-```
+    pip install -U viper-infra-commander
+
 
 
 {__viper_cli_examples__}

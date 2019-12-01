@@ -1,11 +1,10 @@
 from viper import Host
 from viper import Hosts
-from viper.demo import __doc__
-
-__doc__ = __doc__
 
 
 def group1() -> Hosts:
+    """Just a group of hosts."""
+
     return Hosts.from_items(
         Host("127.0.0.1"),
         Host("1.1.1.1"),

@@ -1,8 +1,5 @@
 from viper import Host
 from viper import Result
-from viper.demo import __doc__
-
-__doc__ = __doc__
 
 
 def ip_is(host: Host, ip: str) -> bool:

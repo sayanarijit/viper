@@ -1,8 +1,5 @@
 from viper import Hosts
 from viper import Results
-from viper.demo import __doc__
-
-__doc__ = __doc__
 
 
 def hosts_to_csv(hosts: Hosts) -> None:
