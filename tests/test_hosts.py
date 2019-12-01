@@ -21,6 +21,7 @@ def test_hosts_to_from_json():
                 "port": 22,
                 "login_name": None,
                 "identity_file": None,
+                "meta": {},
             }
         ]
     )

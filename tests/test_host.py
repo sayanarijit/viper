@@ -14,6 +14,7 @@ def test_host_to_json():
             "port": 22,
             "login_name": None,
             "identity_file": None,
+            "meta": {},
         }
     )
 
@@ -28,6 +29,7 @@ def test_from_json():
                 "port": 22,
                 "login_name": None,
                 "identity_file": None,
+                "meta": {},
             }
         )
     ) == Host("1.1.1.1")

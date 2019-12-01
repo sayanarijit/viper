@@ -45,6 +45,7 @@ def test_result_to_from_json():
                 "stderr_processor": None,
                 "pre_run": None,
                 "post_run": None,
+                "meta": {},
             },
             "host": {
                 "ip": "1.1.1.1",
@@ -53,6 +54,7 @@ def test_result_to_from_json():
                 "port": 22,
                 "login_name": None,
                 "identity_file": None,
+                "meta": {},
             },
             "command": ("foo",),
             "stdout": "out",

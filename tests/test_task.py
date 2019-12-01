@@ -39,6 +39,7 @@ def test_task_to_json():
             "stderr_processor": "test_task.process_stderr",
             "pre_run": None,
             "post_run": None,
+            "meta": {},
         }
     )
 
@@ -83,6 +84,7 @@ def test_runner_to_from_json():
                 "port": 22,
                 "login_name": None,
                 "identity_file": None,
+                "meta": {},
             },
             "task": {
                 "name": "print IP address",
@@ -93,6 +95,7 @@ def test_runner_to_from_json():
                 "stderr_processor": None,
                 "pre_run": None,
                 "post_run": None,
+                "meta": {},
             },
         }
     )
