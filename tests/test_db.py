@@ -1,6 +1,6 @@
-import os
-
 from viper.db import ViperDB
+
+import os
 
 DB_URL = "tests/data/viperdb.sqlite3"
 

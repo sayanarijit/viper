@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 from os import path
+from setuptools import find_packages
+from setuptools import setup
+from viper import __author__
+from viper import __description__
+from viper import __email__
+from viper import __homepage__
+from viper import __license__
+from viper import __version__
 
-from setuptools import find_packages, setup
-
-from viper import (
-    __author__,
-    __description__,
-    __email__,
-    __homepage__,
-    __license__,
-    __version__,
-)
+import typing as t
 
 here = path.abspath(path.dirname(__file__))
 
@@ -18,13 +17,16 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
-install_requires = []
+install_requires: t.List[str] = []
 testing_requires = install_requires + [
     "pytest>=4.4.1",
     "pytest-cov>=2.7.1",
     "black>=19.3b0",
+    "isort>=4.3.21",
     "mypy>=0.710",
     "lxml>=4.3.4",
+    "pre-commit>=1.20.0",
+    "pre-commit-hooks>=2.4.0",
 ]
 dev_requires = testing_requires + ["tox>=3.12.1", "twine>=3.1.1"]
 

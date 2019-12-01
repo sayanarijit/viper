@@ -1,6 +1,8 @@
 from unittest import mock
-
-from viper import Host, Task, Result, Runner
+from viper import Host
+from viper import Result
+from viper import Runner
+from viper import Task
 
 
 def make_echo_command(host):

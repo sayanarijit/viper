@@ -1,9 +1,8 @@
-import json
 from unittest import mock
-
-import pytest
-
 from viper import Host
+
+import json
+import pytest
 
 
 def test_host_to_json():

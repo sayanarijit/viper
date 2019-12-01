@@ -1,6 +1,6 @@
-import sys
-
 from viper.cli import run
+
+import sys
 
 
 def main() -> None:

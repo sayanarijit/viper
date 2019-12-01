@@ -1,8 +1,9 @@
-import typing as t
-from json import loads as loadjson
-
 from viper import Hosts
 from viper.demo import __doc__
+
+import typing as t
+
+__doc__ = __doc__
 
 
 def json(f: t.TextIO) -> Hosts:

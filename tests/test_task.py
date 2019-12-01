@@ -1,6 +1,8 @@
-import json
+from viper import Host
+from viper import Runner
+from viper import Task
 
-from viper import Host, Task, Runner
+import json
 
 
 def make_echo_command(host):

@@ -1,7 +1,8 @@
-import typing as t
-
-from viper import Host, Task
+from viper import Host
+from viper import Task
 from viper.demo import __doc__
+
+import typing as t
 
 __doc__ = __doc__
 

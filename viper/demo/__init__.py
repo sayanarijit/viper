@@ -23,6 +23,21 @@
     viper hosts viper.demo.hosts.group1 --indent 4
 
 
+### Count the number of hosts
+
+    viper hosts viper.demo.hosts.group1 | viper hosts:count
+
+
+### Sort the hosts by custom logic
+
+    viper hosts viper.demo.hosts.group1 | viper hosts:sort --key viper.demo.sort.by_ip -i 4
+
+
+### Pipe the hosts to a custom handler that formats the hosts to CSV
+
+    viper hosts viper.demo.hosts.group1 | viper hosts:pipe viper.demo.handlers.hosts_to_csv
+
+
 ### Let's save the hosts
 
     viper hosts viper.demo.hosts.group1 > /tmp/hosts.json

@@ -1,10 +1,11 @@
 from __future__ import annotations
+from dataclasses import dataclass
+from dataclasses import field
+from sqlite3 import Cursor
+from viper.const import Config
 
 import sqlite3
 import typing as t
-from dataclasses import dataclass, field
-
-from viper.const import Config
 
 
 @dataclass
@@ -14,7 +15,7 @@ class ViperDB:
     engine: t.Optional[sqlite3.Connection] = field(init=False, default=None)
 
     @classmethod
-    def init(cls, url, force=False):
+    def init(cls, url: str, force: bool = False) -> None:
         if force:
             with cls(url) as conn:
                 conn.execute("DELETE FROM results")
@@ -39,13 +40,13 @@ class ViperDB:
                 """
             )
 
-    def __enter__(self):
+    def __enter__(self) -> Cursor:
         self.engine = sqlite3.connect(self.url)
         return self.engine.cursor()
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def __exit__(self, exc_type: type, exc_value: t.Any, exc_traceback: Exception):
         try:
             self.engine.commit()
-        except Exception:
+        except Exception:  # no cover
             self.engine.rollback()
         self.engine.close()

@@ -5,8 +5,10 @@ matrix:
     - python: "3.8"
 install:
   - pip install -e '.[testing]'
+  - make install-hooks
+
 script:
-  - black --check .
-  - pytest --cov=viper
+  - make test
+
 after_success:
   - bash <(curl -s https://codecov.io/bash)

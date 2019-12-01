@@ -5,17 +5,16 @@ __homepage__ = "https://github.com/sayanarijit/viper"
 __license__ = "MIT"
 __version__ = "v0.3.0"
 
-from viper.collections import (
-    Host,
-    Hosts,
-    Task,
-    Result,
-    Results,
-    Runner,
-    Runners,
-)
+from viper.collections import Host  # noqa: F401
+from viper.collections import Hosts  # noqa: F401
+from viper.collections import Result  # noqa: F401
+from viper.collections import Results  # noqa: F401
+from viper.collections import Runner  # noqa: F401
+from viper.collections import Runners  # noqa: F401
+from viper.collections import Task  # noqa: F401
 from viper.demo import __doc__ as __viper_cli_examples__
 
+__all__ = ["Host", "Hosts", "Result", "Results", "Runner", "Runners", "Task"]
 __doc__ = f"""{__description__}
 
 

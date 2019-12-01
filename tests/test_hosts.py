@@ -1,10 +1,9 @@
-import json
-from unittest import mock
-
-import pytest
-
 from tests.const import TEST_DATA_DIR
-from viper import Host, Hosts
+from unittest import mock
+from viper import Host
+from viper import Hosts
+
+import json
 
 CSV_FILE = f"{TEST_DATA_DIR}/hosts.csv"
 JSON_FILE = f"{TEST_DATA_DIR}/hosts.json"
@@ -55,20 +54,6 @@ def test_hosts_filter():
     ) == Hosts.from_items(Host("1.2.3.4"), Host("1.1.1.1"))
 
 
-def test_hosts_get():
-
-    with pytest.raises(LookupError) as e:
-        Hosts.from_file(CSV_FILE).get(lambda h: False)
-
-    assert "could not find" in str(vars(e))
-
-    with pytest.raises(LookupError) as e:
-        Hosts.from_file(CSV_FILE).get(lambda h: True)
-    assert "multiple" in str(vars(e))
-
-    assert Hosts.from_file(CSV_FILE).get(lambda h: h.ip == "1.1.1.1") == Host("1.1.1.1")
-
-
 def test_hosts_first():
     assert Hosts.from_file(CSV_FILE).sort().first() == Host("1.1.1.1")
 
@@ -99,7 +84,7 @@ def test_hosts_sort():
 
 def test_hosts_task():
 
-    from viper import Task, Hosts, Runner
+    from viper import Hosts, Runner
 
     task = mock.Mock()
     hosts = Hosts.from_file(CSV_FILE)

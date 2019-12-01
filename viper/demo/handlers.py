@@ -1,5 +1,24 @@
+from viper import Hosts
 from viper import Results
 from viper.demo import __doc__
+
+__doc__ = __doc__
+
+
+def hosts_to_csv(hosts: Hosts) -> None:
+    """Print the hosts in CSV format"""
+
+    print("ip,hostname,domain,port,login_name,identity_file")
+    for host in hosts.all():
+        print(
+            host.ip,
+            host.hostname or "",
+            host.domain or "",
+            host.port or "",
+            host.login_name or "",
+            host.identity_file or "",
+            sep=",",
+        )
 
 
 def print_status(results: Results) -> None:

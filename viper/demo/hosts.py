@@ -1,4 +1,5 @@
-from viper import Host, Hosts
+from viper import Host
+from viper import Hosts
 from viper.demo import __doc__
 
 __doc__ = __doc__

@@ -1,4 +1,7 @@
-from viper import Host, Hosts, Task, Runner
+from viper import Host
+from viper import Hosts
+from viper import Runner
+from viper import Task
 
 
 def make_command(host):

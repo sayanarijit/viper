@@ -1,18 +1,36 @@
 """Base collection classes are defined here."""
 
 from __future__ import annotations
-
-from time import time
-import typing as t
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
+from concurrent.futures import as_completed
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from dataclasses import field
 from json import dumps as dumpjson
 from json import loads as loadjson
 from pydoc import locate
-from subprocess import PIPE, Popen, TimeoutExpired
-
+from subprocess import PIPE
+from subprocess import Popen
+from subprocess import TimeoutExpired
+from time import time
 from viper.const import Config
 from viper.db import ViperDB
+
+import typing as t
+
+ItemType = t.TypeVar("ItemType", bound="Item")
+ItemsType = t.TypeVar("ItemsType", bound="Items")
+
+
+class HandlerType:
+    """TODO: This should be a protocol"""
+
+    pass
+
+
+class FilterType:
+    """TODO: This should be a protocol"""
+
+    pass
 
 
 @dataclass(frozen=True, order=True)
@@ -20,7 +38,7 @@ class Item:
     """A single item."""
 
     @classmethod
-    def from_dict(cls, dict_: t.Dict[str, t.Any]) -> Item:
+    def from_dict(cls: t.Type[ItemType], dict_: t.Dict[str, object]) -> ItemType:
         """Initialize item from given dict."""
 
         try:
@@ -28,27 +46,29 @@ class Item:
         except Exception:
             raise ValueError(f"invalid input data for {cls.__name__}")
 
-    def to_dict(self) -> t.Dict[str, t.Any]:
+    def to_dict(self) -> t.Dict[str, object]:
         """Represent the item as dict."""
 
         return vars(self)
 
     @classmethod
-    def from_json(cls, json: str, *args: t.Any, **kwargs: t.Any) -> Item:
+    def from_json(
+        cls: t.Type[ItemType], json: str, *args: object, **kwargs: object
+    ) -> ItemType:
         """Initialize item from given JSON data."""
 
         return cls.from_dict(loadjson(json))
 
-    def to_json(self, *args: t.Any, **kwargs: t.Any) -> str:
+    def to_json(self, *args: object, **kwargs: object) -> str:
         """Represent the item as JSON data."""
 
         return dumpjson(self.to_dict(), *args, **kwargs)
 
     @classmethod
-    def from_func(cls, funcpath: str) -> Item:
+    def from_func(cls: t.Type[ItemType], funcpath: str) -> ItemType:
         """Load the item from the given Python function."""
 
-        func: t.Optional[t.Callable[[], Items]] = locate(funcpath)
+        func: t.Optional[t.Callable[[], ItemsType]] = locate(funcpath)
 
         if not func:
             raise ValueError(f"could not resolve {repr(funcpath)}.")
@@ -61,11 +81,11 @@ class Item:
 
         return item
 
-    def hash(self):
+    def hash(self: ItemType) -> int:
         """Get the hash value"""
         return hash(self)
 
-    def pipe(self, handler: t.Callable[[Item], t.Any], *args: str) -> t.Any:
+    def pipe(self: ItemType, handler: HandlerType, *args: str) -> object:
         """Pipe this object to the given function"""
         return handler(self, *args)
 
@@ -74,16 +94,18 @@ class Item:
 class Items:
     """A collection of similar items."""
 
-    _all: t.Sequence[Item] = ()
-    _item_factory: t.Type[Item] = field(init=False, default=Item)
+    _all: t.Sequence[t.ItemType] = ()
+    _item_factory: t.Type[ItemType] = field(init=False, default=Item)
 
     @classmethod
-    def from_items(cls, *items: Item) -> Items:
+    def from_items(cls: t.Type[ItemType], *items: ItemType) -> ItemsType:
         """Initialize items from given items."""
         return cls(tuple(set(items)))
 
     @classmethod
-    def from_list(cls, list_: t.Sequence[t.Dict[str, t.Any]]) -> Items:
+    def from_list(
+        cls: t.Type[ItemsType], list_: t.Sequence[t.Dict[str, object]]
+    ) -> ItemsType:
         """Initialize items from given list."""
 
         if cls._item_factory is None:
@@ -94,27 +116,29 @@ class Items:
         except Exception:
             raise ValueError(f"invalid input data for {cls.__name__}")
 
-    def to_list(self) -> t.List[t.Dict[str, t.Any]]:
+    def to_list(self: ItemsType) -> t.List[t.Dict[str, object]]:
         """Represent the items as list."""
 
         return [i.to_dict() for i in self._all]
 
     @classmethod
-    def from_json(cls, json: str, *args: t.Any, **kwargs: t.Any) -> Items:
+    def from_json(
+        cls: t.Type[ItemsType], json: str, *args: object, **kwargs: object
+    ) -> ItemsType:
         """Initialize items from given JSON data."""
 
         return cls.from_list(loadjson(json))
 
-    def to_json(self, *args: t.Any, **kwargs: t.Any) -> str:
+    def to_json(self: ItemsType, *args: object, **kwargs: object) -> str:
         """Represent the item as JSON data."""
 
         return dumpjson(self.to_list(), *args, **kwargs)
 
     @classmethod
-    def from_func(cls, funcpath: str) -> Items:
+    def from_func(cls: t.Type[ItemsType], funcpath: str) -> ItemsType:
         """Load the items from the given Python function."""
 
-        func: t.Optional[t.Callable[[], Items]] = locate(funcpath)
+        func: t.Optional[t.Callable[[], ItemsType]] = locate(funcpath)
         if not func:
             raise ValueError(f"could not resolve {repr(funcpath)}.")
 
@@ -124,59 +148,48 @@ class Items:
 
         return items
 
-    def __getitem__(self, key: int) -> Item:
+    def __getitem__(self: ItemsType, key: int) -> Item:
         return self._all[key]
 
-    def __len__(self) -> int:
+    def __len__(self: ItemsType) -> int:
         """Count the number of items."""
         return len(self._all)
 
-    def count(self) -> int:
+    def count(self: ItemsType) -> int:
         """Count the number of items."""
         return len(self._all)
 
-    def first(self) -> Item:
+    def first(self: ItemsType) -> Item:
         """Get the first item from the list."""
-        return self._all[0]
+        return self.index(0)
 
-    def last(self) -> Item:
+    def last(self: ItemsType) -> Item:
         """Get the last item from the list."""
-        return self._all[-1]
+        return self.index(-1)
 
-    def index(self, index: int) -> Item:
+    def index(self: ItemsType, index: int) -> Item:
         """The the item from a given index."""
         return self._all[index]
 
-    def sort(self, key: t.Optional[t.Callable[[Item], t.Any]] = None) -> Items:
+    def sort(
+        self: ItemsType, key: t.Optional[t.Callable[[Item], object]] = None
+    ) -> ItemsType:
         """Sort the items by given key/function."""
         return type(self)(tuple(sorted(self._all, key=key)))
 
-    def filter(self, handler, *args: str) -> Items:
+    def filter(self: ItemsType, filter_: FilterType, *args: str) -> ItemsType:
         """Filter the items by a giver function."""
-        return type(self)(tuple(filter(lambda i: handler(i, *args), self._all)))
+        return type(self)(tuple(filter(lambda i: filter_(i, *args), self._all)))
 
-    def get(self, func: t.Callable[[Item], bool]) -> Item:
-        """Get one unique item by a filter function."""
-
-        items = self.filter(func)
-
-        if items.count() == 0:
-            raise LookupError("could not find any item.")
-
-        if items.count() > 1:
-            raise LookupError("multiple item found.")
-
-        return items.first()
-
-    def all(self) -> t.Sequence[Item]:
+    def all(self: ItemsType) -> t.Sequence[Item]:
         """Get a tuple of all the items."""
         return self._all
 
-    def hash(self):
+    def hash(self: ItemsType) -> int:
         """Get the hash value"""
         return hash(self)
 
-    def pipe(self, func, *args: str) -> t.Any:
+    def pipe(self: ItemsType, func: HandlerType, *args: str) -> object:
         """Pipe this object to the given function"""
         return func(self, *args)
 
@@ -235,7 +248,7 @@ class Hosts(Items):
 
         if loader is None:
 
-            def _loader(f: t.TextIO):
+            def _loader(f: t.TextIO) -> Hosts:
                 return cls.from_items(
                     *(Host(ip.strip()) for ip in f.read().strip().split())
                 )
@@ -248,9 +261,7 @@ class Hosts(Items):
     def task(self, task: Task) -> Runners:
         """Assigns a task to be run on all the hosts."""
 
-        return Runners.from_items(
-            *(Runner(task=task, host=h) for h in self._all)
-        )
+        return Runners.from_items(*(Runner(task=task, host=h) for h in self._all))
 
     def run_task(self, task: Task, max_workers=Config.max_workers.value) -> Results:
         """Run a task to be run on all hosts and then run it."""
@@ -260,10 +271,10 @@ class Hosts(Items):
     def run_task_then_pipe(
         self,
         task: Task,
-        handler: t.Callable[[Results], t.Any],
+        handler: HandlerType,
         *args,
         max_workers=Config.max_workers.value,
-    ) -> t.Any:
+    ) -> object:
         """Assign the task to the host and then run it."""
 
         return self.run_task(task, max_workers=max_workers).pipe(handler, *args)
@@ -288,7 +299,7 @@ class Task(Item):
     stderr_processor: t.Optional[t.Callable[[str], str]] = None
 
     @classmethod
-    def from_dict(cls, dict_: t.Dict[str, t.Any]) -> Task:
+    def from_dict(cls, dict_: t.Dict[str, object]) -> Task:
         """Overloading from_dict()."""
 
         outp = dict_.get("stdout_processor")
@@ -303,7 +314,7 @@ class Task(Item):
             )
         )
 
-    def to_dict(self) -> t.Dict[str, t.Any]:
+    def to_dict(self) -> t.Dict[str, object]:
         """Overloading to_dict()."""
 
         cf = self.command_factory
@@ -331,7 +342,7 @@ class Runner(Item):
     task: Task
 
     @classmethod
-    def from_dict(cls, dict_: t.Dict[str, t.Any]) -> Runner:
+    def from_dict(cls, dict_: t.Dict[str, object]) -> Runner:
         """Overloading from_dict()."""
 
         return cls(
@@ -342,12 +353,12 @@ class Runner(Item):
             )
         )
 
-    def to_dict(self) -> t.Dict[str, t.Any]:
+    def to_dict(self) -> t.Dict[str, object]:
         """Overloading to_dict()."""
 
         return dict(vars(self), task=self.task.to_dict(), host=self.host.to_dict())
 
-    def run(self, retry=0) -> Result:
+    def run(self, retry: int = 0) -> Result:
         """Run the task on the host."""
         command = self.task.command_factory(self.host)
 
@@ -455,7 +466,7 @@ class Result(Item):
         )
 
     @classmethod
-    def from_dict(cls, dict_: t.Dict[str, t.Any]) -> Task:
+    def from_dict(cls, dict_: t.Dict[str, object]) -> Task:
         """Overloading from_dict()."""
 
         return cls(
@@ -467,10 +478,10 @@ class Result(Item):
             )
         )
 
-    def to_dict(self) -> t.Dict[str, t.Any]:
+    def to_dict(self) -> t.Dict[str, object]:
         """Overloading to_dict()."""
 
-        return dict(vars(self), task=self.task.to_dict(), host=self.host.to_dict(),)
+        return dict(vars(self), task=self.task.to_dict(), host=self.host.to_dict())
 
     def ok(self) -> bool:
         """If the result is success."""
@@ -511,7 +522,7 @@ class Result(Item):
 
 @dataclass(frozen=True)
 class Results(Items):
-    _item_factory: t.Type[Result] = field(init=False, default=Result)
+    _item_factory: t.Type[Results] = field(init=False, default=Result)
 
     @classmethod
     def by_host(cls, host: Host) -> Results:
@@ -553,7 +564,7 @@ class Results(Items):
                     AND JSON_EXTRACT(task, '$.name') = ?
                 ORDER BY start DESC
                 """,
-                (runner.host.ip, runner.task.name,),
+                (runner.host.ip, runner.task.name),
             )
             results = [cls._item_factory.from_hash(r[0]) for r in rows]
 
