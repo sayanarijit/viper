@@ -51,3 +51,7 @@ def export_csv(results: Results, csv_file: str) -> None:
                     r.stderr,
                 ]
             )
+
+        # Let's print the result to stdout so that it can be
+        # piped to other commands
+        print(results.to_json())
