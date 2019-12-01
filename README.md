@@ -178,8 +178,8 @@ positional arguments:
                         to the given handler
     hosts:task          [Hosts > hosts:task TASK > Runners] assign a task to
                         each host
-    hosts:run-task      [Hosts > hosts:run-task > Results] assign a task to
-                        each host and run
+    hosts:run-task      [Hosts > hosts:run-task TASK > Results] assign a task
+                        to each host and run
     hosts:run-task-then-pipe
                         [Hosts > hosts:run-task-then-pipe TASK HANDLER *ARGS >
                         ?] run the task on hosts and pipe the results to a
@@ -196,7 +196,7 @@ positional arguments:
                         runners to the given handler
     runners:run         [Runners > runners:run > Results] run the assigned
                         tasks
-    runners:hosts       [Runners > runners:hosts > Hosts] get the hohsts from
+    runners:hosts       [Runners > runners:hosts > Hosts] get the hosts from
                         the runners
     results:filter      [Results > results:filter FILTER *ARGS > Results]
                         filter results by a given handler

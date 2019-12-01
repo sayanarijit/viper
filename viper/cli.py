@@ -179,7 +179,7 @@ class HostsTaskCommand(SubParser):
 
 
 class HostsRunTaskCommand(SubParser):
-    """[Hosts > hosts:run-task > Results] assign a task to each host and run"""
+    """[Hosts > hosts:run-task TASK > Results] assign a task to each host and run"""
 
     subcommand = "hosts:run-task"
 
