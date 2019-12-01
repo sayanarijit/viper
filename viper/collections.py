@@ -8,13 +8,11 @@ from dataclasses import field
 from json import dumps as dumpjson
 from json import loads as loadjson
 from pydoc import locate
-from subprocess import PIPE
-from subprocess import Popen
-from subprocess import TimeoutExpired
 from time import time
 from viper.const import Config
 from viper.db import ViperDB
 
+import subprocess
 import typing as t
 
 ItemType = t.TypeVar("ItemType", bound="Item")
@@ -382,14 +380,17 @@ class Runner(Item):
         """Run the task on the host."""
         command = self.task.command_factory(self.host)
 
-        p = Popen(command, stdout=PIPE, stderr=PIPE)
-
         start = time()
         try:
-            out, err = p.communicate(timeout=self.task.timeout)
-            stdout, stderr = out.decode("latin1"), err.decode("latin1")
-        except TimeoutExpired as e:
-            stdout, stderr, p.returncode = "", str(e), 123
+            r = subprocess.run(
+                command,
+                timeout=self.task.timeout,
+                encoding="latin1",
+                capture_output=True,
+            )
+            stdout, stderr, returncode = r.stdout, r.stderr, r.returncode
+        except Exception as e:
+            stdout, stderr, returncode = "", str(e), 123
         end = time()
 
         if self.task.stderr_processor:
@@ -399,15 +400,7 @@ class Runner(Item):
             stderr = self.task.stderr_processor(stderr)
 
         result = Result(
-            self.task,
-            self.host,
-            command,
-            stdout,
-            stderr,
-            p.returncode,
-            start,
-            end,
-            retry,
+            self.task, self.host, command, stdout, stderr, returncode, start, end, retry
         ).save()
 
         if result.errored() and self.task.retry > retry:
