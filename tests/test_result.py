@@ -1,6 +1,6 @@
 import json
 
-from viper import Host, Task, TaskResult
+from viper import Host, Task, Result
 
 
 def make_echo_command(host):
@@ -19,8 +19,8 @@ def process_stderr(err):
     return f"error: {err}"
 
 
-def test_task_result_to_from_json():
-    result = TaskResult(
+def test_result_to_from_json():
+    result = Result(
         task=Task("print IP address", command_factory=make_echo_command),
         host=Host("1.1.1.1"),
         command=("foo",),
@@ -36,7 +36,7 @@ def test_task_result_to_from_json():
         {
             "task": {
                 "name": "print IP address",
-                "command_factory": "test_task_result.make_echo_command",
+                "command_factory": "test_result.make_echo_command",
                 "timeout": None,
                 "retry": 0,
                 "stdout_processor": None,
@@ -61,4 +61,4 @@ def test_task_result_to_from_json():
     )
 
     assert result_json == result.to_json()
-    assert TaskResult.from_json(result_json) == result
+    assert Result.from_json(result_json) == result

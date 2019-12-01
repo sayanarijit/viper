@@ -1,4 +1,4 @@
-from viper import Host, TaskResult
+from viper import Host, Result
 from viper.demo import __doc__
 
 __doc__ = __doc__
@@ -9,11 +9,11 @@ def ip_is(host: Host, ip: str) -> bool:
     return host.ip == ip
 
 
-def result_ok(result: TaskResult) -> bool:
-    """Filter task results by OK status."""
+def result_ok(result: Result) -> bool:
+    """Filter results by OK status."""
     return result.ok()
 
 
-def result_errored(result: TaskResult) -> bool:
-    """Filter task results by error status."""
+def result_errored(result: Result) -> bool:
+    """Filter results by error status."""
     return result.errored()

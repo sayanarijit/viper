@@ -6,7 +6,7 @@ import typing as t
 from argparse import ArgumentParser
 from pydoc import locate
 
-from viper import Hosts, Task, TaskResults, TaskRunners, __version__
+from viper import Hosts, Task, Results, Runners, __version__
 from viper.const import Config
 from viper.db import ViperDB
 
@@ -94,8 +94,8 @@ class TaskFromFuncCommand(SubParser):
         return 0
 
 
-class TaskResultsCommand(SubParser):
-    """[Task > task:results > TaskResults] get the past task results of given task"""
+class ResultsCommand(SubParser):
+    """[Task > task:results > Results] get the past results of given task"""
 
     subcommand = "task:results"
 
@@ -148,7 +148,7 @@ class HostsFromFileCommand(SubParser):
 
 
 class HostsTaskCommand(SubParser):
-    """[Hosts > hosts:task TASK > TaskRunners] assign a task to each host"""
+    """[Hosts > hosts:task TASK > Runners] assign a task to each host"""
 
     subcommand = "hosts:task"
 
@@ -165,7 +165,7 @@ class HostsTaskCommand(SubParser):
 
 
 class HostsRunTaskCommand(SubParser):
-    """[Hosts > hosts:run-task > TaskRunners] assign a task to each host and run"""
+    """[Hosts > hosts:run-task > Runners] assign a task to each host and run"""
 
     subcommand = "hosts:run-task"
 
@@ -273,23 +273,23 @@ class HostsPipeCommand(SubParser):
         return 0
 
 
-class HostsTaskResultsCommand(SubParser):
-    """[Hosts > hosts:task-results > TaskResults] get the past task results of the hosts"""
+class HostsResultsCommand(SubParser):
+    """[Hosts > hosts:results > Results] get the past results of the hosts"""
 
-    subcommand = "hosts:task-results"
+    subcommand = "hosts:results"
 
     def add_arguments(self, parser):
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args):
-        print(Hosts.from_json(input()).task_results().to_json(indent=args.indent))
+        print(Hosts.from_json(input()).results().to_json(indent=args.indent))
         return 0
 
 
-class TaskRunnersFilterCommand(SubParser):
-    """[TaskRunners > task-runners:filter FILTER *ARGS > TaskRunners] filter task runners by a given function"""
+class RunnersFilterCommand(SubParser):
+    """[Runners > runners:filter FILTER *ARGS > Runners] filter runners by a given function"""
 
-    subcommand = "task-runners:filter"
+    subcommand = "runners:filter"
 
     def add_arguments(self, parser):
         parser.add_argument("filter", type=func)
@@ -300,30 +300,30 @@ class TaskRunnersFilterCommand(SubParser):
 
     def __call__(self, args):
         print(
-            TaskRunners.from_json(input())
+            Runners.from_json(input())
             .filter(args.filter, *args.args)
             .to_json(indent=args.indent)
         )
         return 0
 
 
-class TaskRunnersCountCommand(SubParser):
-    """[TaskRunners > task-runners:count > int] count the number of task runners"""
+class RunnersCountCommand(SubParser):
+    """[Runners > runners:count > int] count the number of runners"""
 
-    subcommand = "task-runners:count"
+    subcommand = "runners:count"
 
     def add_arguments(self, parser):
         pass
 
     def __call__(self, args):
-        print(TaskRunners.from_json(input()).count())
+        print(Runners.from_json(input()).count())
         return 0
 
 
-class TaskRunnersSortCommand(SubParser):
-    """[TaskRunners > task-runners:sort > TaskRunners] sort the task runners"""
+class RunnersSortCommand(SubParser):
+    """[Runners > runners:sort > Runners] sort the runners"""
 
-    subcommand = "task-runners:sort"
+    subcommand = "runners:sort"
 
     def add_arguments(self, parser):
         parser.add_argument("--key", type=func)
@@ -331,17 +331,17 @@ class TaskRunnersSortCommand(SubParser):
 
     def __call__(self, args):
         print(
-            TaskRunners.from_json(input())
+            Runners.from_json(input())
             .sort(key=args.key)
             .to_json(indent=args.indent)
         )
         return 0
 
 
-class TaskRunnersPipeCommand(SubParser):
-    """[TaskRunners > task-runners:pipe HANDLER *ARGS > ?] pipe the task runners to the given handler"""
+class RunnersPipeCommand(SubParser):
+    """[Runners > runners:pipe HANDLER *ARGS > ?] pipe the runners to the given handler"""
 
-    subcommand = "task-runners:pipe"
+    subcommand = "runners:pipe"
 
     def add_arguments(self, parser):
         parser.add_argument("handler", type=func)
@@ -350,14 +350,14 @@ class TaskRunnersPipeCommand(SubParser):
         )
 
     def __call__(self, args) -> int:
-        TaskRunners.from_json(input()).pipe(args.handler, *args.args)
+        Runners.from_json(input()).pipe(args.handler, *args.args)
         return 0
 
 
-class TaskRunnersRunCommand(SubParser):
-    """[TaskRunners > task-runners:run > TaskResults] run the assigned tasks"""
+class RunnersRunCommand(SubParser):
+    """[Runners > runners:run > Results] run the assigned tasks"""
 
-    subcommand = "task-runners:run"
+    subcommand = "runners:run"
 
     def add_arguments(self, parser):
         parser.add_argument("--max-workers", type=int, default=Config.max_workers.value)
@@ -365,30 +365,30 @@ class TaskRunnersRunCommand(SubParser):
 
     def __call__(self, args):
         print(
-            TaskRunners.from_json(input())
+            Runners.from_json(input())
             .run(max_workers=args.max_workers)
             .to_json(indent=args.indent)
         )
         return 0
 
 
-class TaskRunnersHostsCommand(SubParser):
-    """[TaskRunners > task-runners:hosts > Hosts] get the hohsts from the task runners"""
+class RunnersHostsCommand(SubParser):
+    """[Runners > runners:hosts > Hosts] get the hohsts from the runners"""
 
-    subcommand = "task-runners:hosts"
+    subcommand = "runners:hosts"
 
     def add_arguments(self, parser):
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args):
-        print(TaskRunners.from_json(input()).hosts().to_json(indent=args.indent))
+        print(Runners.from_json(input()).hosts().to_json(indent=args.indent))
         return 0
 
 
-class TaskResultsFilterCommand(SubParser):
-    """[TaskResults > task-results:filter FILTER *ARGS > TaskResults] filter task results by a given handler"""
+class ResultsFilterCommand(SubParser):
+    """[Results > results:filter FILTER *ARGS > Results] filter results by a given handler"""
 
-    subcommand = "task-results:filter"
+    subcommand = "results:filter"
 
     def add_arguments(self, parser):
         parser.add_argument("filter", type=func)
@@ -399,30 +399,30 @@ class TaskResultsFilterCommand(SubParser):
 
     def __call__(self, args):
         print(
-            TaskResults.from_json(input())
+            Results.from_json(input())
             .filter(args.filter, *args.args)
             .to_json(indent=args.indent)
         )
         return 0
 
 
-class TaskResultsCountCommand(SubParser):
-    """[TaskResults > task-results:count > int] count the number of task results"""
+class ResultsCountCommand(SubParser):
+    """[Results > results:count > int] count the number of results"""
 
-    subcommand = "task-results:count"
+    subcommand = "results:count"
 
     def add_arguments(self, parser):
         pass
 
     def __call__(self, args):
-        print(TaskResults.from_json(input()).count())
+        print(Results.from_json(input()).count())
         return 0
 
 
-class TaskResultsSortCommand(SubParser):
-    """[TaskResults > task-results:sort > TaskResults] sort the task results"""
+class ResultsSortCommand(SubParser):
+    """[Results > results:sort > Results] sort the results"""
 
-    subcommand = "task-results:sort"
+    subcommand = "results:sort"
 
     def add_arguments(self, parser):
         parser.add_argument("--key", type=func)
@@ -430,17 +430,17 @@ class TaskResultsSortCommand(SubParser):
 
     def __call__(self, args):
         print(
-            TaskResults.from_json(input())
+            Results.from_json(input())
             .sort(key=args.key)
             .to_json(indent=args.indent)
         )
         return 0
 
 
-class TaskResultsPipeCommand(SubParser):
-    """[TaskResults > task-results:pipe HANDLER *ARGS > ?] pipe the task results to the given handler"""
+class ResultsPipeCommand(SubParser):
+    """[Results > results:pipe HANDLER *ARGS > ?] pipe the results to the given handler"""
 
-    subcommand = "task-results:pipe"
+    subcommand = "results:pipe"
 
     def add_arguments(self, parser):
         parser.add_argument("handler", type=func)
@@ -449,33 +449,33 @@ class TaskResultsPipeCommand(SubParser):
         )
 
     def __call__(self, args) -> int:
-        TaskResults.from_json(input()).pipe(args.handler, *args.args)
+        Results.from_json(input()).pipe(args.handler, *args.args)
         return 0
 
 
-class TaskResultsHostsCommand(SubParser):
-    """[TaskResults > task-results:hosts > Hosts] get the hosts from the task results"""
+class ResultsHostsCommand(SubParser):
+    """[Results > results:hosts > Hosts] get the hosts from the results"""
 
-    subcommand = "task-results:hosts"
+    subcommand = "results:hosts"
 
     def add_arguments(self, parser):
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args):
-        print(TaskResults.from_json(input()).hosts().to_json(indent=args.indent))
+        print(Results.from_json(input()).hosts().to_json(indent=args.indent))
         return 0
 
 
-class TaskResultsByTaskCommand(SubParser):
-    """[Task > task-results:by-task > TaskResults] get the past task results of given task"""
+class ResultsByTaskCommand(SubParser):
+    """[Task > results:by-task > Results] get the past results of given task"""
 
-    subcommand = "task-results:by-task"
+    subcommand = "results:by-task"
 
     def add_arguments(self, parser):
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args):
-        print(TaskResults.by_task(Task.from_json(input())).to_json(indent=args.indent))
+        print(Results.by_task(Task.from_json(input())).to_json(indent=args.indent))
         return 0
 
 
@@ -494,7 +494,7 @@ def run() -> int:
 
     # Task commands
     TaskFromFuncCommand.attach_to(subparsers)
-    TaskResultsCommand.attach_to(subparsers)
+    ResultsCommand.attach_to(subparsers)
 
     # Hosts commands
     HostsFromFileCommand.attach_to(subparsers)
@@ -508,25 +508,25 @@ def run() -> int:
     HostsTaskCommand.attach_to(subparsers)
     HostsRunTaskCommand.attach_to(subparsers)
     HostsRunTaskThenPipeCommand.attach_to(subparsers)
-    HostsTaskResultsCommand.attach_to(subparsers)
+    HostsResultsCommand.attach_to(subparsers)
 
     # Task runners commands
-    TaskRunnersFilterCommand.attach_to(subparsers)
-    TaskRunnersCountCommand.attach_to(subparsers)
-    TaskRunnersSortCommand.attach_to(subparsers)
-    TaskRunnersPipeCommand.attach_to(subparsers)
+    RunnersFilterCommand.attach_to(subparsers)
+    RunnersCountCommand.attach_to(subparsers)
+    RunnersSortCommand.attach_to(subparsers)
+    RunnersPipeCommand.attach_to(subparsers)
 
-    TaskRunnersRunCommand.attach_to(subparsers)
-    TaskRunnersHostsCommand.attach_to(subparsers)
+    RunnersRunCommand.attach_to(subparsers)
+    RunnersHostsCommand.attach_to(subparsers)
 
     # Task results commands
-    TaskResultsFilterCommand.attach_to(subparsers)
-    TaskResultsCountCommand.attach_to(subparsers)
-    TaskResultsSortCommand.attach_to(subparsers)
-    TaskResultsPipeCommand.attach_to(subparsers)
+    ResultsFilterCommand.attach_to(subparsers)
+    ResultsCountCommand.attach_to(subparsers)
+    ResultsSortCommand.attach_to(subparsers)
+    ResultsPipeCommand.attach_to(subparsers)
 
-    TaskResultsHostsCommand.attach_to(subparsers)
-    TaskResultsByTaskCommand.attach_to(subparsers)
+    ResultsHostsCommand.attach_to(subparsers)
+    ResultsByTaskCommand.attach_to(subparsers)
 
     args = parser.parse_args()
 

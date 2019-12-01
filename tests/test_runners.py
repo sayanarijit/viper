@@ -1,4 +1,4 @@
-from viper import Host, Hosts, Task, TaskRunner
+from viper import Host, Hosts, Task, Runner
 
 
 def make_command(host):
@@ -13,7 +13,7 @@ def process_stderr(err):
     return f"error: {err}"
 
 
-def test_task_runners_hosts():
+def test_runners_hosts():
     hosts = Hosts.from_items(Host("1.1.1.1"), Host("2.2.2.2"))
     task = Task(
         "print IP address",
@@ -22,11 +22,11 @@ def test_task_runners_hosts():
         stderr_processor=process_stderr,
     )
 
-    task_runners = hosts.task(task)
-    assert task_runners.hosts() == hosts
+    runners = hosts.task(task)
+    assert runners.hosts() == hosts
 
 
-def test_task_runners_run_in_sequence():
+def test_runners_run_in_sequence():
     host = Host("1.1.1.1")
     hosts = Hosts.from_items(host)
     task = Task(
@@ -36,13 +36,13 @@ def test_task_runners_run_in_sequence():
         stderr_processor=process_stderr,
     )
 
-    task_runners = hosts.task(task)
-    results = task_runners.run()
+    runners = hosts.task(task)
+    results = runners.run()
 
-    runner = task_runners.first()
+    runner = runners.first()
     result = results.first()
 
-    assert runner == TaskRunner(host, task)
+    assert runner == Runner(host, task)
     assert result.task == task
     assert result.host == host
     assert result.command == ("echo", "1.1.1.1")
@@ -55,7 +55,7 @@ def test_task_runners_run_in_sequence():
     assert results.hosts() == hosts
 
 
-def test_task_runners_run_in_parallel():
+def test_runners_run_in_parallel():
     host = Host("1.1.1.1")
     hosts = Hosts.from_items(host)
     task = Task(
@@ -65,13 +65,13 @@ def test_task_runners_run_in_parallel():
         stderr_processor=process_stderr,
     )
 
-    task_runners = hosts.task(task)
-    results = task_runners.run(max_workers=5)
+    runners = hosts.task(task)
+    results = runners.run(max_workers=5)
 
-    runner = task_runners.first()
+    runner = runners.first()
     result = results.first()
 
-    assert runner == TaskRunner(host, task)
+    assert runner == Runner(host, task)
     assert result.task == task
     assert result.host == host
     assert result.command == ("echo", "1.1.1.1")

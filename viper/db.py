@@ -17,13 +17,13 @@ class ViperDB:
     def init(cls, url, force=False):
         if force:
             with cls(url) as conn:
-                conn.execute("DELETE FROM task_results")
-                conn.execute("DROP TABLE task_results")
+                conn.execute("DELETE FROM results")
+                conn.execute("DROP TABLE results")
 
         with cls(url) as conn:
             conn.execute(
                 """
-                CREATE TABLE IF NOT EXISTS task_results (
+                CREATE TABLE IF NOT EXISTS results (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     hash INTEGER UNIQUE NOT NULL,
                     task JSON NOT NULL,

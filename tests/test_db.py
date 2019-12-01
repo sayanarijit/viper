@@ -23,7 +23,7 @@ def test_viper_db_insert():
     with ViperDB(DB_URL) as conn:
         conn.execute(
             """
-            INSERT INTO task_results (
+            INSERT INTO results (
                 hash, task, host, command, stdout, stderr, returncode, start, end, retry
             ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
@@ -33,6 +33,6 @@ def test_viper_db_insert():
         )
 
     with ViperDB(DB_URL) as conn:
-        data = next(conn.execute("SELECT id, task FROM task_results"))
+        data = next(conn.execute("SELECT id, task FROM results"))
 
     assert data == (1, "foo")

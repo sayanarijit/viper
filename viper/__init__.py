@@ -9,10 +9,10 @@ from viper.collections import (
     Host,
     Hosts,
     Task,
-    TaskResult,
-    TaskResults,
-    TaskRunner,
-    TaskRunners,
+    Result,
+    Results,
+    Runner,
+    Runners,
 )
 from viper.demo import __doc__ as __viper_cli_examples__
 

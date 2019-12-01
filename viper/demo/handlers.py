@@ -1,8 +1,8 @@
-from viper import TaskResults
+from viper import Results
 from viper.demo import __doc__
 
 
-def print_status(results: TaskResults) -> None:
+def print_status(results: Results) -> None:
     """Print the status of the results in the terminal."""
 
     for result in results.all():
@@ -12,7 +12,7 @@ def print_status(results: TaskResults) -> None:
             print(f"{result.task.name}: {result.host.ip} PASSED")
 
 
-def export_csv(results: TaskResults, csv_file: str) -> None:
+def export_csv(results: Results, csv_file: str) -> None:
     """Export the result to a CSV file location"""
 
     import csv

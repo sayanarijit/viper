@@ -40,7 +40,7 @@
 
 ### Run the assigned tasks
 
-    cat /tmp/hosts.json | viper hosts:task viper.demo.tasks.ping | viper task-runners:run --indent 4
+    cat /tmp/hosts.json | viper hosts:task viper.demo.tasks.ping | viper runners:run --indent 4
 
     # or use a shortcut
 
@@ -52,14 +52,14 @@
     cat /tmp/hosts.json | viper hosts:run-task viper.demo.tasks.ping --max-workers 50 --indent 4
 
 
-### Get the past task results of the hosts from DB
+### Get the past results of the hosts from DB
 
-    cat /tmp/hosts.json | viper hosts:task-results --indent 4 --debug
+    cat /tmp/hosts.json | viper hosts:results --indent 4 --debug
 
 
-### Or get the past task results by task
+### Or get the past results by task
 
-    viper task viper.demo.tasks.ping | viper task-results:by-task -i 4
+    viper task viper.demo.tasks.ping | viper results:by-task -i 4
 
     # or
 
@@ -74,19 +74,19 @@
 ### Now filter the results by their status
 
     # success
-    cat /tmp/results.json | viper task-results:filter viper.demo.filters.result_ok -i 4
+    cat /tmp/results.json | viper results:filter viper.demo.filters.result_ok -i 4
 
     # failed
-    cat /tmp/results.json | viper task-results:filter viper.demo.filters.result_errored -i 4
+    cat /tmp/results.json | viper results:filter viper.demo.filters.result_errored -i 4
 
 
 ### Pipe the results to a custom handler
 
     # print the status to terminal
-    cat /tmp/results.json | viper task-results:pipe viper.demo.handlers.print_status
+    cat /tmp/results.json | viper results:pipe viper.demo.handlers.print_status
 
     # export the results to a csv file
-    cat /tmp/results.json | viper task-results:pipe viper.demo.handlers.export_csv /tmp/results.csv
+    cat /tmp/results.json | viper results:pipe viper.demo.handlers.export_csv /tmp/results.csv
 
 
 ### Let's do that again in one go

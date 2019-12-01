@@ -53,12 +53,12 @@ def test_fqdn():
 @mock.patch("viper.collections.Task")
 def test_task(Task):
 
-    from viper import TaskRunner
+    from viper import Runner
 
     task = Task()
     runner = Host("1.1.1.1").task(task)
 
-    assert isinstance(runner, TaskRunner)
+    assert isinstance(runner, Runner)
     assert runner.task == task
 
 
@@ -72,8 +72,8 @@ def test_run_task():
     assert Host("8.8.8.8").run_task(ping()).returncode == 0
 
 
-@mock.patch("viper.collections.TaskResults")
-def test_host_task_results(TaskResults):
+@mock.patch("viper.collections.Results")
+def test_host_results(Results):
     host = Host("1.1.1.1")
-    host.task_results()
-    TaskResults.by_host.assert_called_with(host)
+    host.results()
+    Results.by_host.assert_called_with(host)

@@ -99,23 +99,23 @@ def test_hosts_sort():
 
 def test_hosts_task():
 
-    from viper import Task, Hosts, TaskRunner
+    from viper import Task, Hosts, Runner
 
     task = mock.Mock()
     hosts = Hosts.from_file(CSV_FILE)
 
-    assert hosts.task(task).sort(lambda x: x.host).first() == TaskRunner(
+    assert hosts.task(task).sort(lambda x: x.host).first() == Runner(
         task=task, host=hosts.sort().first()
     )
 
 
 @mock.patch("viper.collections.Task")
-@mock.patch("viper.collections.TaskRunners")
-def test_hosts_run_task(TaskRunners, Task):
+@mock.patch("viper.collections.Runners")
+def test_hosts_run_task(Runners, Task):
 
     task = Task()
     hosts = Hosts.from_file(CSV_FILE)
 
     hosts.run_task(task, max_workers=3)
 
-    TaskRunners.from_items().run.assert_called_with(max_workers=3)
+    Runners.from_items().run.assert_called_with(max_workers=3)

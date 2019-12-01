@@ -1,6 +1,6 @@
 from unittest import mock
 
-from viper import Host, Task, TaskResult, TaskRunner
+from viper import Host, Task, Result, Runner
 
 
 def make_echo_command(host):
@@ -19,7 +19,7 @@ def process_stderr(err):
     return f"error: {err}"
 
 
-def test_task_runner_run_save_load():
+def test_runner_run_save_load():
     host = Host("1.1.1.1")
     task = Task(
         "print IP address",
@@ -32,7 +32,7 @@ def test_task_runner_run_save_load():
 
     result = runner.run()
 
-    assert runner == TaskRunner(host, task)
+    assert runner == Runner(host, task)
     assert result.task == task
     assert result.host == host
     assert result.command == ("echo", "1.1.1.1")
@@ -42,7 +42,7 @@ def test_task_runner_run_save_load():
     assert result.end > result.start
     assert result.ok()
     assert not result.errored()
-    assert TaskResult.from_hash(hash(result)) == result
+    assert Result.from_hash(hash(result)) == result
 
 
 def test_tasks_runner_retry():
@@ -52,11 +52,11 @@ def test_tasks_runner_retry():
     assert host.task(task).run().retry == 3
 
 
-@mock.patch("viper.collections.TaskResults")
-def test_task_runner_task_results(TaskResults):
+@mock.patch("viper.collections.Results")
+def test_runner_results(Results):
     host = mock.Mock()
     task = mock.Mock()
 
-    runner = TaskRunner(host=host, task=task)
-    runner.task_results()
-    TaskResults.by_task_runner.assert_called_with(runner)
+    runner = Runner(host=host, task=task)
+    runner.results()
+    Results.by_runner.assert_called_with(runner)

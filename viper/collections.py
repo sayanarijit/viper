@@ -206,19 +206,19 @@ class Host(Item):
 
         return f"{self.hostname}.{self.domain}"
 
-    def task(self, task: Task) -> TaskRunner:
+    def task(self, task: Task) -> Runner:
         """Assigns a task to be run."""
 
-        return TaskRunner(task=task, host=self)
+        return Runner(task=task, host=self)
 
-    def run_task(self, task: Task) -> TaskResult:
+    def run_task(self, task: Task) -> Result:
         """Assign the task to the host and then run it."""
 
         return self.task(task).run()
 
-    def task_results(self) -> TaskResults:
-        """Fetch recent task results of current host from database."""
-        return self.pipe(TaskResults.by_host)
+    def results(self) -> Results:
+        """Fetch recent results of current host from database."""
+        return self.pipe(Results.by_host)
 
 
 @dataclass(frozen=True)
@@ -245,14 +245,14 @@ class Hosts(Items):
         with open(filepath) as f:
             return loader(f)
 
-    def task(self, task: Task) -> TaskRunners:
+    def task(self, task: Task) -> Runners:
         """Assigns a task to be run on all the hosts."""
 
-        return TaskRunners.from_items(
-            *(TaskRunner(task=task, host=h) for h in self._all)
+        return Runners.from_items(
+            *(Runner(task=task, host=h) for h in self._all)
         )
 
-    def run_task(self, task: Task, max_workers=Config.max_workers.value) -> TaskResults:
+    def run_task(self, task: Task, max_workers=Config.max_workers.value) -> Results:
         """Run a task to be run on all hosts and then run it."""
 
         return self.task(task).run(max_workers=max_workers)
@@ -260,7 +260,7 @@ class Hosts(Items):
     def run_task_then_pipe(
         self,
         task: Task,
-        handler: t.Callable[[TaskResults], t.Any],
+        handler: t.Callable[[Results], t.Any],
         *args,
         max_workers=Config.max_workers.value,
     ) -> t.Any:
@@ -268,12 +268,12 @@ class Hosts(Items):
 
         return self.run_task(task, max_workers=max_workers).pipe(handler, *args)
 
-    def task_results(self) -> TaskResults:
+    def results(self) -> Results:
         results = []
         for h in self._all:
-            for r in h.task_results():
+            for r in h.results():
                 results.append(r)
-        return TaskResults.from_items(*results)
+        return Results.from_items(*results)
 
 
 @dataclass(frozen=True, order=True)
@@ -317,21 +317,21 @@ class Task(Item):
             stderr_processor=f"{errp.__module__}.{errp.__qualname__}" if errp else None,
         )
 
-    def results(self) -> TaskResults:
+    def results(self) -> Results:
         """Get the past results of this task."""
 
-        return self.pipe(TaskResults.by_task)
+        return self.pipe(Results.by_task)
 
 
 @dataclass(frozen=True, order=True)
-class TaskRunner(Item):
-    """A task runner."""
+class Runner(Item):
+    """A runner."""
 
     host: Host
     task: Task
 
     @classmethod
-    def from_dict(cls, dict_: t.Dict[str, t.Any]) -> TaskRunner:
+    def from_dict(cls, dict_: t.Dict[str, t.Any]) -> Runner:
         """Overloading from_dict()."""
 
         return cls(
@@ -347,7 +347,7 @@ class TaskRunner(Item):
 
         return dict(vars(self), task=self.task.to_dict(), host=self.host.to_dict())
 
-    def run(self, retry=0) -> TaskResult:
+    def run(self, retry=0) -> Result:
         """Run the task on the host."""
         command = self.task.command_factory(self.host)
 
@@ -367,7 +367,7 @@ class TaskRunner(Item):
         if self.task.stderr_processor:
             stderr = self.task.stderr_processor(stderr)
 
-        result = TaskResult(
+        result = Result(
             self.task,
             self.host,
             command,
@@ -384,28 +384,28 @@ class TaskRunner(Item):
 
         return result
 
-    def task_results(self) -> TaskResults:
-        """Fetch recent task results of current task runner from database."""
-        return self.pipe(TaskResults.by_task_runner)
+    def results(self) -> Results:
+        """Fetch recent results of current runner from database."""
+        return self.pipe(Results.by_runner)
 
 
 @dataclass(frozen=True)
-class TaskRunners(Items):
-    _item_factory: t.Type[TaskRunner] = field(init=False, default=TaskRunner)
+class Runners(Items):
+    _item_factory: t.Type[Runner] = field(init=False, default=Runner)
 
-    def run(self, max_workers=Config.max_workers.value) -> TaskResults:
+    def run(self, max_workers=Config.max_workers.value) -> Results:
         """Run the tasks."""
 
         if max_workers <= 1:
             # Run in sequence
-            return TaskResults.from_items(*(r.run() for r in self._all))
+            return Results.from_items(*(r.run() for r in self._all))
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Run in parallel
             futures = [executor.submit(r.run) for r in self._all]
             results = [f.result() for f in as_completed(futures)]
 
-        return TaskResults.from_items(*results)
+        return Results.from_items(*results)
 
     def hosts(self) -> Hosts:
         """Get the list of hosts from the runners."""
@@ -413,7 +413,7 @@ class TaskRunners(Items):
 
 
 @dataclass(frozen=True, order=True)
-class TaskResult(Item):
+class Result(Item):
     """The result of an executed task."""
 
     task: Task
@@ -427,7 +427,7 @@ class TaskResult(Item):
     retry: int
 
     @classmethod
-    def from_hash(cls, hash_: int) -> TaskResult:
+    def from_hash(cls, hash_: int) -> Result:
         with ViperDB(ViperDB.url) as conn:
 
             data = next(
@@ -435,7 +435,7 @@ class TaskResult(Item):
                     """
                     SELECT
                         task, host, command, stdout, stderr, returncode, start, end, retry
-                    FROM task_results WHERE hash = ?
+                    FROM results WHERE hash = ?
                     """,
                     (hash_,),
                 )
@@ -480,13 +480,13 @@ class TaskResult(Item):
         """If the result is failure."""
         return self.returncode != 0
 
-    def save(self) -> TaskResult:
+    def save(self) -> Result:
         """Save the result dump."""
 
         with ViperDB() as conn:
             conn.execute(
                 """
-                INSERT INTO task_results (
+                INSERT INTO results (
                     hash, task, host, command, stdout, stderr, returncode, start, end, retry
                 ) VALUES (
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
@@ -510,15 +510,15 @@ class TaskResult(Item):
 
 
 @dataclass(frozen=True)
-class TaskResults(Items):
-    _item_factory: t.Type[TaskResult] = field(init=False, default=TaskResult)
+class Results(Items):
+    _item_factory: t.Type[Result] = field(init=False, default=Result)
 
     @classmethod
-    def by_host(cls, host: Host) -> TaskResults:
+    def by_host(cls, host: Host) -> Results:
         with ViperDB(ViperDB.url) as conn:
             rows = conn.execute(
                 f"""
-                SELECT hash FROM task_results
+                SELECT hash FROM results
                 WHERE JSON_EXTRACT(host, '$.ip') = ?
                 ORDER BY start DESC
                 """,
@@ -529,11 +529,11 @@ class TaskResults(Items):
         return cls.from_items(*results)
 
     @classmethod
-    def by_task(cls, task: Task) -> TaskResults:
+    def by_task(cls, task: Task) -> Results:
         with ViperDB(ViperDB.url) as conn:
             rows = conn.execute(
                 f"""
-                SELECT hash FROM task_results
+                SELECT hash FROM results
                 WHERE JSON_EXTRACT(task, '$.name') = ?
                 ORDER BY start DESC
                 """,
@@ -544,11 +544,11 @@ class TaskResults(Items):
         return cls.from_items(*results)
 
     @classmethod
-    def by_task_runner(cls, runner: TaskRunner) -> TaskResults:
+    def by_runner(cls, runner: Runner) -> Results:
         with ViperDB(ViperDB.url) as conn:
             rows = conn.execute(
                 f"""
-                SELECT hash FROM task_results
+                SELECT hash FROM results
                 WHERE JSON_EXTRACT(host, '$.ip') = ?
                     AND JSON_EXTRACT(task, '$.name') = ?
                 ORDER BY start DESC

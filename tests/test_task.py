@@ -1,6 +1,6 @@
 import json
 
-from viper import Host, Task, TaskRunner
+from viper import Host, Task, Runner
 
 
 def make_echo_command(host):
@@ -62,8 +62,8 @@ def test_task_from_json():
     assert task == task_json
 
 
-def test_task_runner_to_from_json():
-    runner = TaskRunner(
+def test_runner_to_from_json():
+    runner = Runner(
         task=Task("print IP address", command_factory=make_echo_command),
         host=Host("1.1.1.1"),
     )
@@ -90,4 +90,4 @@ def test_task_runner_to_from_json():
     )
 
     assert runner.to_json() == runner_json
-    assert TaskRunner.from_json(runner_json) == runner
+    assert Runner.from_json(runner_json) == runner
