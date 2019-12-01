@@ -458,7 +458,7 @@ class Result(Item):
     retry: int
 
     @classmethod
-    def from_hash(cls, hash_: int) -> Result:
+    def by_hash(cls, hash_: int) -> Result:
         with ViperDB(ViperDB.url) as conn:
 
             data = next(
@@ -555,7 +555,7 @@ class Results(Items):
                 """,
                 (host.ip,),
             )
-            results = [cls._item_factory.from_hash(r[0]) for r in rows]
+            results = [cls._item_factory.by_hash(r[0]) for r in rows]
 
         return cls.from_items(*results)
 
@@ -570,7 +570,7 @@ class Results(Items):
                 """,
                 (task.name,),
             )
-            results = [cls._item_factory.from_hash(r[0]) for r in rows]
+            results = [cls._item_factory.by_hash(r[0]) for r in rows]
 
         return cls.from_items(*results)
 
@@ -586,7 +586,7 @@ class Results(Items):
                 """,
                 (runner.host.ip, runner.task.name),
             )
-            results = [cls._item_factory.from_hash(r[0]) for r in rows]
+            results = [cls._item_factory.by_hash(r[0]) for r in rows]
 
         return cls.from_items(*results)
 

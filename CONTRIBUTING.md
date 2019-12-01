@@ -20,10 +20,10 @@ make docs
 make checks
 
 # Run unit tests
-make unit-test
+make unit-tests
 
 # Run all the tests
-make test
+make tests
 ```
 
 Then commit push the changes to a new branch named something like

@@ -64,7 +64,7 @@ apidocs:
 	# open file://$(PWD)/docs/_build/html/index.html
 
 
-.PHONY: unit-test
+.PHONY: unit-tests
 unit-tests:
 	pytest --cov=viper .
 
@@ -75,4 +75,4 @@ tests: test
 .PHONY: test
 test:
 	$(MAKE) checks
-	$(MAKE) unit-test
+	$(MAKE) unit-tests

@@ -44,7 +44,7 @@ def test_runner_run_save_load():
     assert result.end > result.start
     assert result.ok()
     assert not result.errored()
-    assert Result.from_hash(hash(result)) == result
+    assert Result.by_hash(hash(result)) == result
 
 
 def test_tasks_runner_retry():
