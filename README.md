@@ -5,7 +5,7 @@ Viper Infrastructure Commander
 [![Build Status](https://travis-ci.com/sayanarijit/viper.svg?branch=master)](https://travis-ci.com/sayanarijit/viper)
 [![codecov](https://codecov.io/gh/sayanarijit/viper/branch/master/graph/badge.svg)](https://codecov.io/gh/sayanarijit/viper)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
-[![Documentation Status](https://readthedocs.org/projects/viper-infrastructure-commander/badge/?version=latest)](https://github.com/python/black)
+[![Documentation Status](https://readthedocs.org/projects/viper-infrastructure-commander/badge/?version=latest)](https://viper-infrastructure-commander.readthedocs.io)
 
 Viper is a handy tool for easily running infrastructure management tasks and commands.
 
