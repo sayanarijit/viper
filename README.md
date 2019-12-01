@@ -155,7 +155,7 @@ usage: viper [-h] [--version] [--debug]
              {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:rttp,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:run,runners:hosts,results:filter,results:count,results:sort,results:pipe,results:hosts,results:by-task}
              ...
 
-Viper CLI v0.3.0
+Viper CLI v0.4.0
 
 positional arguments:
   {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:rttp,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:run,runners:hosts,results:filter,results:count,results:sort,results:pipe,results:hosts,results:by-task}
