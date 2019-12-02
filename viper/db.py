@@ -18,8 +18,7 @@ class ViperDB:
     def init(cls, url: str, force: bool = False) -> None:
         if force:
             with cls(url) as conn:
-                conn.execute("DELETE FROM results")
-                conn.execute("DROP TABLE results")
+                conn.execute("DROP TABLE IF EXISTS results")
 
         with cls(url) as conn:
             conn.execute(

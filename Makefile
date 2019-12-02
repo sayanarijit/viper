@@ -36,7 +36,7 @@ readme:
 	@echo "[![Documentation Status](https://readthedocs.org/projects/viper-infrastructure-commander/badge/?version=latest)](https://viper-infrastructure-commander.readthedocs.io)" | tee -a README.md
 	@echo "" | tee -a README.md
 	@echo
-	@.venv/bin/python -c "import viper; print(viper.__doc__)" | tee -a README.md
+	@python -c "import viper; print(viper.__doc__)" | tee -a README.md
 	@echo "" | tee -a README.md
 	@echo
 	@echo "Viper CLI Reference" | tee -a README.md
