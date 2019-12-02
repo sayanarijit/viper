@@ -13,12 +13,14 @@ from viper.collections import FilterType
 from viper.collections import HandlerType
 from viper.const import Config
 from viper.db import ViperDB
+from viper.project import Project
 
+import os
 import sys
 import traceback
 import typing as t
 
-__all__ = ["SubParser", "func", "run"]
+__all__ = ["SubCommand", "func", "run"]
 
 
 def func(objpath: str) -> t.Union[HandlerType, FilterType]:
@@ -34,27 +36,23 @@ def func(objpath: str) -> t.Union[HandlerType, FilterType]:
     return func
 
 
-class SubParser:
+class SubCommand:
     """Base class for the subcommand parsers."""
 
-    subcommand: t.Optional[str] = None
+    name: t.Optional[str] = None
 
     aliases: t.Sequence[str] = ()
 
     @classmethod
     def attach_to(cls, subparsers: _SubParsersAction) -> None:
 
-        if not cls.subcommand:
+        if not cls.name:
             raise NotImplementedError()  # no cover
 
-        subparser = subparsers.add_parser(cls.subcommand, help=cls.__doc__)
+        subparser = subparsers.add_parser(cls.name, help=cls.__doc__)
         if cls.aliases:
             for alias in cls.aliases:
-                cls(
-                    subparsers.add_parser(
-                        alias, help=f"alias of {repr(cls.subcommand)}"
-                    )
-                )
+                cls(subparsers.add_parser(alias, help=f"alias of {repr(cls.name)}"))
         cls(subparser)
 
     def __init__(self, subparser: ArgumentParser) -> None:
@@ -73,10 +71,10 @@ class SubParser:
         raise NotImplementedError()  # no cover
 
 
-class InitCommand(SubParser):
+class InitCommand(SubCommand):
     """initialize the current workspace"""
 
-    subcommand = "init"
+    name = "init"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
@@ -91,10 +89,10 @@ class InitCommand(SubParser):
         return 0
 
 
-class TaskFromFuncCommand(SubParser):
+class TaskFromFuncCommand(SubCommand):
     """[task:from-func FUNC > Task] get the task from a Python function location"""
 
-    subcommand = "task:from-func"
+    name = "task:from-func"
     aliases = ("task",)
 
     def add_arguments(self, parser: ArgumentParser) -> None:
@@ -108,10 +106,10 @@ class TaskFromFuncCommand(SubParser):
         return 0
 
 
-class TaskResultsCommand(SubParser):
+class TaskResultsCommand(SubCommand):
     """[Task > task:results > Results] get the past results of given task"""
 
-    subcommand = "task:results"
+    name = "task:results"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("-i", "--indent", type=int, default=None)
@@ -121,10 +119,10 @@ class TaskResultsCommand(SubParser):
         return 0
 
 
-class HostsFromFuncCommand(SubParser):
+class HostsFromFuncCommand(SubCommand):
     """[hosts:from-func FUNC > Hosts] get a group of hosts from a Python function location"""
 
-    subcommand = "hosts:from-func"
+    name = "hosts:from-func"
     aliases = ("hosts",)
 
     def add_arguments(self, parser: ArgumentParser) -> None:
@@ -138,10 +136,10 @@ class HostsFromFuncCommand(SubParser):
         return 0
 
 
-class HostsFromFileCommand(SubParser):
+class HostsFromFileCommand(SubCommand):
     """[hosts:from-file FILE > Hosts] get a group of hosts from a file"""
 
-    subcommand = "hosts:from-file"
+    name = "hosts:from-file"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("filepath")
@@ -161,10 +159,10 @@ class HostsFromFileCommand(SubParser):
         return 0
 
 
-class HostsTaskCommand(SubParser):
+class HostsTaskCommand(SubCommand):
     """[Hosts > hosts:task TASK > Runners] assign a task to each host"""
 
-    subcommand = "hosts:task"
+    name = "hosts:task"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
@@ -185,10 +183,10 @@ class HostsTaskCommand(SubParser):
         return 0
 
 
-class HostsRunTaskCommand(SubParser):
+class HostsRunTaskCommand(SubCommand):
     """[Hosts > hosts:run-task TASK *ARGS > Results] assign a task to each host and run"""
 
-    subcommand = "hosts:run-task"
+    name = "hosts:run-task"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
@@ -209,10 +207,10 @@ class HostsRunTaskCommand(SubParser):
         return 0
 
 
-class HostsFilterCommand(SubParser):
+class HostsFilterCommand(SubCommand):
     """[Hosts > hosts:filter FILTER *AGS > Hosts] filter hosts by a given function"""
 
-    subcommand = "hosts:filter"
+    name = "hosts:filter"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("filter", type=func)
@@ -230,10 +228,10 @@ class HostsFilterCommand(SubParser):
         return 0
 
 
-class HostsCountCommand(SubParser):
+class HostsCountCommand(SubCommand):
     """[Hosts > hosts:count > int] count the number of hosts"""
 
-    subcommand = "hosts:count"
+    name = "hosts:count"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         pass
@@ -243,10 +241,10 @@ class HostsCountCommand(SubParser):
         return 0
 
 
-class HostsSortCommand(SubParser):
+class HostsSortCommand(SubCommand):
     """[Hosts > hosts:sort > Hosts] sort the hosts"""
 
-    subcommand = "hosts:sort"
+    name = "hosts:sort"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("--key", type=func)
@@ -257,10 +255,10 @@ class HostsSortCommand(SubParser):
         return 0
 
 
-class HostsPipeCommand(SubParser):
+class HostsPipeCommand(SubCommand):
     """[Hosts > hosts:pipe HANDLER *ARGS > ?] pipe the hosts to the given handler"""
 
-    subcommand = "hosts:pipe"
+    name = "hosts:pipe"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("handler", type=func)
@@ -273,10 +271,10 @@ class HostsPipeCommand(SubParser):
         return 0
 
 
-class HostsResultsCommand(SubParser):
+class HostsResultsCommand(SubCommand):
     """[Hosts > hosts:results > Results] get the past results of the hosts"""
 
-    subcommand = "hosts:results"
+    name = "hosts:results"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("-i", "--indent", type=int, default=None)
@@ -286,10 +284,10 @@ class HostsResultsCommand(SubParser):
         return 0
 
 
-class RunnersFilterCommand(SubParser):
+class RunnersFilterCommand(SubCommand):
     """[Runners > runners:filter FILTER *ARGS > Runners] filter runners by a given function"""
 
-    subcommand = "runners:filter"
+    name = "runners:filter"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("filter", type=func)
@@ -307,10 +305,10 @@ class RunnersFilterCommand(SubParser):
         return 0
 
 
-class RunnersCountCommand(SubParser):
+class RunnersCountCommand(SubCommand):
     """[Runners > runners:count > int] count the number of runners"""
 
-    subcommand = "runners:count"
+    name = "runners:count"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         pass
@@ -320,10 +318,10 @@ class RunnersCountCommand(SubParser):
         return 0
 
 
-class RunnersSortCommand(SubParser):
+class RunnersSortCommand(SubCommand):
     """[Runners > runners:sort > Runners] sort the runners"""
 
-    subcommand = "runners:sort"
+    name = "runners:sort"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("--key", type=func)
@@ -334,10 +332,10 @@ class RunnersSortCommand(SubParser):
         return 0
 
 
-class RunnersPipeCommand(SubParser):
+class RunnersPipeCommand(SubCommand):
     """[Runners > runners:pipe HANDLER *ARGS > ?] pipe the runners to the given handler"""
 
-    subcommand = "runners:pipe"
+    name = "runners:pipe"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("handler", type=func)
@@ -350,10 +348,10 @@ class RunnersPipeCommand(SubParser):
         return 0
 
 
-class RunnersRunCommand(SubParser):
+class RunnersRunCommand(SubCommand):
     """[Runners > runners:run *ARGS > Results] run the assigned tasks"""
 
-    subcommand = "runners:run"
+    name = "runners:run"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
@@ -371,10 +369,10 @@ class RunnersRunCommand(SubParser):
         return 0
 
 
-class RunnersHostsCommand(SubParser):
+class RunnersHostsCommand(SubCommand):
     """[Runners > runners:hosts > Hosts] get the hosts from the runners"""
 
-    subcommand = "runners:hosts"
+    name = "runners:hosts"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("-i", "--indent", type=int, default=None)
@@ -384,10 +382,10 @@ class RunnersHostsCommand(SubParser):
         return 0
 
 
-class ResultsFromHistoryCommand(SubParser):
+class ResultsFromHistoryCommand(SubCommand):
     """[results:from-history > Results] get the past results from database"""
 
-    subcommand = "results:from-history"
+    name = "results:from-history"
     aliases = ("results",)
 
     def add_arguments(self, parser: ArgumentParser) -> None:
@@ -398,10 +396,10 @@ class ResultsFromHistoryCommand(SubParser):
         return 0
 
 
-class ResultsFilterCommand(SubParser):
+class ResultsFilterCommand(SubCommand):
     """[Results > results:filter FILTER *ARGS > Results] filter results by a given handler"""
 
-    subcommand = "results:filter"
+    name = "results:filter"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("filter", type=func)
@@ -419,10 +417,10 @@ class ResultsFilterCommand(SubParser):
         return 0
 
 
-class ResultsCountCommand(SubParser):
+class ResultsCountCommand(SubCommand):
     """[Results > results:count > int] count the number of results"""
 
-    subcommand = "results:count"
+    name = "results:count"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         pass
@@ -432,10 +430,10 @@ class ResultsCountCommand(SubParser):
         return 0
 
 
-class ResultsSortCommand(SubParser):
+class ResultsSortCommand(SubCommand):
     """[Results > results:sort > Results] sort the results"""
 
-    subcommand = "results:sort"
+    name = "results:sort"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("--key", type=func)
@@ -446,10 +444,10 @@ class ResultsSortCommand(SubParser):
         return 0
 
 
-class ResultsPipeCommand(SubParser):
+class ResultsPipeCommand(SubCommand):
     """[Results > results:pipe HANDLER *ARGS > ?] pipe the results to the given handler"""
 
-    subcommand = "results:pipe"
+    name = "results:pipe"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("handler", type=func)
@@ -462,10 +460,10 @@ class ResultsPipeCommand(SubParser):
         return 0
 
 
-class ResultsHostsCommand(SubParser):
+class ResultsHostsCommand(SubCommand):
     """[Results > results:hosts > Hosts] get the hosts from the results"""
 
-    subcommand = "results:hosts"
+    name = "results:hosts"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("-i", "--indent", type=int, default=None)
@@ -475,10 +473,10 @@ class ResultsHostsCommand(SubParser):
         return 0
 
 
-class ResultsByTaskCommand(SubParser):
+class ResultsByTaskCommand(SubCommand):
     """[Task > results:by-task > Results] get the past results of given task"""
 
-    subcommand = "results:by-task"
+    name = "results:by-task"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("-i", "--indent", type=int, default=None)
@@ -536,6 +534,16 @@ def run() -> int:
 
     ResultsHostsCommand.attach_to(subparsers)
     ResultsByTaskCommand.attach_to(subparsers)
+
+    # Project specific commands
+    if os.path.exists("viperfile.py"):
+        module = __import__("viperfile")
+        for k, v in vars(module).items():
+            if not isinstance(v, Project):
+                continue
+
+            for subcommand in v.all_commands():
+                subcommand.attach_to(subparsers)
 
     args = parser.parse_args()
 

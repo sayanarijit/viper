@@ -110,3 +110,6 @@ venv.bak/
 
 # viperdb
 viperdb.sqlite3
+
+# results file
+results.csv
