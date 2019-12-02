@@ -13,6 +13,8 @@ def test_all_cli_examples():
         if line.startswith("   ") and not line.strip().startswith("#")
     ]
 
+    assert subprocess.run(["viper", "init", "-f"]).returncode == 0
+
     for command in commands:
         print(command)
         assert subprocess.run(command, shell=True).returncode == 0

@@ -108,7 +108,7 @@ class TaskFromFuncCommand(SubParser):
         return 0
 
 
-class ResultsCommand(SubParser):
+class TaskResultsCommand(SubParser):
     """[Task > task:results > Results] get the past results of given task"""
 
     subcommand = "task:results"
@@ -170,16 +170,23 @@ class HostsTaskCommand(SubParser):
         parser.add_argument(
             "task", type=Task.from_func, help=Task.from_func.__doc__.lower()
         )
+        parser.add_argument(
+            "args", nargs="*", help="arguments to be passed to the command factory"
+        )
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
 
-        print(Hosts.from_json(input()).task(args.task).to_json(indent=args.indent))
+        print(
+            Hosts.from_json(input())
+            .task(args.task, *args.args)
+            .to_json(indent=args.indent)
+        )
         return 0
 
 
 class HostsRunTaskCommand(SubParser):
-    """[Hosts > hosts:run-task TASK > Results] assign a task to each host and run"""
+    """[Hosts > hosts:run-task TASK *ARGS > Results] assign a task to each host and run"""
 
     subcommand = "hosts:run-task"
 
@@ -187,38 +194,17 @@ class HostsRunTaskCommand(SubParser):
         parser.add_argument(
             "task", type=Task.from_func, help=Task.from_func.__doc__.lower()
         )
+        parser.add_argument(
+            "args", nargs="*", help="arguments to be passed to the command factory"
+        )
         parser.add_argument("--max-workers", type=int, default=Config.max_workers.value)
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
-
         print(
             Hosts.from_json(input())
-            .run_task(args.task, max_workers=args.max_workers)
+            .run_task(args.task, *args.args, max_workers=args.max_workers)
             .to_json(indent=args.indent)
-        )
-        return 0
-
-
-class HostsRunTaskThenPipeCommand(SubParser):
-    """[Hosts > hosts:run-task-then-pipe TASK HANDLER *ARGS > ?] run the task on hosts and pipe the results to a handler"""
-
-    subcommand = "hosts:run-task-then-pipe"
-    aliases = ("hosts:rttp",)
-
-    def add_arguments(self, parser: ArgumentParser) -> None:
-        parser.add_argument(
-            "task", type=Task.from_func, help=Task.from_func.__doc__.lower()
-        )
-        parser.add_argument("handler", type=func, help="the result handler function")
-        parser.add_argument(
-            "args", nargs="*", help="arguments to be passed to the filter"
-        )
-        parser.add_argument("--max-workers", type=int, default=Config.max_workers.value)
-
-    def __call__(self, args: Namespace) -> int:
-        Hosts.from_json(input()).run_task_then_pipe(
-            args.task, args.handler, *args.args, max_workers=args.max_workers
         )
         return 0
 
@@ -365,18 +351,21 @@ class RunnersPipeCommand(SubParser):
 
 
 class RunnersRunCommand(SubParser):
-    """[Runners > runners:run > Results] run the assigned tasks"""
+    """[Runners > runners:run *ARGS > Results] run the assigned tasks"""
 
     subcommand = "runners:run"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument(
+            "args", nargs="*", help="arguments to be passed to the command factory"
+        )
         parser.add_argument("--max-workers", type=int, default=Config.max_workers.value)
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
         print(
             Runners.from_json(input())
-            .run(max_workers=args.max_workers)
+            .run(*args.args, max_workers=args.max_workers)
             .to_json(indent=args.indent)
         )
         return 0
@@ -392,6 +381,20 @@ class RunnersHostsCommand(SubParser):
 
     def __call__(self, args: Namespace) -> int:
         print(Runners.from_json(input()).hosts().to_json(indent=args.indent))
+        return 0
+
+
+class ResultsFromHistoryCommand(SubParser):
+    """[results:from-history > Results] get the past results from database"""
+
+    subcommand = "results:from-history"
+    aliases = ("results",)
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(Results.from_history().to_json(indent=args.indent))
         return 0
 
 
@@ -500,7 +503,7 @@ def run() -> int:
 
     # Task commands
     TaskFromFuncCommand.attach_to(subparsers)
-    ResultsCommand.attach_to(subparsers)
+    TaskResultsCommand.attach_to(subparsers)
 
     # Hosts commands
     HostsFromFileCommand.attach_to(subparsers)
@@ -513,7 +516,6 @@ def run() -> int:
 
     HostsTaskCommand.attach_to(subparsers)
     HostsRunTaskCommand.attach_to(subparsers)
-    HostsRunTaskThenPipeCommand.attach_to(subparsers)
     HostsResultsCommand.attach_to(subparsers)
 
     # Task runners commands
@@ -526,6 +528,7 @@ def run() -> int:
     RunnersHostsCommand.attach_to(subparsers)
 
     # Task results commands
+    ResultsFromHistoryCommand.attach_to(subparsers)
     ResultsFilterCommand.attach_to(subparsers)
     ResultsCountCommand.attach_to(subparsers)
     ResultsSortCommand.attach_to(subparsers)

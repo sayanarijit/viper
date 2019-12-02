@@ -13,6 +13,8 @@ from viper.const import Config
 from viper.db import ViperDB
 
 import subprocess
+import sys
+import traceback
 import typing as t
 
 ItemType = t.TypeVar("ItemType", bound="Item")
@@ -46,6 +48,12 @@ class HandlerType:
 
 
 class FilterType:
+    """TODO: This should be a protocol"""
+
+    pass
+
+
+class CommandFactoryType:
     """TODO: This should be a protocol"""
 
     pass
@@ -253,15 +261,15 @@ class Host(Item):
 
         return f"{self.hostname}.{self.domain}"
 
-    def task(self, task: Task) -> Runner:
+    def task(self, task: Task, *args: str) -> Runner:
         """Assigns a task to be run."""
 
-        return Runner(task=task, host=self)
+        return Runner(task=task, host=self, args=args)
 
-    def run_task(self, task: Task) -> Result:
+    def run_task(self, task: Task, *args: str) -> Result:
         """Assign the task to the host and then run it."""
 
-        return self.task(task).run()
+        return self.task(task, *args).run()
 
     def results(self) -> Results:
         """Fetch recent results of current host from database."""
@@ -292,26 +300,18 @@ class Hosts(Items):
         with open(filepath) as f:
             return loader(f)
 
-    def task(self, task: Task) -> Runners:
+    def task(self, task: Task, *args: str) -> Runners:
         """Assigns a task to be run on all the hosts."""
 
-        return Runners.from_items(*(Runner(task=task, host=h) for h in self._all))
+        return Runners.from_items(
+            *(Runner(task=task, host=h, args=args) for h in self._all)
+        )
 
-    def run_task(self, task: Task, max_workers=Config.max_workers.value) -> Results:
+    def run_task(
+        self, task: Task, *args: str, max_workers=Config.max_workers.value
+    ) -> Results:
         """Run a task to be run on all hosts and then run it."""
-
-        return self.task(task).run(max_workers=max_workers)
-
-    def run_task_then_pipe(
-        self,
-        task: Task,
-        handler: HandlerType,
-        *args,
-        max_workers=Config.max_workers.value,
-    ) -> object:
-        """Assign the task to the host and then run it."""
-
-        return self.run_task(task, max_workers=max_workers).pipe(handler, *args)
+        return self.task(task, *args).run(max_workers=max_workers)
 
     def results(self) -> Results:
         results = []
@@ -326,7 +326,7 @@ class Task(Item):
     """An infra task."""
 
     name: str
-    command_factory: t.Callable[[Host], t.Sequence[str]]
+    command_factory: CommandFactoryType
     timeout: t.Optional[int] = None
     retry: int = 0
     stdout_processor: t.Optional[t.Callable[[str], str]] = None
@@ -343,11 +343,14 @@ class Task(Item):
         errp = dict_.get("stderr_processor")
         pre = dict_.get("pre_run")
         post = dict_.get("post_run")
+        cf = locate(dict_["command_factory"])
+        if not cf:
+            raise ValueError(f"could not locate {repr(dict_['command_factory'])}")
 
         return cls(
             **dict(
                 dict_,
-                command_factory=locate(dict_["command_factory"]),
+                command_factory=cf,
                 stdout_processor=locate(outp) if outp else None,
                 stderr_processor=locate(errp) if errp else None,
                 pre_run=locate(pre) if pre else None,
@@ -387,6 +390,7 @@ class Runner(Item):
 
     host: Host
     task: Task
+    args: t.Sequence[str] = ()
 
     @classmethod
     def from_dict(cls, dict_: t.Dict[str, object]) -> Runner:
@@ -397,6 +401,7 @@ class Runner(Item):
                 dict_,
                 task=Task.from_dict(dict_["task"]),
                 host=Host.from_dict(dict_["host"]),
+                args=tuple(dict_.get("args", [])),
             )
         )
 
@@ -411,7 +416,7 @@ class Runner(Item):
         if self.task.pre_run:
             self.task.pre_run(self)
 
-        command = self.task.command_factory(self.host)
+        command = self.task.command_factory(self.host, *self.args)
         start = time()
 
         try:
@@ -459,12 +464,23 @@ class Runners(Items):
 
         if max_workers <= 1:
             # Run in sequence
-            return Results.from_items(*(r.run() for r in self._all))
+            results = []
+            for r in self.all():
+                try:
+                    results.append(r.run())
+                except Exception:
+                    print(traceback.format_exc(), file=sys.stderr)
+            return Results.from_items(*results)
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Run in parallel
             futures = [executor.submit(r.run) for r in self._all]
-            results = [f.result() for f in as_completed(futures)]
+            results = []
+            for f in as_completed(futures):
+                try:
+                    results.append(f.result())
+                except Exception:
+                    print(traceback.format_exc(), file=sys.stderr)
 
         return Results.from_items(*results)
 
@@ -495,12 +511,14 @@ class Result(Item):
                 conn.execute(
                     """
                     SELECT
-                        task, host, command, stdout, stderr, returncode, start, end, retry
+                        task, host, command, stdout, stderr,
+                        returncode, start, end, retry
                     FROM results WHERE hash = ?
                     """,
                     (hash_,),
                 )
             )
+
         return cls.from_dict(
             dict(
                 task=loadjson(data[0]),
@@ -577,6 +595,14 @@ class Result(Item):
 @dataclass(frozen=True)
 class Results(Items):
     _item_factory: t.Type[Results] = field(init=False, default=Result)
+
+    @classmethod
+    def from_history(cls) -> Results:
+        with ViperDB(ViperDB.url) as conn:
+            rows = conn.execute("SELECT hash FROM results ORDER BY start DESC")
+            results = [cls._item_factory.by_hash(r[0]) for r in rows]
+
+        return cls.from_items(*results)
 
     @classmethod
     def by_host(cls, host: Host) -> Results:

@@ -99,9 +99,14 @@ Run tasks in parallel using multiple workers
     cat /tmp/hosts.json | viper hosts:run-task viper.demo.tasks.ping --max-workers 50 --indent 4
 
 
-Get the past results of the hosts from DB
------------------------------------------
+Get the past results from DB
+----------------------------
 
+    viper results
+
+
+Or get the past results by hosts
+--------------------------------
     cat /tmp/hosts.json | viper hosts:results --indent 4 --debug
 
 
@@ -144,7 +149,7 @@ Pipe the results to a custom handler
 Let's do that again in one go
 -----------------------------
 
-    viper hosts viper.demo.hosts.group1 | viper hosts:rttp viper.demo.tasks.ping viper.demo.handlers.export_csv /tmp/results.csv
+    viper hosts viper.demo.hosts.group1 | viper hosts:run-task viper.demo.tasks.ping | viper results:pipe viper.demo.handlers.export_csv /tmp/results.csv
 
 
 
@@ -152,13 +157,13 @@ Viper CLI Reference
 ===================
 ```
 usage: viper [-h] [--version] [--debug]
-             {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:rttp,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:run,runners:hosts,results:filter,results:count,results:sort,results:pipe,results:hosts,results:by-task}
+             {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:run,runners:hosts,results:from-history,results,results:filter,results:count,results:sort,results:pipe,results:hosts,results:by-task}
              ...
 
-Viper CLI v0.8.0
+Viper CLI v0.9.0
 
 positional arguments:
-  {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:run-task-then-pipe,hosts:rttp,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:run,runners:hosts,results:filter,results:count,results:sort,results:pipe,results:hosts,results:by-task}
+  {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:run,runners:hosts,results:from-history,results,results:filter,results:count,results:sort,results:pipe,results:hosts,results:by-task}
     init                initialize the current workspace
     task:from-func      [task:from-func FUNC > Task] get the task from a
                         Python function location
@@ -178,13 +183,8 @@ positional arguments:
                         to the given handler
     hosts:task          [Hosts > hosts:task TASK > Runners] assign a task to
                         each host
-    hosts:run-task      [Hosts > hosts:run-task TASK > Results] assign a task
-                        to each host and run
-    hosts:run-task-then-pipe
-                        [Hosts > hosts:run-task-then-pipe TASK HANDLER *ARGS >
-                        ?] run the task on hosts and pipe the results to a
-                        handler
-    hosts:rttp          alias of 'hosts:run-task-then-pipe'
+    hosts:run-task      [Hosts > hosts:run-task TASK *ARGS > Results] assign a
+                        task to each host and run
     hosts:results       [Hosts > hosts:results > Results] get the past results
                         of the hosts
     runners:filter      [Runners > runners:filter FILTER *ARGS > Runners]
@@ -194,10 +194,14 @@ positional arguments:
     runners:sort        [Runners > runners:sort > Runners] sort the runners
     runners:pipe        [Runners > runners:pipe HANDLER *ARGS > ?] pipe the
                         runners to the given handler
-    runners:run         [Runners > runners:run > Results] run the assigned
-                        tasks
+    runners:run         [Runners > runners:run *ARGS > Results] run the
+                        assigned tasks
     runners:hosts       [Runners > runners:hosts > Hosts] get the hosts from
                         the runners
+    results:from-history
+                        [results:from-history > Results] get the past results
+                        from database
+    results             alias of 'results:from-history'
     results:filter      [Results > results:filter FILTER *ARGS > Results]
                         filter results by a given handler
     results:count       [Results > results:count > int] count the number of

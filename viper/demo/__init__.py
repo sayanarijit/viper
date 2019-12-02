@@ -80,9 +80,14 @@ Run tasks in parallel using multiple workers
     cat /tmp/hosts.json | viper hosts:run-task viper.demo.tasks.ping --max-workers 50 --indent 4
 
 
-Get the past results of the hosts from DB
------------------------------------------
+Get the past results from DB
+----------------------------
 
+    viper results
+
+
+Or get the past results by hosts
+--------------------------------
     cat /tmp/hosts.json | viper hosts:results --indent 4 --debug
 
 
@@ -125,5 +130,5 @@ Pipe the results to a custom handler
 Let's do that again in one go
 -----------------------------
 
-    viper hosts viper.demo.hosts.group1 | viper hosts:rttp viper.demo.tasks.ping viper.demo.handlers.export_csv /tmp/results.csv
+    viper hosts viper.demo.hosts.group1 | viper hosts:run-task viper.demo.tasks.ping | viper results:pipe viper.demo.handlers.export_csv /tmp/results.csv
 """

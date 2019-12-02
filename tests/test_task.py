@@ -97,6 +97,7 @@ def test_runner_to_from_json():
                 "post_run": None,
                 "meta": {},
             },
+            "args": [],
         }
     )
 

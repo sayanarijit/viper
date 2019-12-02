@@ -6,7 +6,7 @@ import sys
 
 def log_command(runner: Runner) -> None:
     """Log the command before run."""
-    command = runner.task.command_factory(runner.host)
+    command = runner.task.command_factory(runner.host, *runner.args)
     print(runner.host.ip, command, file=sys.stderr, sep=": ")
 
 
