@@ -37,7 +37,10 @@ def log_status_callbask(result: Result) -> None:
 
 
 @myproj.hostgroup(
-    args=[Arg("-f", "--file", type=FileType("r"), default="/fath/to/hosts.json",)]
+    args=[
+        Arg("-f", "--file", type=FileType("r"), default="hosts.json",),
+        Arg("-i", "--identity_file", default="/root/.ssh/id_rsa.pub",),
+    ]
 )
 def allhosts(args) -> Hosts:
     """Get all the myproj hosts."""
@@ -50,7 +53,7 @@ def allhosts(args) -> Hosts:
                 ip=d["ip"],
                 hostname=d["name"],
                 login_name="root",
-                identity_file="/path/to/ssh_pub.key",
+                identity_file=args.identity_file,
                 meta=tuple(d.items()),
             )
             for d in data
@@ -140,7 +143,6 @@ def results2csv(results: Results, args: Namespace) -> Results:
 
 
 def remote_exec_command(host: Host, command: str) -> t.Sequence[str]:
-    """Basic SSH command."""
     if not host.login_name:
         raise ValueError(f"{host}: 'login_name' is not set")
 
@@ -170,6 +172,7 @@ def remote_exec_command(host: Host, command: str) -> t.Sequence[str]:
     ],
 )
 def remote_exec(hosts: Hosts, args: Namespace) -> Results:
+    """Execute command on hosts remotely."""
     return hosts.run_task(
         Task(
             "Remote execute",
@@ -198,6 +201,7 @@ def app_version_command(host: Host, app: str) -> t.Sequence[str]:
     ],
 )
 def app_version(hosts: Hosts, args: Namespace) -> Results:
+    """Get application version."""
     return hosts.run_task(
         Task(
             "Get app version",
@@ -227,6 +231,7 @@ def update_via_apt_command(host: Host, app: str) -> t.Sequence[str]:
     ],
 )
 def update_via_apt(hosts: Hosts, args: Namespace) -> Results:
+    """Update application via apt."""
     return (
         hosts.run_task(
             Task(
