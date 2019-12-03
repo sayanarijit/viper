@@ -12,10 +12,13 @@ See `viper.demo.viperfile.py` for examples.
 
 
 from __future__ import annotations
+from argparse import ArgumentParser
+from argparse import Namespace
 from dataclasses import dataclass
 from dataclasses import field
 from viper.cli_base import SubCommand
 from viper.collections import Collection as ViperCollection
+from viper.collections import Hosts
 from viper.collections import Items
 
 import typing as t
@@ -51,17 +54,19 @@ class Project:
     def hostgroup(self, args: t.Optional[t.Sequence[Arg]] = None):
         """Use this decorator to define host groups."""
 
-        def wrapper(func):
+        def wrapper(
+            func: t.Callable[[Namespace], Hosts]
+        ) -> t.Callable[[Namespace], Hosts]:
             class HostGroupCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
                 __doc__ = f"[@{self.prefix}:{func.__name__} > Hosts] {func.__doc__}"
 
-                def add_arguments(self, parser):
+                def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
                         for arg in args:
                             parser.add_argument(*arg.args, **arg.kwargs)
 
-                def __call__(self, args):
+                def __call__(self, args: Namespace) -> int:
                     print(func(args).to_json())
                     return 0
 
@@ -70,26 +75,28 @@ class Project:
 
         return wrapper
 
-    def filter(self, objtype: type, args: t.Optional[t.Sequence[Arg]] = None):
+    def filter(self, objtype: t.Type[Items], args: t.Optional[t.Sequence[Arg]] = None):
         """Use this decorator to define filters."""
 
         if not issubclass(objtype, Items):
             raise ValueError(f"{objtype} does not have filter option")
 
-        def wrapper(func):
+        def wrapper(
+            func: t.Callable[[Items, Namespace], bool],
+        ) -> t.Callable[[Items, Namespace], bool]:
             class FilterCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
                 __doc__ = f"[{objtype.__name__} > @{self.prefix}:{func.__name__} > {objtype.__name__}] {func.__doc__}"
 
-                def add_arguments(self, parser):
+                def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
                         for arg in args:
                             parser.add_argument(*arg.args, **arg.kwargs)
 
-                def __call__(self, args):
+                def __call__(self, args: Namespace) -> int:
                     print(
                         objtype.from_json(input())
-                        .filter(lambda host: func(args, host))
+                        .filter(lambda host: func(host, args))
                         .to_json()
                     )
                     return 0
@@ -101,7 +108,7 @@ class Project:
 
     def handler(
         self,
-        fromtype: type,
+        fromtype: ViperCollection,
         totype: t.Optional[type] = None,
         args: t.Optional[t.Sequence[Arg]] = None,
     ):
@@ -110,20 +117,20 @@ class Project:
         if not issubclass(fromtype, ViperCollection):
             raise ValueError(f"{fromtype} does not have pipe option")
 
-        def wrapper(func):
+        def wrapper(
+            func: t.Callable[[ViperCollection, Namespace], object]
+        ) -> t.Callable[[ViperCollection, Namespace], object]:
             class HandlerCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
                 __doc__ = f"[{fromtype.__name__} > @{self.prefix}:{func.__name__} > {totype.__name__}] {func.__doc__}"
 
-                def add_arguments(self, parser):
+                def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
                         for arg in args:
                             parser.add_argument(*arg.args, **arg.kwargs)
 
-                def __call__(self, args):
-                    r = fromtype.from_json(input()).pipe(
-                        lambda hosts: func(args, hosts)
-                    )
+                def __call__(self, args: Namespace) -> int:
+                    r = fromtype.from_json(input()).pipe(lambda obj: func(obj, args))
                     if totype:
                         print(
                             r.to_json()
@@ -139,7 +146,7 @@ class Project:
 
     def job(
         self,
-        fromtype: type,
+        fromtype: t.Type[ViperCollection],
         totype: t.Optional[type] = None,
         args: t.Optional[t.Sequence[Arg]] = None,
     ):
@@ -148,19 +155,21 @@ class Project:
         if not issubclass(fromtype, ViperCollection):
             raise ValueError(f"{fromtype} is not a valid input for any job")
 
-        def wrapper(func):
+        def wrapper(
+            func: t.Callable[[ViperCollection, Namespace], object]
+        ) -> t.Callable[[ViperCollection, Namespace], object]:
             class WorkFlowCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
                 __doc__ = f"[{fromtype.__name__} > @{self.prefix}:{func.__name__} > {totype.__name__}] {func.__doc__}"
 
-                def add_arguments(self, parser):
+                def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
                         for arg in args:
                             parser.add_argument(*arg.args, **arg.kwargs)
 
-                def __call__(self, args):
+                def __call__(self, args: Namespace) -> int:
                     if totype:
-                        r = func(args, fromtype.from_json(input()))
+                        r = func(fromtype.from_json(input()), args)
                         print(
                             r.to_json()
                             if issubclass(totype, ViperCollection)

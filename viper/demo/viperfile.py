@@ -1,6 +1,7 @@
 """Project specific viper commands."""
 
 from argparse import FileType
+from argparse import Namespace
 from time import ctime
 from viper import Host
 from viper import Hosts
@@ -58,14 +59,14 @@ def allhosts(args) -> Hosts:
 
 
 @myproj.filter(objtype=Hosts, args=[Arg("key"), Arg("val")])
-def hosts_by(args, host) -> bool:
+def hosts_by(host: Host, args: Namespace) -> bool:
     """Filter hosts by key and metadata"""
 
     return str(dict(host.meta)[args.key]) == args.val
 
 
 @myproj.filter(objtype=Results, args=[Arg("key"), Arg("val")])
-def results_by(args, result) -> bool:
+def results_by(result: Result, args: Namespace) -> bool:
     """Filter hosts by IP address"""
 
     return (
@@ -76,7 +77,7 @@ def results_by(args, result) -> bool:
 @myproj.handler(
     fromtype=Hosts, totype=Hosts, args=[Arg("file", type=FileType("w"))],
 )
-def hosts2csv(args, hosts: Hosts) -> Hosts:
+def hosts2csv(hosts: Hosts, args: Namespace) -> Hosts:
     """Export csv formatted hosts to file"""
 
     if hosts.count() > 0:
@@ -94,7 +95,7 @@ def hosts2csv(args, hosts: Hosts) -> Hosts:
 @myproj.handler(
     fromtype=Results, totype=Results, args=[Arg("file", type=FileType("w"))],
 )
-def results2csv(args, results: Results) -> None:
+def results2csv(results: Results, args: Namespace) -> Results:
     """Export csv formatted results to file"""
 
     if results.count() > 0:
@@ -168,7 +169,7 @@ def remote_exec_command(host: Host, command: str) -> t.Sequence[str]:
         Arg("--max-workers", default=0, type=int),
     ],
 )
-def remote_exec(args, hosts: Hosts) -> Results:
+def remote_exec(hosts: Hosts, args: Namespace) -> Results:
     return hosts.run_task(
         Task(
             "Remote execute",
@@ -180,7 +181,7 @@ def remote_exec(args, hosts: Hosts) -> Results:
         ),
         args.command,
         max_workers=args.max_workers,
-    ).pipe(lambda results: results2csv(args, results))
+    ).pipe(lambda results: results2csv(results, args))
 
 
 def app_version_command(host: Host, app: str) -> t.Sequence[str]:
@@ -196,7 +197,7 @@ def app_version_command(host: Host, app: str) -> t.Sequence[str]:
         Arg("--max-workers", default=0, type=int),
     ],
 )
-def app_version(args, hosts: Hosts) -> Results:
+def app_version(hosts: Hosts, args: Namespace) -> Results:
     return hosts.run_task(
         Task(
             "Get app version",
@@ -208,7 +209,7 @@ def app_version(args, hosts: Hosts) -> Results:
         ),
         args.app,
         max_workers=args.max_workers,
-    ).pipe(lambda results: results2csv(args, results))
+    ).pipe(lambda results: results2csv(results, args))
 
 
 def update_via_apt_command(host: Host, app: str) -> t.Sequence[str]:
@@ -225,7 +226,7 @@ def update_via_apt_command(host: Host, app: str) -> t.Sequence[str]:
         Arg("--max-workers", default=0, type=int),
     ],
 )
-def update_via_apt(args, hosts: Hosts) -> Results:
+def update_via_apt(hosts: Hosts, args: Namespace) -> Results:
     return (
         hosts.run_task(
             Task(
@@ -253,5 +254,5 @@ def update_via_apt(args, hosts: Hosts) -> Results:
             args.app,
             max_workers=args.max_workers,
         )
-        .pipe(lambda results: results2csv(args, results))
+        .pipe(lambda results: results2csv(results, args))
     )
