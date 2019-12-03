@@ -57,14 +57,14 @@ def allhosts(args) -> Hosts:
     )
 
 
-@myproj.filter(objclass=Hosts, args=[Arg("key"), Arg("val")])
+@myproj.filter(objtype=Hosts, args=[Arg("key"), Arg("val")])
 def hosts_by(args, host) -> bool:
     """Filter hosts by key and metadata"""
 
     return str(dict(host.meta)[args.key]) == args.val
 
 
-@myproj.filter(objclass=Results, args=[Arg("key"), Arg("val")])
+@myproj.filter(objtype=Results, args=[Arg("key"), Arg("val")])
 def results_by(args, result) -> bool:
     """Filter hosts by IP address"""
 
@@ -74,9 +74,9 @@ def results_by(args, result) -> bool:
 
 
 @myproj.handler(
-    fromclass=Hosts, toclass=Hosts, args=[Arg("file", type=FileType("w"))],
+    fromtype=Hosts, totype=Hosts, args=[Arg("file", type=FileType("w"))],
 )
-def hosts2csv(args, hosts: Hosts) -> None:
+def hosts2csv(args, hosts: Hosts) -> Hosts:
     """Export csv formatted hosts to file"""
 
     if hosts.count() > 0:
@@ -88,11 +88,11 @@ def hosts2csv(args, hosts: Hosts) -> None:
     args.file.close()
 
     # Printing JSON to terminal to that it can be piped to further commands
-    print(hosts.to_json())
+    return hosts
 
 
 @myproj.handler(
-    fromclass=Results, toclass=Results, args=[Arg("file", type=FileType("w"))],
+    fromtype=Results, totype=Results, args=[Arg("file", type=FileType("w"))],
 )
 def results2csv(args, results: Results) -> None:
     """Export csv formatted results to file"""
@@ -135,7 +135,7 @@ def results2csv(args, results: Results) -> None:
     args.file.close()
 
     # Printing JSON to terminal to that it can be piped to further commands
-    print(results.to_json())
+    return results
 
 
 def remote_exec_command(host: Host, command: str) -> t.Sequence[str]:
@@ -160,16 +160,16 @@ def remote_exec_command(host: Host, command: str) -> t.Sequence[str]:
 
 
 @myproj.job(
-    fromclass=Hosts,
-    toclass=Results,
+    fromtype=Hosts,
+    totype=Results,
     args=[
         Arg("command"),
         Arg("file", type=FileType("w"), help="CSV file path for the result"),
         Arg("--max-workers", default=0, type=int),
     ],
 )
-def remote_exec(args, hosts: Hosts) -> None:
-    hosts.run_task(
+def remote_exec(args, hosts: Hosts) -> Results:
+    return hosts.run_task(
         Task(
             "Remote execute",
             remote_exec_command,
@@ -188,16 +188,16 @@ def app_version_command(host: Host, app: str) -> t.Sequence[str]:
 
 
 @myproj.job(
-    fromclass=Hosts,
-    toclass=Results,
+    fromtype=Hosts,
+    totype=Results,
     args=[
         Arg("app"),
         Arg("file", type=FileType("w"), help="CSV file path for the result"),
         Arg("--max-workers", default=0, type=int),
     ],
 )
-def app_version(args, hosts: Hosts):
-    hosts.run_task(
+def app_version(args, hosts: Hosts) -> Results:
+    return hosts.run_task(
         Task(
             "Get app version",
             app_version_command,
@@ -216,8 +216,8 @@ def update_via_apt_command(host: Host, app: str) -> t.Sequence[str]:
 
 
 @myproj.job(
-    fromclass=Hosts,
-    toclass=Results,
+    fromtype=Hosts,
+    totype=Results,
     args=[
         Arg("app"),
         Arg("version"),
@@ -225,31 +225,33 @@ def update_via_apt_command(host: Host, app: str) -> t.Sequence[str]:
         Arg("--max-workers", default=0, type=int),
     ],
 )
-def update_via_apt(args, hosts: Hosts):
-    hosts.run_task(
-        Task(
-            "Get app version",
-            app_version_command,
-            timeout=10,
-            retry=3,
-            pre_run=log_command_callback,
-            post_run=log_status_callbask,
-        ),
-        args.app,
-        max_workers=args.max_workers,
-    ).filter(
-        lambda results: results.ok() and args.version not in results.stdout
-    ).hosts().run_task(
-        Task(
-            "Update app version",
-            update_via_apt_command,
-            timeout=300,
-            retry=5,
-            pre_run=log_command_callback,
-            post_run=log_status_callbask,
-        ),
-        args.app,
-        max_workers=args.max_workers,
-    ).pipe(
-        lambda results: results2csv(args, results)
+def update_via_apt(args, hosts: Hosts) -> Results:
+    return (
+        hosts.run_task(
+            Task(
+                "Get app version",
+                app_version_command,
+                timeout=10,
+                retry=3,
+                pre_run=log_command_callback,
+                post_run=log_status_callbask,
+            ),
+            args.app,
+            max_workers=args.max_workers,
+        )
+        .filter(lambda results: results.ok() and args.version not in results.stdout)
+        .hosts()
+        .run_task(
+            Task(
+                "Update app version",
+                update_via_apt_command,
+                timeout=300,
+                retry=5,
+                pre_run=log_command_callback,
+                post_run=log_status_callbask,
+            ),
+            args.app,
+            max_workers=args.max_workers,
+        )
+        .pipe(lambda results: results2csv(args, results))
     )

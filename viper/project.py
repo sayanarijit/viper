@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from dataclasses import field
 from viper.cli_base import SubCommand
-from viper.collections import Item
+from viper.collections import Collection as ViperCollection
 from viper.collections import Items
 
 import typing as t
@@ -70,16 +70,16 @@ class Project:
 
         return wrapper
 
-    def filter(self, objclass: type, args: t.Optional[t.Sequence[Arg]] = None):
+    def filter(self, objtype: type, args: t.Optional[t.Sequence[Arg]] = None):
         """Use this decorator to define filters."""
 
-        if not issubclass(objclass, Items):
-            raise ValueError(f"{objclass} does not have filter option")
+        if not issubclass(objtype, Items):
+            raise ValueError(f"{objtype} does not have filter option")
 
         def wrapper(func):
             class FilterCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
-                __doc__ = f"[{objclass.__name__} > @{self.prefix}:{func.__name__} > {objclass.__name__}] {func.__doc__}"
+                __doc__ = f"[{objtype.__name__} > @{self.prefix}:{func.__name__} > {objtype.__name__}] {func.__doc__}"
 
                 def add_arguments(self, parser):
                     if args:
@@ -88,7 +88,7 @@ class Project:
 
                 def __call__(self, args):
                     print(
-                        objclass.from_json(input())
+                        objtype.from_json(input())
                         .filter(lambda host: func(args, host))
                         .to_json()
                     )
@@ -100,17 +100,20 @@ class Project:
         return wrapper
 
     def handler(
-        self, fromclass: type, toclass: type, args: t.Optional[t.Sequence[Arg]] = None
+        self,
+        fromtype: type,
+        totype: t.Optional[type] = None,
+        args: t.Optional[t.Sequence[Arg]] = None,
     ):
         """Use this decorator to define handlers."""
 
-        if not issubclass(fromclass, Item) and not issubclass(fromclass, Items):
-            raise ValueError(f"{fromclass} does not have pipe option")
+        if not issubclass(fromtype, ViperCollection):
+            raise ValueError(f"{fromtype} does not have pipe option")
 
         def wrapper(func):
             class HandlerCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
-                __doc__ = f"[{fromclass.__name__} > @{self.prefix}:{func.__name__} > {toclass.__name__}] {func.__doc__}"
+                __doc__ = f"[{fromtype.__name__} > @{self.prefix}:{func.__name__} > {totype.__name__}] {func.__doc__}"
 
                 def add_arguments(self, parser):
                     if args:
@@ -118,7 +121,15 @@ class Project:
                             parser.add_argument(*arg.args, **arg.kwargs)
 
                 def __call__(self, args):
-                    fromclass.from_json(input()).pipe(lambda hosts: func(args, hosts))
+                    r = fromtype.from_json(input()).pipe(
+                        lambda hosts: func(args, hosts)
+                    )
+                    if totype:
+                        print(
+                            r.to_json()
+                            if issubclass(totype, ViperCollection)
+                            else totype(r)
+                        )
                     return 0
 
             self.handler_commands.append(HandlerCommand)
@@ -127,17 +138,20 @@ class Project:
         return wrapper
 
     def job(
-        self, fromclass: type, toclass: type, args: t.Optional[t.Sequence[Arg]] = None
+        self,
+        fromtype: type,
+        totype: t.Optional[type] = None,
+        args: t.Optional[t.Sequence[Arg]] = None,
     ):
         """Use this decorator to define job."""
 
-        if not issubclass(fromclass, Item) and not issubclass(fromclass, Items):
-            raise ValueError(f"{fromclass} is not a valid input for any job")
+        if not issubclass(fromtype, ViperCollection):
+            raise ValueError(f"{fromtype} is not a valid input for any job")
 
         def wrapper(func):
             class WorkFlowCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
-                __doc__ = f"[{fromclass.__name__} > @{self.prefix}:{func.__name__} > {toclass.__name__}] {func.__doc__}"
+                __doc__ = f"[{fromtype.__name__} > @{self.prefix}:{func.__name__} > {totype.__name__}] {func.__doc__}"
 
                 def add_arguments(self, parser):
                     if args:
@@ -145,7 +159,13 @@ class Project:
                             parser.add_argument(*arg.args, **arg.kwargs)
 
                 def __call__(self, args):
-                    func(args, fromclass.from_json(input()))
+                    if totype:
+                        r = func(args, fromtype.from_json(input()))
+                        print(
+                            r.to_json()
+                            if issubclass(totype, ViperCollection)
+                            else totype(r)
+                        )
                     return 0
 
             self.job_commands.append(WorkFlowCommand)

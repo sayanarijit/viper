@@ -17,10 +17,12 @@ import sys
 import traceback
 import typing as t
 
+CollectionType = t.TypeVar("CollectionType", bound="Item")
 ItemType = t.TypeVar("ItemType", bound="Item")
 ItemsType = t.TypeVar("ItemsType", bound="Items")
 
 __all__ = [
+    "Collection",
     "Item",
     "Items",
     "Host",
@@ -60,7 +62,46 @@ class CommandFactoryType:
 
 
 @dataclass(frozen=True, order=True)
-class Item:
+class Collection:
+    """The base collection class."""
+
+    def from_json(
+        cls: t.Type[CollectionType], json: str, *args: object, **kwargs: object
+    ) -> ItemType:
+        raise NotImplementedError()
+
+    def to_json(self, *args: object, **kwargs: object) -> str:
+        """Represent the collection as JSON data."""
+        raise NotImplementedError()
+
+    @classmethod
+    def from_func(cls: t.Type[CollectionType], funcpath: str) -> ItemType:
+        """Load the object from the given Python function."""
+
+        func: t.Optional[t.Callable[[], CollectionType]] = locate(funcpath)
+
+        if not func:
+            raise ValueError(f"could not resolve {repr(funcpath)}.")
+
+        obj = func()
+        if not isinstance(obj, cls):
+            raise ValueError(
+                f"{repr(funcpath)} does not produce a valid {cls} instance."
+            )
+
+        return obj
+
+    def pipe(self: CollectionType, handler: HandlerType, *args: str) -> object:
+        """Pipe this object to the given function"""
+        return handler(self, *args)
+
+    def hash(self: CollectionType) -> int:
+        """Get the hash value."""
+        return hash(self)
+
+
+@dataclass(frozen=True, order=True)
+class Item(Collection):
     """A single item."""
 
     @classmethod
@@ -72,52 +113,20 @@ class Item:
         except Exception:
             raise ValueError(f"invalid input data for {cls.__name__}")
 
-    def to_dict(self) -> t.Dict[str, object]:
+    def to_dict(self: ItemType) -> t.Dict[str, object]:
         """Represent the item as dict."""
-
         return vars(self)
 
     @classmethod
-    def from_json(
-        cls: t.Type[ItemType], json: str, *args: object, **kwargs: object
-    ) -> ItemType:
-        """Initialize item from given JSON data."""
+    def from_json(cls: t.Type[ItemType], json, *args, **kwargs) -> ItemType:
+        return cls.from_dict(loadjson(json, *args, **kwargs))
 
-        return cls.from_dict(loadjson(json))
-
-    def to_json(self, *args: object, **kwargs: object) -> str:
-        """Represent the item as JSON data."""
-
+    def to_json(self: ItemType, *args, **kwargs) -> str:
         return dumpjson(self.to_dict(), *args, **kwargs)
-
-    @classmethod
-    def from_func(cls: t.Type[ItemType], funcpath: str) -> ItemType:
-        """Load the item from the given Python function."""
-
-        func: t.Optional[t.Callable[[], ItemsType]] = locate(funcpath)
-
-        if not func:
-            raise ValueError(f"could not resolve {repr(funcpath)}.")
-
-        item = func()
-        if not isinstance(item, cls):
-            raise ValueError(
-                f"{repr(funcpath)} does not produce a valid {cls} instance."
-            )
-
-        return item
-
-    def hash(self: ItemType) -> int:
-        """Get the hash value"""
-        return hash(self)
-
-    def pipe(self: ItemType, handler: HandlerType, *args: str) -> object:
-        """Pipe this object to the given function"""
-        return handler(self, *args)
 
 
 @dataclass(frozen=True)
-class Items:
+class Items(Collection):
     """A collection of similar items."""
 
     _all: t.Sequence[t.ItemType] = ()
@@ -160,20 +169,6 @@ class Items:
 
         return dumpjson(self.to_list(), *args, **kwargs)
 
-    @classmethod
-    def from_func(cls: t.Type[ItemsType], funcpath: str) -> ItemsType:
-        """Load the items from the given Python function."""
-
-        func: t.Optional[t.Callable[[], ItemsType]] = locate(funcpath)
-        if not func:
-            raise ValueError(f"could not resolve {repr(funcpath)}.")
-
-        items = func()
-        if not isinstance(items, cls):
-            raise ValueError(f"{repr(funcpath)} does not produce a {cls} instance.")
-
-        return items
-
     def __getitem__(self: ItemsType, key: int) -> Item:
         return self._all[key]
 
@@ -210,14 +205,6 @@ class Items:
     def all(self: ItemsType) -> t.Sequence[Item]:
         """Get a tuple of all the items."""
         return self._all
-
-    def hash(self: ItemsType) -> int:
-        """Get the hash value"""
-        return hash(self)
-
-    def pipe(self: ItemsType, func: HandlerType, *args: str) -> object:
-        """Pipe this object to the given function"""
-        return func(self, *args)
 
 
 @dataclass(frozen=True, order=True)
