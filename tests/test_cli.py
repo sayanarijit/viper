@@ -32,19 +32,19 @@ def test_load_func_errors():
 
 
 def test_print_usage():
-    p = subprocess.Popen(
-        ["python", "-m", "viper.main"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
+    p = subprocess.Popen(["viper"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
+
     assert p.returncode == 1
     assert "usage: viper" in out.decode()
 
 
 def test_print_usage_with_viperfile():
-    shutil.copyfile("viper/demo/viperfile.py", "viperfile.py")
+    shutil.copyfile("viper/demo/viperfile.py", "/tmp/viperfile.py")
     p = subprocess.Popen(
-        ["python", "-m", "viper.main"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        ["viper"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd="/tmp",
     )
     out, err = p.communicate()
+
     assert p.returncode == 1
     assert "@myproj:allhosts" in out.decode()

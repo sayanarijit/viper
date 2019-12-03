@@ -502,6 +502,8 @@ def run() -> int:
     # Import project specific commands
     if os.path.exists("viperfile.py"):
         from viper import project
+
+        sys.path.append(os.path.dirname("."))
         import viperfile
 
         for k, v in vars(viperfile).items():
