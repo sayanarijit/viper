@@ -12,6 +12,14 @@ viper.demo.callbacks module
    :undoc-members:
    :show-inheritance:
 
+viper.demo.commands module
+--------------------------
+
+.. automodule:: viper.demo.commands
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 viper.demo.filters module
 -------------------------
 
@@ -56,6 +64,14 @@ viper.demo.tasks module
 -----------------------
 
 .. automodule:: viper.demo.tasks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+viper.demo.viperfile module
+---------------------------
+
+.. automodule:: viper.demo.viperfile
    :members:
    :undoc-members:
    :show-inheritance:

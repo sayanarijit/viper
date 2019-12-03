@@ -19,6 +19,14 @@ viper.cli module
    :undoc-members:
    :show-inheritance:
 
+viper.cli\_base module
+----------------------
+
+.. automodule:: viper.cli_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 viper.collections module
 ------------------------
 
@@ -47,6 +55,14 @@ viper.main module
 -----------------
 
 .. automodule:: viper.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+viper.project module
+--------------------
+
+.. automodule:: viper.project
    :members:
    :undoc-members:
    :show-inheritance:
