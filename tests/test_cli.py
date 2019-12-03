@@ -2,6 +2,7 @@ from viper.cli import func
 from viper.demo import __doc__ as examples_doc
 
 import pytest
+import shutil
 import subprocess
 
 
@@ -37,3 +38,13 @@ def test_print_usage():
     out, err = p.communicate()
     assert p.returncode == 1
     assert "usage: viper" in out.decode()
+
+
+def test_print_usage_with_viperfile():
+    shutil.copyfile("viper/demo/viperfile.py", "viperfile.py")
+    p = subprocess.Popen(
+        ["python", "-m", "viper.main"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    out, err = p.communicate()
+    assert p.returncode == 1
+    assert "@myproj:allhosts" in out.decode()

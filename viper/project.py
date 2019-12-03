@@ -14,7 +14,7 @@ See `viper.demo.viperfile.py` for examples.
 from __future__ import annotations
 from dataclasses import dataclass
 from dataclasses import field
-from viper import cli
+from viper.cli_base import SubCommand
 from viper.collections import Item
 from viper.collections import Items
 
@@ -34,12 +34,12 @@ class Project:
     """A project namespace for the sub commands."""
 
     prefix: str
-    hostgroup_commands: t.List[cli.SubCommand] = field(default_factory=lambda: [])
-    filter_commands: t.List[cli.SubCommand] = field(default_factory=lambda: [])
-    handler_commands: t.List[cli.SubCommand] = field(default_factory=lambda: [])
-    job_commands: t.List[cli.SubCommand] = field(default_factory=lambda: [])
+    hostgroup_commands: t.List[SubCommand] = field(default_factory=lambda: [])
+    filter_commands: t.List[SubCommand] = field(default_factory=lambda: [])
+    handler_commands: t.List[SubCommand] = field(default_factory=lambda: [])
+    job_commands: t.List[SubCommand] = field(default_factory=lambda: [])
 
-    def all_commands(self) -> t.List[cli.SubCommand]:
+    def all_commands(self) -> t.List[SubCommand]:
         """Return all sub commands"""
         return (
             self.hostgroup_commands
@@ -52,7 +52,7 @@ class Project:
         """Use this decorator to define host groups."""
 
         def wrapper(func):
-            class HostGroupCommand(cli.SubCommand):
+            class HostGroupCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
                 __doc__ = f"[@{self.prefix}:{func.__name__} > Hosts] {func.__doc__}"
 
@@ -77,7 +77,7 @@ class Project:
             raise ValueError(f"{objclass} does not have filter option")
 
         def wrapper(func):
-            class FilterCommand(cli.SubCommand):
+            class FilterCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
                 __doc__ = f"[{objclass.__name__} > @{self.prefix}:{func.__name__} > {objclass.__name__}] {func.__doc__}"
 
@@ -108,7 +108,7 @@ class Project:
             raise ValueError(f"{fromclass} does not have pipe option")
 
         def wrapper(func):
-            class HandlerCommand(cli.SubCommand):
+            class HandlerCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
                 __doc__ = f"[{fromclass.__name__} > @{self.prefix}:{func.__name__} > {toclass.__name__}] {func.__doc__}"
 
@@ -135,7 +135,7 @@ class Project:
             raise ValueError(f"{fromclass} is not a valid input for any job")
 
         def wrapper(func):
-            class WorkFlowCommand(cli.SubCommand):
+            class WorkFlowCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
                 __doc__ = f"[{fromclass.__name__} > @{self.prefix}:{func.__name__} > {toclass.__name__}] {func.__doc__}"
 

@@ -113,3 +113,6 @@ viperdb.sqlite3
 
 # results file
 results.csv
+
+# test viperfile
+/viperfile.py

@@ -1,6 +1,5 @@
 """Viper CLI library."""
 
-from argparse import _SubParsersAction
 from argparse import ArgumentParser
 from argparse import Namespace
 from pydoc import locate
@@ -9,66 +8,31 @@ from viper import Hosts
 from viper import Results
 from viper import Runners
 from viper import Task
+from viper.cli_base import SubCommand
 from viper.collections import FilterType
 from viper.collections import HandlerType
 from viper.const import Config
 from viper.db import ViperDB
-from viper.project import Project
 
 import os
 import sys
 import traceback
 import typing as t
 
-__all__ = ["SubCommand", "func", "run"]
+__all__ = ["func", "run"]
 
 
 def func(objpath: str) -> t.Union[HandlerType, FilterType]:
     """Resolved python function from given string."""
 
-    func = locate(objpath)
+    funcobj = locate(objpath)
     if not func:
         raise ValueError(f"could not resolve {repr(objpath)}.")
 
-    if not callable(func):
+    if not callable(funcobj):
         raise ValueError(f"{repr(objpath)} is not a valid function.")
 
-    return func
-
-
-class SubCommand:
-    """Base class for the subcommand parsers."""
-
-    name: t.Optional[str] = None
-
-    aliases: t.Sequence[str] = ()
-
-    @classmethod
-    def attach_to(cls, subparsers: _SubParsersAction) -> None:
-
-        if not cls.name:
-            raise NotImplementedError()  # no cover
-
-        subparser = subparsers.add_parser(cls.name, help=cls.__doc__)
-        if cls.aliases:
-            for alias in cls.aliases:
-                cls(subparsers.add_parser(alias, help=f"alias of {repr(cls.name)}"))
-        cls(subparser)
-
-    def __init__(self, subparser: ArgumentParser) -> None:
-        self.add_arguments(subparser)
-        subparser.set_defaults(_handler=self)
-        subparser.add_argument(
-            "--debug",
-            action="store_true",
-            help="show traceback information when an exception is raised",
-        )
-
-    def add_arguments(self, parser: ArgumentParser) -> None:
-        raise NotImplementedError()  # no cover
-
-    def __call__(self, args: Namespace) -> int:
-        raise NotImplementedError()  # no cover
+    return funcobj
 
 
 class InitCommand(SubCommand):
@@ -535,11 +499,13 @@ def run() -> int:
     ResultsHostsCommand.attach_to(subparsers)
     ResultsByTaskCommand.attach_to(subparsers)
 
-    # Project specific commands
+    # Import project specific commands
     if os.path.exists("viperfile.py"):
-        module = __import__("viperfile")
-        for k, v in vars(module).items():
-            if not isinstance(v, Project):
+        from viper import project
+        import viperfile
+
+        for k, v in vars(viperfile).items():
+            if not isinstance(v, project.Project):
                 continue
 
             for subcommand in v.all_commands():
