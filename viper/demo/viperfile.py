@@ -26,7 +26,7 @@ def log_command_callback(runner: Runner) -> None:
     print(runner.host.ip, command, file=sys.stderr, sep=": ")
 
 
-def log_status_callbask(result: Result) -> None:
+def log_status_callback(result: Result) -> None:
     """Log the status after task run."""
 
     if result.ok():
@@ -38,8 +38,8 @@ def log_status_callbask(result: Result) -> None:
 
 @myproj.hostgroup(
     args=[
-        Arg("-f", "--file", type=FileType("r"), default="hosts.json",),
-        Arg("-i", "--identity_file", default="/root/.ssh/id_rsa.pub",),
+        Arg("-f", "--file", type=FileType("r"), default="hosts.json"),
+        Arg("-i", "--identity_file", default="/root/.ssh/id_rsa.pub"),
     ]
 )
 def allhosts(args) -> Hosts:
@@ -77,9 +77,7 @@ def results_by(result: Result, args: Namespace) -> bool:
     )
 
 
-@myproj.handler(
-    fromtype=Hosts, totype=Hosts, args=[Arg("file", type=FileType("w"))],
-)
+@myproj.handler(fromtype=Hosts, totype=Hosts, args=[Arg("file", type=FileType("w"))])
 def hosts2csv(hosts: Hosts, args: Namespace) -> Hosts:
     """Export csv formatted hosts to file"""
 
@@ -96,7 +94,7 @@ def hosts2csv(hosts: Hosts, args: Namespace) -> Hosts:
 
 
 @myproj.handler(
-    fromtype=Results, totype=Results, args=[Arg("file", type=FileType("w"))],
+    fromtype=Results, totype=Results, args=[Arg("file", type=FileType("w"))]
 )
 def results2csv(results: Results, args: Namespace) -> Results:
     """Export csv formatted results to file"""
@@ -180,7 +178,7 @@ def remote_exec(hosts: Hosts, args: Namespace) -> Results:
             timeout=300,
             retry=0,
             pre_run=log_command_callback,
-            post_run=log_status_callbask,
+            post_run=log_status_callback,
         ),
         args.command,
         max_workers=args.max_workers,
@@ -209,7 +207,7 @@ def app_version(hosts: Hosts, args: Namespace) -> Results:
             timeout=10,
             retry=3,
             pre_run=log_command_callback,
-            post_run=log_status_callbask,
+            post_run=log_status_callback,
         ),
         args.app,
         max_workers=args.max_workers,
@@ -240,7 +238,7 @@ def update_via_apt(hosts: Hosts, args: Namespace) -> Results:
                 timeout=10,
                 retry=3,
                 pre_run=log_command_callback,
-                post_run=log_status_callbask,
+                post_run=log_status_callback,
             ),
             args.app,
             max_workers=args.max_workers,
@@ -254,7 +252,7 @@ def update_via_apt(hosts: Hosts, args: Namespace) -> Results:
                 timeout=300,
                 retry=5,
                 pre_run=log_command_callback,
-                post_run=log_status_callbask,
+                post_run=log_status_callback,
             ),
             args.app,
             max_workers=args.max_workers,
