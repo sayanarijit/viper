@@ -54,7 +54,7 @@ class InitCommand(SubCommand):
 
 
 class TaskFromFuncCommand(SubCommand):
-    """[task:from-func FUNC > Task] get the task from a Python function location"""
+    """[task:from-func > Task] get the task from a Python function location"""
 
     name = "task:from-func"
     aliases = ("task",)
@@ -84,7 +84,7 @@ class TaskResultsCommand(SubCommand):
 
 
 class HostsFromFuncCommand(SubCommand):
-    """[hosts:from-func FUNC > Hosts] get a group of hosts from a Python function location"""
+    """[hosts:from-func > Hosts] get a group of hosts from a Python function location"""
 
     name = "hosts:from-func"
     aliases = ("hosts",)
@@ -101,7 +101,7 @@ class HostsFromFuncCommand(SubCommand):
 
 
 class HostsFromFileCommand(SubCommand):
-    """[hosts:from-file FILE > Hosts] get a group of hosts from a file"""
+    """[hosts:from-file > Hosts] get a group of hosts from a file"""
 
     name = "hosts:from-file"
 
@@ -124,7 +124,7 @@ class HostsFromFileCommand(SubCommand):
 
 
 class HostsTaskCommand(SubCommand):
-    """[Hosts > hosts:task TASK > Runners] assign a task to each host"""
+    """[Hosts > hosts:task > Runners] assign a task to each host"""
 
     name = "hosts:task"
 
@@ -148,7 +148,7 @@ class HostsTaskCommand(SubCommand):
 
 
 class HostsRunTaskCommand(SubCommand):
-    """[Hosts > hosts:run-task TASK *ARGS > Results] assign a task to each host and run"""
+    """[Hosts > hosts:run-task > Results] assign a task to each host and run"""
 
     name = "hosts:run-task"
 
@@ -172,7 +172,7 @@ class HostsRunTaskCommand(SubCommand):
 
 
 class HostsFilterCommand(SubCommand):
-    """[Hosts > hosts:filter FILTER *AGS > Hosts] filter hosts by a given function"""
+    """[Hosts > hosts:filter > Hosts] filter hosts by a given function"""
 
     name = "hosts:filter"
 
@@ -220,7 +220,7 @@ class HostsSortCommand(SubCommand):
 
 
 class HostsPipeCommand(SubCommand):
-    """[Hosts > hosts:pipe HANDLER *ARGS > ?] pipe the hosts to the given handler"""
+    """[Hosts > hosts:pipe > ?] pipe the hosts to the given handler"""
 
     name = "hosts:pipe"
 
@@ -249,7 +249,7 @@ class HostsResultsCommand(SubCommand):
 
 
 class RunnersFilterCommand(SubCommand):
-    """[Runners > runners:filter FILTER *ARGS > Runners] filter runners by a given function"""
+    """[Runners > runners:filter > Runners] filter runners by a given function"""
 
     name = "runners:filter"
 
@@ -297,7 +297,7 @@ class RunnersSortCommand(SubCommand):
 
 
 class RunnersPipeCommand(SubCommand):
-    """[Runners > runners:pipe HANDLER *ARGS > ?] pipe the runners to the given handler"""
+    """[Runners > runners:pipe > ?] pipe the runners to the given handler"""
 
     name = "runners:pipe"
 
@@ -313,7 +313,7 @@ class RunnersPipeCommand(SubCommand):
 
 
 class RunnersRunCommand(SubCommand):
-    """[Runners > runners:run *ARGS > Results] run the assigned tasks"""
+    """[Runners > runners:run > Results] run the assigned tasks"""
 
     name = "runners:run"
 
@@ -361,7 +361,7 @@ class ResultsFromHistoryCommand(SubCommand):
 
 
 class ResultsFilterCommand(SubCommand):
-    """[Results > results:filter FILTER *ARGS > Results] filter results by a given handler"""
+    """[Results > results:filter > Results] filter results by a given handler"""
 
     name = "results:filter"
 
@@ -409,7 +409,7 @@ class ResultsSortCommand(SubCommand):
 
 
 class ResultsPipeCommand(SubCommand):
-    """[Results > results:pipe HANDLER *ARGS > ?] pipe the results to the given handler"""
+    """[Results > results:pipe > ?] pipe the results to the given handler"""
 
     name = "results:pipe"
 
