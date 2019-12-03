@@ -9,6 +9,7 @@ from viper import Results
 from viper import Runners
 from viper import Task
 from viper.cli_base import SubCommand
+from viper.collections import Collection as ViperCollection
 from viper.collections import FilterType
 from viper.collections import HandlerType
 from viper.const import Config
@@ -231,7 +232,16 @@ class HostsPipeCommand(SubCommand):
         )
 
     def __call__(self, args: Namespace) -> int:
-        Hosts.from_json(input()).pipe(args.handler, *args.args)
+        obj = Hosts.from_json(input()).pipe(args.handler, *args.args)
+
+        if obj is None:
+            return 0
+
+        if isinstance(obj, ViperCollection):
+            print(obj.to_json())
+            return 0
+
+        print(obj)
         return 0
 
 
@@ -308,7 +318,16 @@ class RunnersPipeCommand(SubCommand):
         )
 
     def __call__(self, args: Namespace) -> int:
-        Runners.from_json(input()).pipe(args.handler, *args.args)
+        obj = Runners.from_json(input()).pipe(args.handler, *args.args)
+
+        if obj is None:
+            return 0
+
+        if isinstance(obj, ViperCollection):
+            print(obj.to_json())
+            return 0
+
+        print(obj)
         return 0
 
 
@@ -420,7 +439,16 @@ class ResultsPipeCommand(SubCommand):
         )
 
     def __call__(self, args: Namespace) -> int:
-        Results.from_json(input()).pipe(args.handler, *args.args)
+        obj = Results.from_json(input()).pipe(args.handler, *args.args)
+
+        if obj is None:
+            return 0
+
+        if isinstance(obj, ViperCollection):
+            print(obj.to_json())
+            return 0
+
+        print(obj)
         return 0
 
 

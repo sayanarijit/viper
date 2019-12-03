@@ -1,6 +1,8 @@
 from viper import Hosts
 from viper import Results
 
+"""Viper handlers."""
+
 
 def hosts_to_csv(hosts: Hosts) -> None:
     """Print the hosts in CSV format"""
@@ -27,8 +29,11 @@ def print_status(results: Results) -> None:
         else:
             print(f"{result.task.name}: {result.host.ip} PASSED")
 
+    # Since this handler returns None, it won't print
+    # anything else in the terminal.
 
-def export_csv(results: Results, csv_file: str) -> None:
+
+def export_csv(results: Results, csv_file: str) -> Results:
     """Export the result to a CSV file location"""
 
     import csv
@@ -68,6 +73,5 @@ def export_csv(results: Results, csv_file: str) -> None:
                 ]
             )
 
-        # Let's print the result to stdout so that it can be
-        # piped to other commands
-        print(results.to_json())
+    # Let's return the result to stdout so that it can be piped to other commands
+    return results
