@@ -1,4 +1,7 @@
-"""Base collection classes are defined here."""
+"""Datatypes for Viper Objects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The data types for Viper objects are defined here.
+"""
 
 from __future__ import annotations
 from concurrent.futures import as_completed
@@ -63,7 +66,10 @@ class CommandFactoryType:
 
 @dataclass(frozen=True, order=True)
 class Collection:
-    """The base collection class."""
+    """The base collection class.
+
+    This is the parent class for all Viper objects.
+    """
 
     def __str__(self):
         return self.to_json()
@@ -71,15 +77,33 @@ class Collection:
     def from_json(
         cls: t.Type[CollectionType], json: str, *args: object, **kwargs: object
     ) -> ItemType:
+        """Initialise a new object of this class from the given JSON string.
+
+        :param str json: The JSON data to parse.
+        :param object args and kwargs: These will be passed to `json.laods`.
+
+        :example:
+
+        .. code-block:: python
+
+            Hosts.from_json('[{"ip": "1.1.1.1"}]') == Hosts.from_items(Host("1.1.1.1"))
+        """
         raise NotImplementedError()
 
     def to_json(self, *args: object, **kwargs: object) -> str:
-        """Represent the collection as JSON data."""
+        """Represent the collection as JSON data.
+
+        :param object args and kwargs: These will be passed to `json.laods`.
+        """
         raise NotImplementedError()
 
     @classmethod
     def from_func(cls: t.Type[CollectionType], funcpath: str) -> ItemType:
-        """Load the object from the given Python function."""
+        """Load the object from the given Python function.
+
+        :param str funcpath: The path to a Python function that returns an
+            instance of this class.
+        """
 
         func: t.Optional[t.Callable[[], CollectionType]] = locate(funcpath)
 

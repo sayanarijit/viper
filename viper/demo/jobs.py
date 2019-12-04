@@ -5,13 +5,13 @@ multiple tasks connected together with handlers, filters, callbacks etc.
 
 A job receives the data as `str` from stdin which should be the
 first argument of the job function. You can then define rest of the arguments
-which will be passed as `str` when you run it. You define what to do with them
+which will be passed as `str` when you run it. You define what to do with the args
 in the function body. You can return anything and that will be printed
-in the stdout or you can return None if you don't want it to print anything.
+in the stdout or you can return `None` if you don't want it to print anything.
 
 
-Job definition structure:
--------------------------
+Viper Job Definition Structure
+------------------------------
 
 .. code-block:: python
 

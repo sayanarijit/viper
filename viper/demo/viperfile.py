@@ -1,4 +1,30 @@
-"""Project specific viper commands."""
+"""Viperfile Demo
+~~~~~~~~~~~~~~~~~
+This module is an example of the structure of ``viperfile.py``.
+
+A ``viperfile.py`` let's you extend the Viper CLI commands and options.
+The host groups, filters, handlers, jobs etc. you define in the file,
+will be added to the Viper CLI's command list for easy access and documentation.
+
+The ``viperfile.py`` file should be in your current working directory.
+
+
+Example Viperfile CLI Usage
+---------------------------
+
+.. code-block:: bash
+
+    viper --help
+
+    viper @myproj:allhosts --help
+
+    viper @myproj:allhosts | \\
+            viper @myproj:hosts_by name vele | \\
+            viper @myproj:remote_exec "df -h" results.csv --max-worker 50
+
+.. tip::
+    See :py:mod:`viper.project` for more details on available project APIs.
+"""
 
 from argparse import FileType
 from argparse import Namespace
@@ -22,6 +48,7 @@ myproj = Project(prefix="myproj")
 
 def log_command_callback(runner: Runner) -> None:
     """Log the command before run."""
+
     command = runner.task.command_factory(runner.host, *runner.args)
     print(runner.host.ip, command, file=sys.stderr, sep=": ")
 
