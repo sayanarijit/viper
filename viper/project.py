@@ -61,7 +61,7 @@ class Project:
 
             class HostGroupCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
-                __doc__ = f"[> Hosts] {doc}"
+                __doc__ = f"[-> Hosts] {doc}"
 
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
@@ -94,7 +94,7 @@ class Project:
 
             class FilterCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
-                __doc__ = f"[{objtype.__name__} > {objtype.__name__}] {doc}"
+                __doc__ = f"[{objtype.__name__} -> {objtype.__name__}] {doc}"
 
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
@@ -133,7 +133,7 @@ class Project:
 
             class HandlerCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
-                __doc__ = f"[{fromtype.__name__} > {totype.__name__}] {doc}"
+                __doc__ = f"[{fromtype.__name__} -> {totype.__name__}] {doc}"
 
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
@@ -172,7 +172,7 @@ class Project:
 
             class WorkFlowCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
-                __doc__ = f"[{fromtype.__name__} > {totype.__name__}] {doc}"
+                __doc__ = f"[{fromtype.__name__} -> {totype.__name__}] {doc}"
 
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
