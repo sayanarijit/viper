@@ -44,6 +44,14 @@ viper.demo.hosts module
    :undoc-members:
    :show-inheritance:
 
+viper.demo.jobs module
+----------------------
+
+.. automodule:: viper.demo.jobs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 viper.demo.loaders module
 -------------------------
 

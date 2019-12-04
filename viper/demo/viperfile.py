@@ -39,7 +39,7 @@ def log_status_callback(result: Result) -> None:
 @myproj.hostgroup(
     args=[
         Arg("-f", "--file", type=FileType("r"), default="hosts.json"),
-        Arg("-i", "--identity_file", default="/root/.ssh/id_rsa.pub"),
+        Arg("-I", "--identity_file", default="/root/.ssh/id_rsa.pub"),
     ]
 )
 def allhosts(args) -> Hosts:

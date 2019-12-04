@@ -65,6 +65,9 @@ class CommandFactoryType:
 class Collection:
     """The base collection class."""
 
+    def __str__(self):
+        return self.to_json()
+
     def from_json(
         cls: t.Type[CollectionType], json: str, *args: object, **kwargs: object
     ) -> ItemType:

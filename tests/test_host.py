@@ -68,7 +68,7 @@ def test_run_task():
     from viper.db import ViperDB
     from viper.demo.tasks import ping
 
-    ViperDB.init(ViperDB.url)
+    ViperDB.init(ViperDB.url, force=True)
 
     assert Host("8.8.8.8").run_task(ping()).returncode == 0
 

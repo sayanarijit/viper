@@ -4,10 +4,6 @@
 Initialize current workspace (creates a `viperdb.sqlite3` file)
 ---------------------------------------------------------------
 
-    viper init
-
-    # or remove or overwrite existing data with "-f" / "--force"
-
     viper init -f
 
 

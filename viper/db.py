@@ -23,7 +23,7 @@ class ViperDB:
         with cls(url) as conn:
             conn.execute(
                 """
-                CREATE TABLE IF NOT EXISTS results (
+                CREATE TABLE results (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     hash INTEGER UNIQUE NOT NULL,
                     task JSON NOT NULL,

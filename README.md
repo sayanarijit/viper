@@ -23,10 +23,6 @@ Viper CLI Examples
 Initialize current workspace (creates a `viperdb.sqlite3` file)
 ---------------------------------------------------------------
 
-    viper init
-
-    # or remove or overwrite existing data with "-f" / "--force"
-
     viper init -f
 
 
@@ -157,14 +153,16 @@ Viper CLI Reference
 ===================
 ```
 usage: viper [-h] [--version] [--debug]
-             {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:run,runners:hosts,results:from-history,results,results:filter,results:count,results:sort,results:pipe,results:hosts,results:by-task}
+             {init,run-job,run,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:run,runners:hosts,results:from-history,results,results:filter,results:count,results:sort,results:pipe,results:hosts,results:by-task}
              ...
 
-Viper CLI v0.13.0
+Viper CLI v0.14.0
 
 positional arguments:
-  {init,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:run,runners:hosts,results:from-history,results,results:filter,results:count,results:sort,results:pipe,results:hosts,results:by-task}
+  {init,run-job,run,task:from-func,task,task:results,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:task,hosts:run-task,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:run,runners:hosts,results:from-history,results,results:filter,results:count,results:sort,results:pipe,results:hosts,results:by-task}
     init                initialize the current workspace
+    run-job             run a custom defined job
+    run                 alias of 'run-job'
     task:from-func      [task:from-func > Task] get the task from a Python
                         function location
     task                alias of 'task:from-func'

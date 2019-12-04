@@ -1,4 +1,7 @@
-"""Viper CLI library."""
+"""Viper Command-line Interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+TODO: add docs
+"""
 
 from argparse import ArgumentParser
 from argparse import Namespace
@@ -16,6 +19,7 @@ from viper.const import Config
 from viper.db import ViperDB
 
 import os
+import sqlite3
 import sys
 import traceback
 import typing as t
@@ -50,7 +54,37 @@ class InitCommand(SubCommand):
         )
 
     def __call__(self, args: Namespace) -> int:
-        ViperDB.init(ViperDB.url, force=args.force)
+        try:
+            ViperDB.init(ViperDB.url, force=args.force)
+        except sqlite3.OperationalError:
+            raise RuntimeError(
+                "database already exists!"
+                " use '-f'/'--force' to force re-create the database."
+            )
+        return 0
+
+
+class RunJobCommand(SubCommand):
+    """run a custom defined job"""
+
+    name = "run-job"
+    aliases = ("run",)
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("job", type=func, help="job definition location")
+        parser.add_argument("args", nargs="*", help="arguments to be passed to the job")
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        obj = args.job(input(), *args.args)
+        if obj is None:
+            return 0
+
+        if isinstance(obj, ViperCollection):
+            print(obj.to_json(indent=args.indent))
+            return 0
+
+        print(obj)
         return 0
 
 
@@ -230,6 +264,7 @@ class HostsPipeCommand(SubCommand):
         parser.add_argument(
             "args", nargs="*", help="arguments to be passed to the filter"
         )
+        parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
         obj = Hosts.from_json(input()).pipe(args.handler, *args.args)
@@ -238,7 +273,7 @@ class HostsPipeCommand(SubCommand):
             return 0
 
         if isinstance(obj, ViperCollection):
-            print(obj.to_json())
+            print(obj.to_json(indent=args.indent))
             return 0
 
         print(obj)
@@ -316,6 +351,7 @@ class RunnersPipeCommand(SubCommand):
         parser.add_argument(
             "args", nargs="*", help="arguments to be passed to the filter"
         )
+        parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
         obj = Runners.from_json(input()).pipe(args.handler, *args.args)
@@ -324,7 +360,7 @@ class RunnersPipeCommand(SubCommand):
             return 0
 
         if isinstance(obj, ViperCollection):
-            print(obj.to_json())
+            print(obj.to_json(indent=args.indent))
             return 0
 
         print(obj)
@@ -437,6 +473,7 @@ class ResultsPipeCommand(SubCommand):
         parser.add_argument(
             "args", nargs="*", help="arguments to be passed to the filter"
         )
+        parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
         obj = Results.from_json(input()).pipe(args.handler, *args.args)
@@ -445,7 +482,7 @@ class ResultsPipeCommand(SubCommand):
             return 0
 
         if isinstance(obj, ViperCollection):
-            print(obj.to_json())
+            print(obj.to_json(indent=args.indent))
             return 0
 
         print(obj)
@@ -491,6 +528,9 @@ def run() -> int:
     # Init command
     InitCommand.attach_to(subparsers)
 
+    # Job run command
+    RunJobCommand.attach_to(subparsers)
+
     # Task commands
     TaskFromFuncCommand.attach_to(subparsers)
     TaskResultsCommand.attach_to(subparsers)
@@ -531,7 +571,7 @@ def run() -> int:
     if os.path.exists("viperfile.py"):
         from viper import project
 
-        sys.path.append(os.path.dirname("."))
+        sys.path.insert(0, os.path.realpath("."))
         import viperfile
 
         for k, v in vars(viperfile).items():

@@ -65,9 +65,10 @@ class Project:
                     if args:
                         for arg in args:
                             parser.add_argument(*arg.args, **arg.kwargs)
+                    parser.add_argument("-i", "--indent", type=int, default=None)
 
                 def __call__(self, args: Namespace) -> int:
-                    print(func(args).to_json())
+                    print(func(args).to_json(indent=args.indent))
                     return 0
 
             self.hostgroup_commands.append(HostGroupCommand)
@@ -128,14 +129,15 @@ class Project:
                     if args:
                         for arg in args:
                             parser.add_argument(*arg.args, **arg.kwargs)
+                    parser.add_argument("-i", "--indent", type=int, default=None)
 
                 def __call__(self, args: Namespace) -> int:
-                    r = fromtype.from_json(input()).pipe(lambda obj: func(obj, args))
+                    obj = fromtype.from_json(input()).pipe(lambda obj: func(obj, args))
                     if totype:
                         print(
-                            r.to_json()
-                            if issubclass(totype, ViperCollection)
-                            else totype(r)
+                            obj.to_json(indent=args.indent)
+                            if isinstance(obj, ViperCollection)
+                            else totype(obj)
                         )
                     return 0
 
@@ -166,14 +168,15 @@ class Project:
                     if args:
                         for arg in args:
                             parser.add_argument(*arg.args, **arg.kwargs)
+                    parser.add_argument("-i", "--indent", type=int, default=None)
 
                 def __call__(self, args: Namespace) -> int:
                     if totype:
-                        r = func(fromtype.from_json(input()), args)
+                        obj = func(fromtype.from_json(input()), args)
                         print(
-                            r.to_json()
-                            if issubclass(totype, ViperCollection)
-                            else totype(r)
+                            obj.to_json(indent=args.indent)
+                            if isinstance(obj, ViperCollection)
+                            else totype(obj)
                         )
                     return 0
 
