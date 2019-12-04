@@ -65,7 +65,7 @@ class InitCommand(SubCommand):
 
 
 class RunJobCommand(SubCommand):
-    """[? > run-job > ?] run a custom defined job"""
+    """[? > ?] run a custom defined job"""
 
     name = "run-job"
     aliases = ("run",)
@@ -89,7 +89,7 @@ class RunJobCommand(SubCommand):
 
 
 class TaskFromFuncCommand(SubCommand):
-    """[task:from-func > Task] get the task from a Python function location"""
+    """[> Task] get the task from a Python function location"""
 
     name = "task:from-func"
     aliases = ("task",)
@@ -106,7 +106,7 @@ class TaskFromFuncCommand(SubCommand):
 
 
 class TaskResultsCommand(SubCommand):
-    """[Task > task:results > Results] get the past results of given task"""
+    """[Task > Results] get the past results of given task"""
 
     name = "task:results"
 
@@ -119,7 +119,7 @@ class TaskResultsCommand(SubCommand):
 
 
 class HostsFromFuncCommand(SubCommand):
-    """[hosts:from-func > Hosts] get a group of hosts from a Python function location"""
+    """[> Hosts] get a group of hosts from a Python function location"""
 
     name = "hosts:from-func"
     aliases = ("hosts",)
@@ -136,7 +136,7 @@ class HostsFromFuncCommand(SubCommand):
 
 
 class HostsFromFileCommand(SubCommand):
-    """[hosts:from-file > Hosts] get a group of hosts from a file"""
+    """[> Hosts] get a group of hosts from a file"""
 
     name = "hosts:from-file"
 
@@ -159,7 +159,7 @@ class HostsFromFileCommand(SubCommand):
 
 
 class HostsTaskCommand(SubCommand):
-    """[Hosts > hosts:task > Runners] assign a task to each host"""
+    """[Hosts > Runners] assign a task to each host"""
 
     name = "hosts:task"
 
@@ -183,7 +183,7 @@ class HostsTaskCommand(SubCommand):
 
 
 class HostsRunTaskCommand(SubCommand):
-    """[Hosts > hosts:run-task > Results] assign a task to each host and run"""
+    """[Hosts > Results] assign a task to each host and run"""
 
     name = "hosts:run-task"
 
@@ -207,7 +207,7 @@ class HostsRunTaskCommand(SubCommand):
 
 
 class HostsFilterCommand(SubCommand):
-    """[Hosts > hosts:filter > Hosts] filter hosts by a given function"""
+    """[Hosts > Hosts] filter hosts by a given function"""
 
     name = "hosts:filter"
 
@@ -228,7 +228,7 @@ class HostsFilterCommand(SubCommand):
 
 
 class HostsCountCommand(SubCommand):
-    """[Hosts > hosts:count > int] count the number of hosts"""
+    """[Hosts > int] count the number of hosts"""
 
     name = "hosts:count"
 
@@ -241,7 +241,7 @@ class HostsCountCommand(SubCommand):
 
 
 class HostsSortCommand(SubCommand):
-    """[Hosts > hosts:sort > Hosts] sort the hosts"""
+    """[Hosts > Hosts] sort the hosts"""
 
     name = "hosts:sort"
 
@@ -255,7 +255,7 @@ class HostsSortCommand(SubCommand):
 
 
 class HostsPipeCommand(SubCommand):
-    """[Hosts > hosts:pipe > ?] pipe the hosts to the given handler"""
+    """[Hosts > ?] pipe the hosts to the given handler"""
 
     name = "hosts:pipe"
 
@@ -281,7 +281,7 @@ class HostsPipeCommand(SubCommand):
 
 
 class HostsResultsCommand(SubCommand):
-    """[Hosts > hosts:results > Results] get the past results of the hosts"""
+    """[Hosts > Results] get the past results of the hosts"""
 
     name = "hosts:results"
 
@@ -294,7 +294,7 @@ class HostsResultsCommand(SubCommand):
 
 
 class RunnersFilterCommand(SubCommand):
-    """[Runners > runners:filter > Runners] filter runners by a given function"""
+    """[Runners > Runners] filter runners by a given function"""
 
     name = "runners:filter"
 
@@ -315,7 +315,7 @@ class RunnersFilterCommand(SubCommand):
 
 
 class RunnersCountCommand(SubCommand):
-    """[Runners > runners:count > int] count the number of runners"""
+    """[Runners > int] count the number of runners"""
 
     name = "runners:count"
 
@@ -328,7 +328,7 @@ class RunnersCountCommand(SubCommand):
 
 
 class RunnersSortCommand(SubCommand):
-    """[Runners > runners:sort > Runners] sort the runners"""
+    """[Runners > Runners] sort the runners"""
 
     name = "runners:sort"
 
@@ -342,7 +342,7 @@ class RunnersSortCommand(SubCommand):
 
 
 class RunnersPipeCommand(SubCommand):
-    """[Runners > runners:pipe > ?] pipe the runners to the given handler"""
+    """[Runners > ?] pipe the runners to the given handler"""
 
     name = "runners:pipe"
 
@@ -368,7 +368,7 @@ class RunnersPipeCommand(SubCommand):
 
 
 class RunnersRunCommand(SubCommand):
-    """[Runners > runners:run > Results] run the assigned tasks"""
+    """[Runners > Results] run the assigned tasks"""
 
     name = "runners:run"
 
@@ -389,7 +389,7 @@ class RunnersRunCommand(SubCommand):
 
 
 class RunnersHostsCommand(SubCommand):
-    """[Runners > runners:hosts > Hosts] get the hosts from the runners"""
+    """[Runners > Hosts] get the hosts from the runners"""
 
     name = "runners:hosts"
 
@@ -402,7 +402,7 @@ class RunnersHostsCommand(SubCommand):
 
 
 class ResultsFromHistoryCommand(SubCommand):
-    """[results:from-history > Results] get the past results from database"""
+    """[> Results] get the past results from database"""
 
     name = "results:from-history"
     aliases = ("results",)
@@ -416,7 +416,7 @@ class ResultsFromHistoryCommand(SubCommand):
 
 
 class ResultsFilterCommand(SubCommand):
-    """[Results > results:filter > Results] filter results by a given handler"""
+    """[Results > Results] filter results by a given handler"""
 
     name = "results:filter"
 
@@ -437,7 +437,7 @@ class ResultsFilterCommand(SubCommand):
 
 
 class ResultsCountCommand(SubCommand):
-    """[Results > results:count > int] count the number of results"""
+    """[Results > int] count the number of results"""
 
     name = "results:count"
 
@@ -450,7 +450,7 @@ class ResultsCountCommand(SubCommand):
 
 
 class ResultsSortCommand(SubCommand):
-    """[Results > results:sort > Results] sort the results"""
+    """[Results > Results] sort the results"""
 
     name = "results:sort"
 
@@ -464,7 +464,7 @@ class ResultsSortCommand(SubCommand):
 
 
 class ResultsPipeCommand(SubCommand):
-    """[Results > results:pipe > ?] pipe the results to the given handler"""
+    """[Results > ?] pipe the results to the given handler"""
 
     name = "results:pipe"
 
@@ -490,7 +490,7 @@ class ResultsPipeCommand(SubCommand):
 
 
 class ResultsHostsCommand(SubCommand):
-    """[Results > results:hosts > Hosts] get the hosts from the results"""
+    """[Results > Hosts] get the hosts from the results"""
 
     name = "results:hosts"
 
@@ -503,7 +503,7 @@ class ResultsHostsCommand(SubCommand):
 
 
 class ResultsByTaskCommand(SubCommand):
-    """[Task > results:by-task > Results] get the past results of given task"""
+    """[Task > Results] get the past results of given task"""
 
     name = "results:by-task"
 

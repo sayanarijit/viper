@@ -25,6 +25,7 @@ def test_result_to_from_json():
     result = Result(
         task=Task("print IP address", command_factory=make_echo_command),
         host=Host("1.1.1.1"),
+        args=("bar",),
         command=("foo",),
         stdout="out",
         stderr="err",
@@ -56,7 +57,8 @@ def test_result_to_from_json():
                 "identity_file": None,
                 "meta": {},
             },
-            "command": ("foo",),
+            "args": ["bar"],
+            "command": ["foo"],
             "stdout": "out",
             "stderr": "err",
             "returncode": 0,

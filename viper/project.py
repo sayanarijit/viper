@@ -57,9 +57,12 @@ class Project:
         def wrapper(
             func: t.Callable[[Namespace], Hosts]
         ) -> t.Callable[[Namespace], Hosts]:
+
+            doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
+
             class HostGroupCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
-                __doc__ = f"[@{self.prefix}:{func.__name__} > Hosts] {func.__doc__}"
+                __doc__ = f"[> Hosts] {doc}"
 
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
@@ -85,9 +88,12 @@ class Project:
         def wrapper(
             func: t.Callable[[Items, Namespace], bool],
         ) -> t.Callable[[Items, Namespace], bool]:
+
+            doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
+
             class FilterCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
-                __doc__ = f"[{objtype.__name__} > @{self.prefix}:{func.__name__} > {objtype.__name__}] {func.__doc__}"
+                __doc__ = f"[{objtype.__name__} > {objtype.__name__}] {doc}"
 
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
@@ -121,9 +127,12 @@ class Project:
         def wrapper(
             func: t.Callable[[ViperCollection, Namespace], object]
         ) -> t.Callable[[ViperCollection, Namespace], object]:
+
+            doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
+
             class HandlerCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
-                __doc__ = f"[{fromtype.__name__} > @{self.prefix}:{func.__name__} > {totype.__name__}] {func.__doc__}"
+                __doc__ = f"[{fromtype.__name__} > {totype.__name__}] {doc}"
 
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
@@ -157,9 +166,12 @@ class Project:
         def wrapper(
             func: t.Callable[[ViperCollection, Namespace], object]
         ) -> t.Callable[[ViperCollection, Namespace], object]:
+
+            doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
+
             class WorkFlowCommand(SubCommand):
                 name = f"@{self.prefix}:{func.__name__}"
-                __doc__ = f"[{fromtype.__name__} > @{self.prefix}:{func.__name__} > {totype.__name__}] {func.__doc__}"
+                __doc__ = f"[{fromtype.__name__} > {totype.__name__}] {doc}"
 
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:

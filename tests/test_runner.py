@@ -48,6 +48,7 @@ def test_runner_run_save_load():
     assert runner == Runner(host, task)
     assert result.task == task
     assert result.host == host
+    assert result.args == ()
     assert result.command == ("echo", "1.1.1.1")
     assert result.stdout == "output: 1.1.1.1\n"
     assert result.stderr == "error: "

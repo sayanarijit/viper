@@ -28,6 +28,7 @@ class ViperDB:
                     hash INTEGER UNIQUE NOT NULL,
                     task JSON NOT NULL,
                     host JSON NOT NULL,
+                    args JSON NOT NULL,
                     command JSON NOT NULL,
                     stdout BLOB NOT NULL,
                     stderr BLOB NOT NULL,

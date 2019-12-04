@@ -429,7 +429,16 @@ class Runner(Item):
             stderr = self.task.stderr_processor(stderr)
 
         result = Result(
-            self.task, self.host, command, stdout, stderr, returncode, start, end, retry
+            self.task,
+            self.host,
+            self.args,
+            command,
+            stdout,
+            stderr,
+            returncode,
+            start,
+            end,
+            retry,
         ).save()
 
         if self.task.post_run:
@@ -485,6 +494,7 @@ class Result(Item):
 
     task: Task
     host: Host
+    args: t.Sequence[str]
     command: t.Sequence[str]
     stdout: str
     stderr: str
@@ -501,7 +511,7 @@ class Result(Item):
                 conn.execute(
                     """
                     SELECT
-                        task, host, command, stdout, stderr,
+                        task, host, args, command, stdout, stderr,
                         returncode, start, end, retry
                     FROM results WHERE hash = ?
                     """,
@@ -513,13 +523,14 @@ class Result(Item):
             dict(
                 task=loadjson(data[0]),
                 host=loadjson(data[1]),
-                command=loadjson(data[2]),
-                stdout=data[3],
-                stderr=data[4],
-                returncode=data[5],
-                start=data[6],
-                end=data[7],
-                retry=data[8],
+                args=tuple(loadjson(data[2])),
+                command=tuple(loadjson(data[3])),
+                stdout=data[4],
+                stderr=data[5],
+                returncode=data[6],
+                start=data[7],
+                end=data[8],
+                retry=data[9],
             )
         )
 
@@ -530,6 +541,7 @@ class Result(Item):
         return cls(
             **dict(
                 dict_,
+                args=tuple(dict_["args"]),
                 command=tuple(dict_["command"]),
                 task=Task.from_dict(dict_["task"]),
                 host=Host.from_dict(dict_["host"]),
@@ -560,15 +572,16 @@ class Result(Item):
             conn.execute(
                 """
                 INSERT INTO results (
-                    hash, task, host, command, stdout, stderr, returncode, start, end, retry
+                    hash, task, host, args, command, stdout, stderr, returncode, start, end, retry
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                 )
                 """,
                 (
                     self.hash(),
                     self.task.to_json(),
                     self.host.to_json(),
+                    dumpjson(self.args),
                     dumpjson(self.command),
                     self.stdout,
                     self.stderr,
