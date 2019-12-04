@@ -65,7 +65,7 @@ class InitCommand(SubCommand):
 
 
 class RunJobCommand(SubCommand):
-    """run a custom defined job"""
+    """[? > run-job > ?] run a custom defined job"""
 
     name = "run-job"
     aliases = ("run",)

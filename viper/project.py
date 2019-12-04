@@ -148,14 +148,11 @@ class Project:
 
     def job(
         self,
-        fromtype: t.Type[ViperCollection],
+        fromtype: type,
         totype: t.Optional[type] = None,
         args: t.Optional[t.Sequence[Arg]] = None,
     ):
         """Use this decorator to define job."""
-
-        if not issubclass(fromtype, ViperCollection):
-            raise ValueError(f"{fromtype} is not a valid input for any job")
 
         def wrapper(
             func: t.Callable[[ViperCollection, Namespace], object]
@@ -171,8 +168,13 @@ class Project:
                     parser.add_argument("-i", "--indent", type=int, default=None)
 
                 def __call__(self, args: Namespace) -> int:
+                    if issubclass(fromtype, ViperCollection):
+                        data = fromtype.from_json(input())
+                    else:
+                        data = fromtype(input())
+
                     if totype:
-                        obj = func(fromtype.from_json(input()), args)
+                        obj = func(data, args)
                         print(
                             obj.to_json(indent=args.indent)
                             if isinstance(obj, ViperCollection)
