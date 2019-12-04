@@ -9,7 +9,7 @@ from viper import Result
 from viper import Results
 from viper import Runner
 from viper import Task
-from viper.project import Arg
+from viper.project import arg
 from viper.project import Project
 
 import csv
@@ -38,8 +38,8 @@ def log_status_callback(result: Result) -> None:
 
 @myproj.hostgroup(
     args=[
-        Arg("-f", "--file", type=FileType("r"), default="hosts.json"),
-        Arg("-I", "--identity_file", default="/root/.ssh/id_rsa.pub"),
+        arg("-f", "--file", type=FileType("r"), default="hosts.json"),
+        arg("-I", "--identity_file", default="/root/.ssh/id_rsa.pub"),
     ]
 )
 def allhosts(args) -> Hosts:
@@ -61,14 +61,14 @@ def allhosts(args) -> Hosts:
     )
 
 
-@myproj.filter(objtype=Hosts, args=[Arg("key"), Arg("val")])
+@myproj.filter(objtype=Hosts, args=[arg("key"), arg("val")])
 def hosts_by(host: Host, args: Namespace) -> bool:
     """Filter hosts by key and metadata"""
 
     return str(dict(host.meta)[args.key]) == args.val
 
 
-@myproj.filter(objtype=Results, args=[Arg("key"), Arg("val")])
+@myproj.filter(objtype=Results, args=[arg("key"), arg("val")])
 def results_by(result: Result, args: Namespace) -> bool:
     """Filter hosts by IP address"""
 
@@ -77,7 +77,7 @@ def results_by(result: Result, args: Namespace) -> bool:
     )
 
 
-@myproj.handler(fromtype=Hosts, totype=Hosts, args=[Arg("file", type=FileType("w"))])
+@myproj.handler(fromtype=Hosts, totype=Hosts, args=[arg("file", type=FileType("w"))])
 def hosts2csv(hosts: Hosts, args: Namespace) -> Hosts:
     """Export csv formatted hosts to file"""
 
@@ -94,7 +94,7 @@ def hosts2csv(hosts: Hosts, args: Namespace) -> Hosts:
 
 
 @myproj.handler(
-    fromtype=Results, totype=Results, args=[Arg("file", type=FileType("w"))]
+    fromtype=Results, totype=Results, args=[arg("file", type=FileType("w"))]
 )
 def results2csv(results: Results, args: Namespace) -> Results:
     """Export csv formatted results to file"""
@@ -164,9 +164,9 @@ def remote_exec_command(host: Host, command: str) -> t.Sequence[str]:
     fromtype=Hosts,
     totype=Results,
     args=[
-        Arg("command"),
-        Arg("file", type=FileType("w"), help="CSV file path for the result"),
-        Arg("--max-workers", default=0, type=int),
+        arg("command"),
+        arg("file", type=FileType("w"), help="CSV file path for the result"),
+        arg("--max-workers", default=0, type=int),
     ],
 )
 def remote_exec(hosts: Hosts, args: Namespace) -> Results:
@@ -193,9 +193,9 @@ def app_version_command(host: Host, app: str) -> t.Sequence[str]:
     fromtype=Hosts,
     totype=Results,
     args=[
-        Arg("app"),
-        Arg("file", type=FileType("w"), help="CSV file path for the result"),
-        Arg("--max-workers", default=0, type=int),
+        arg("app"),
+        arg("file", type=FileType("w"), help="CSV file path for the result"),
+        arg("--max-workers", default=0, type=int),
     ],
 )
 def app_version(hosts: Hosts, args: Namespace) -> Results:
@@ -222,10 +222,10 @@ def update_via_apt_command(host: Host, app: str) -> t.Sequence[str]:
     fromtype=Hosts,
     totype=Results,
     args=[
-        Arg("app"),
-        Arg("version"),
-        Arg("file", type=FileType("w"), help="CSV file path for the result"),
-        Arg("--max-workers", default=0, type=int),
+        arg("app"),
+        arg("version"),
+        arg("file", type=FileType("w"), help="CSV file path for the result"),
+        arg("--max-workers", default=0, type=int),
     ],
 )
 def update_via_apt(hosts: Hosts, args: Namespace) -> Results:

@@ -23,13 +23,12 @@ from viper.collections import Items
 
 import typing as t
 
+ArgType = t.Tuple[t.Sequence[str], t.Dict[str, object]]
 
-class Arg:
+
+def arg(*args: str, **kwargs: object) -> ArgType:
     """Args that can be passed to ArgumentParser"""
-
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
+    return args, kwargs
 
 
 @dataclass
@@ -51,7 +50,7 @@ class Project:
             + self.job_commands
         )
 
-    def hostgroup(self, args: t.Optional[t.Sequence[Arg]] = None):
+    def hostgroup(self, args: t.Optional[t.Sequence[ArgType]] = None):
         """Use this decorator to define host groups."""
 
         def wrapper(
@@ -67,7 +66,7 @@ class Project:
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
                         for arg in args:
-                            parser.add_argument(*arg.args, **arg.kwargs)
+                            parser.add_argument(*arg[0], **arg[1])
                     parser.add_argument("-i", "--indent", type=int, default=None)
 
                 def __call__(self, args: Namespace) -> int:
@@ -79,7 +78,9 @@ class Project:
 
         return wrapper
 
-    def filter(self, objtype: t.Type[Items], args: t.Optional[t.Sequence[Arg]] = None):
+    def filter(
+        self, objtype: t.Type[Items], args: t.Optional[t.Sequence[ArgType]] = None
+    ):
         """Use this decorator to define filters."""
 
         if not issubclass(objtype, Items):
@@ -98,7 +99,7 @@ class Project:
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
                         for arg in args:
-                            parser.add_argument(*arg.args, **arg.kwargs)
+                            parser.add_argument(*arg[0], **arg[1])
 
                 def __call__(self, args: Namespace) -> int:
                     print(
@@ -117,7 +118,7 @@ class Project:
         self,
         fromtype: ViperCollection,
         totype: t.Optional[type] = None,
-        args: t.Optional[t.Sequence[Arg]] = None,
+        args: t.Optional[t.Sequence[ArgType]] = None,
     ):
         """Use this decorator to define handlers."""
 
@@ -137,7 +138,7 @@ class Project:
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
                         for arg in args:
-                            parser.add_argument(*arg.args, **arg.kwargs)
+                            parser.add_argument(*arg[0], **arg[1])
                     parser.add_argument("-i", "--indent", type=int, default=None)
 
                 def __call__(self, args: Namespace) -> int:
@@ -159,7 +160,7 @@ class Project:
         self,
         fromtype: type,
         totype: t.Optional[type] = None,
-        args: t.Optional[t.Sequence[Arg]] = None,
+        args: t.Optional[t.Sequence[ArgType]] = None,
     ):
         """Use this decorator to define job."""
 
@@ -176,7 +177,7 @@ class Project:
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
                         for arg in args:
-                            parser.add_argument(*arg.args, **arg.kwargs)
+                            parser.add_argument(*arg[0], **arg[1])
                     parser.add_argument("-i", "--indent", type=int, default=None)
 
                 def __call__(self, args: Namespace) -> int:
