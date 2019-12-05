@@ -4,7 +4,7 @@ A :py:class:`viper.Task` contains the necessary things that :py:class:`viper.Run
 generate the command to execute, call the `pre run` and `post run` callbacks,
 format the `stdout` and `stderr`, and also time out and retry the execution.
 
-.. tip:: See :py:class:`viper.Task` for more details.
+.. tip:: See :py:class:`viper.collections.Task` for more details.
 
 
 Viper Task Definition Structure

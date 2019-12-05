@@ -23,6 +23,7 @@ def process_stderr(err):
 
 def test_result_to_from_json():
     result = Result(
+        trigger_time=1.0,
         task=Task("print IP address", command_factory=make_echo_command),
         host=Host("1.1.1.1"),
         args=("bar",),
@@ -37,6 +38,7 @@ def test_result_to_from_json():
 
     result_json = json.dumps(
         {
+            "trigger_time": 1.0,
             "task": {
                 "name": "print IP address",
                 "command_factory": "test_result.make_echo_command",

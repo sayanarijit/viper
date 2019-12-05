@@ -24,13 +24,13 @@ def test_viper_db_insert():
         conn.execute(
             """
             INSERT INTO results (
-                hash, task, host, args, command, stdout,
+                hash, trigger_time, task, host, args, command, stdout,
                 stderr, returncode, start, end, retry
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )
             """,
-            (999, "foo", "2", "bar", "3", "4", "5", 6, 7, 8, 9),
+            (999, 1.2, "foo", "2", "bar", "3", "4", "5", 6, 7, 8, 9),
         )
 
     with ViperDB(DB_URL) as conn:
