@@ -22,8 +22,7 @@ Example Viperfile CLI Usage
             viper @myproj:hosts_by name vele | \\
             viper @myproj:remote_exec "df -h" results.csv --max-workers 50
 
-.. tip::
-    See :py:mod:`viper.project` for more details on available project APIs.
+.. tip:: See :py:mod:`viper.project` for more details on available project APIs.
 """
 
 from argparse import FileType

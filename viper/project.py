@@ -14,8 +14,7 @@ After defining this in ``viperfile.py`` we can use commands like ``viper @myproj
 a list of hosts from `stdin`.
 
 
-.. tip::
-    See :py:mod:`viper.demo.viperfile` for the full project example.
+.. tip:: See :py:mod:`viper.demo.viperfile` for the full project example.
 """
 
 
@@ -114,8 +113,7 @@ class Project:
 
             viper @myproj:allhosts --help
 
-        .. tip::
-            See :py:func:`viper.demo.viperfile.allhosts`.
+        .. tip:: See :py:func:`viper.demo.viperfile.allhosts`.
         '''
 
         def wrapper(
@@ -167,8 +165,7 @@ class Project:
 
             viper @myproj:hosts_by --help
 
-        .. tip::
-            See :py:func:`viper.demo.viperfile.hosts_by`.
+        .. tip:: See :py:func:`viper.demo.viperfile.hosts_by`.
         '''
 
         if not issubclass(objtype, Items):
@@ -238,8 +235,7 @@ class Project:
 
             viper @myproj:results2csv --help
 
-        .. tip::
-            See :py:func:`viper.demo.viperfile.results2csv`.
+        .. tip:: See :py:func:`viper.demo.viperfile.results2csv`.
         '''
 
         if not issubclass(fromtype, ViperCollection):
@@ -324,8 +320,7 @@ class Project:
 
             viper @myproj:remote_exec --help
 
-        .. tip::
-            See :py:func:`viper.demo.viperfile.allhosts`.
+        .. tip:: See :py:func:`viper.demo.viperfile.allhosts`.
         '''
 
         def wrapper(

@@ -119,8 +119,7 @@ class Collection:
 
             Task.from_func(ping)
 
-        .. tip::
-            See :py:class:`viper.demo.tasks.ping`
+        .. tip:: See :py:class:`viper.demo.tasks.ping`
         """
 
         func: t.Optional[t.Callable[[], CollectionType]] = locate(funcpath)
@@ -148,8 +147,7 @@ class Collection:
 
             Hosts.from_items(Host("1.2.3.4")).pipe(hosts2csv)
 
-        .. tip::
-            See :py:func:`viper.demo.handlers.hosts2csv`
+        .. tip:: See :py:func:`viper.demo.handlers.hosts2csv`
         """
         return handler(self, *args)
 
@@ -380,12 +378,11 @@ class Host(Item):
 
         :example:
 
-        .. code-block::
+        .. code-block:: python
 
             Host("1.2.3.4").task(ping)
 
-        .. tip::
-            See :py:class:`viper.demo.tasks.ping`
+        .. tip:: See :py:class:`viper.demo.tasks.ping`
         """
 
         return Runner(task=task, host=self, args=args)
@@ -401,12 +398,11 @@ class Host(Item):
 
         :example:
 
-        .. code-block::
+        .. code-block:: python
 
             Host("1.2.3.4").task_task(ping)
 
-        .. tip::
-            See :py:class:`viper.demo.tasks.ping`
+        .. tip:: See :py:class:`viper.demo.tasks.ping`
         """
 
         return self.task(task, *args).run()
@@ -435,12 +431,11 @@ class Hosts(Items):
 
         :example:
 
-        .. code-block::
+        .. code-block:: python
 
             Host("1.2.3.4").from_file("/path/to/file/hosts.json", loader=viper.demo.loader.json)
 
-        .. tip::
-            See :py:func:`viper.demo.loaders.json`
+        .. tip:: See :py:func:`viper.demo.loaders.json`
         """
 
         if loader is None:
@@ -465,12 +460,11 @@ class Hosts(Items):
 
         :example:
 
-        .. code-block::
+        .. code-block:: python
 
             Hosts.from_items(Host("1.2.3.4")).task(ping)
 
-        .. tip::
-            See :py:class:`viper.demo.tasks.ping`
+        .. tip:: See :py:class:`viper.demo.tasks.ping`
         """
 
         return Runners.from_items(
@@ -492,12 +486,11 @@ class Hosts(Items):
 
         :example:
 
-        .. code-block::
+        .. code-block:: python
 
             Hosts.from_items(Host("1.2.3.4")).task_task(ping)
 
-        .. tip::
-            See :py:class:`viper.demo.tasks.ping`
+        .. tip:: See :py:class:`viper.demo.tasks.ping`
         """
         return self.task(task, *args).run(max_workers=max_workers)
 
