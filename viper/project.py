@@ -9,8 +9,8 @@ We can see the commands by running ``viper --help``. These commands are
 prefixed with ``@`` so that they are easily recognizable.
 
 
-After defining this in ``viperfile.py`` we can use commands like `viper @myproj:allhosts`
-(example) to get the list of hosts which we can pass to other commands that recieves
+After defining this in ``viperfile.py`` we can use commands like ``viper @myproj:allhosts``
+(example) to get the list of hosts which can be piped to other commands that recieves
 a list of hosts from `stdin`.
 
 
@@ -225,6 +225,8 @@ class Project:
                 """Export csv formatted results to file"""
 
                 if results.count() > 0:
+
+                    import csv
                     # Export the results to a CSV file
 
                 # Return the results so that it can be piped to some other command/handler.

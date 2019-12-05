@@ -20,7 +20,7 @@ Example Viperfile CLI Usage
 
     viper @myproj:allhosts | \\
             viper @myproj:hosts_by name vele | \\
-            viper @myproj:remote_exec "df -h" results.csv --max-worker 50
+            viper @myproj:remote_exec "df -h" results.csv --max-workers 50
 
 .. tip::
     See :py:mod:`viper.project` for more details on available project APIs.

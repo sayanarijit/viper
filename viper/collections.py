@@ -49,13 +49,15 @@ __all__ = [
 class HandlerType:
     """TODO: This should be a protocol"""
 
-    pass
+    def __call__(self, obj: object, *args: object) -> object:
+        pass
 
 
 class FilterType:
     """TODO: This should be a protocol"""
 
-    pass
+    def __call__(self, obj: object, *args: object) -> bool:
+        pass
 
 
 class CommandFactoryType:
@@ -68,7 +70,8 @@ class CommandFactoryType:
 class Collection:
     """The base collection class.
 
-    This is the parent class for all Viper objects.
+    This is the parent class for all Viper native objects such as
+    :py:class:`Host`, :py:class:`Results` etc.
     """
 
     def __str__(self):
@@ -86,7 +89,7 @@ class Collection:
 
         .. code-block:: python
 
-            Hosts.from_json('[{"ip": "1.1.1.1"}]') == Hosts.from_items(Host("1.1.1.1"))
+            Hosts.from_json('[{"ip": "1.1.1.1"}]')
         """
         raise NotImplementedError()
 
@@ -94,15 +97,30 @@ class Collection:
         """Represent the collection as JSON data.
 
         :param object args and kwargs: These will be passed to `json.laods`.
+
+        :example:
+
+        .. code-block:: python
+
+            Host("1.2.3.4").to_json(indent=4)
         """
         raise NotImplementedError()
 
     @classmethod
-    def from_func(cls: t.Type[CollectionType], funcpath: str) -> ItemType:
+    def from_func(cls: t.Type[CollectionType], funcpath: str) -> CollectionType:
         """Load the object from the given Python function.
 
         :param str funcpath: The path to a Python function that returns an
             instance of this class.
+
+        :example:
+
+        .. code-block:: python
+
+            Task.from_func(ping)
+
+        .. tip::
+            See :py:class:`viper.demo.tasks.ping`
         """
 
         func: t.Optional[t.Callable[[], CollectionType]] = locate(funcpath)
@@ -118,22 +136,50 @@ class Collection:
 
         return obj
 
-    def pipe(self: CollectionType, handler: HandlerType, *args: str) -> object:
-        """Pipe this object to the given function"""
+    def pipe(self: CollectionType, handler: HandlerType, *args: object) -> object:
+        """Pipe this object to the given function.
+
+        :param callable handler: A callable that expects this object.
+        :param object args: Arguments to be passed to the handler for decision making.
+
+        :example:
+
+        .. code-block:: python
+
+            Hosts.from_items(Host("1.2.3.4")).pipe(hosts2csv)
+
+        .. tip::
+            See :py:func:`viper.demo.handlers.hosts2csv`
+        """
         return handler(self, *args)
 
     def hash(self: CollectionType) -> int:
-        """Get the hash value."""
+        """Get the hash value.
+
+        By convention all Viper native objects are frozen and thus hashable.
+        """
         return hash(self)
 
 
 @dataclass(frozen=True, order=True)
 class Item(Collection):
-    """A single item."""
+    """The base class for a single Viper object.
+
+    :py:class:`Host`, :py:class:`Task` etc. inherits this base class.
+    """
 
     @classmethod
     def from_dict(cls: t.Type[ItemType], dict_: t.Dict[str, object]) -> ItemType:
-        """Initialize item from given dict."""
+        """Initialize item from the given dict.
+
+        :param dict dict_: The dictionary containing the properties for this object.
+
+        :example:
+
+        .. code-block:: python
+
+            Host.from_dict({"ip": "1.2.3.4"})
+        """
 
         try:
             return cls(**dict_)
@@ -141,7 +187,14 @@ class Item(Collection):
             raise ValueError(f"invalid input data for {cls.__name__}")
 
     def to_dict(self: ItemType) -> t.Dict[str, object]:
-        """Represent the item as dict."""
+        """Represent the item as dict.
+
+        :example:
+
+        .. code-block:: python
+
+            Host("1.2.3.4").to_dict()
+        """
         return vars(self)
 
     @classmethod
@@ -154,21 +207,49 @@ class Item(Collection):
 
 @dataclass(frozen=True)
 class Items(Collection):
-    """A collection of similar items."""
+    """The base class for collection objects for a group of similar items.
 
-    _all: t.Sequence[t.ItemType] = ()
-    _item_factory: t.Type[ItemType] = field(init=False, default=Item)
+    :py:class:`Hosts`, :py:class:`Results` etc. inherits this base class.
+    """
+
+    _all: t.Sequence[Item] = ()
+    _item_factory: t.Type[Item] = field(init=False)
 
     @classmethod
-    def from_items(cls: t.Type[ItemType], *items: ItemType) -> ItemsType:
-        """Initialize items from given items."""
+    def from_items(cls: t.Type[Item], *items: Item) -> ItemsType:
+        """Create this an instance of this object using the given items.
+
+        :param Item items: The group of items to hold.
+
+        .. note::
+            Classes that inherits from :py:class:`Items` should not be
+            initialized directly (e.g. ``Hosts(Host("1.2.3.4"))``). Factory
+            methods such as this should be used instead.
+
+        :example:
+
+        .. code:: python
+
+            Hosts.from_items(Host("1.2.3.4"))
+        """
         return cls(tuple(set(items)))
 
     @classmethod
     def from_list(
         cls: t.Type[ItemsType], list_: t.Sequence[t.Dict[str, object]]
     ) -> ItemsType:
-        """Initialize items from given list."""
+        """Initialize items from given list of dictiionaries.
+
+        :param list list_: The list of dictiionaries containing the item properties.
+
+        This is used for loading JSON data into an instance of this class.
+
+        :example:
+
+        .. code:: python
+
+            Hosts.from_list([{"ip": "1.2.3.4"}])
+        """
 
         if cls._item_factory is None:
             raise NotImplementedError()
@@ -179,7 +260,16 @@ class Items(Collection):
             raise ValueError(f"invalid input data for {cls.__name__}")
 
     def to_list(self: ItemsType) -> t.List[t.Dict[str, object]]:
-        """Represent the items as list."""
+        """Represent the items as a list of dictiionaries.
+
+        This is used for dumping an instance of this object as JSON data.
+
+        :example:
+
+        .. code:: python
+
+            Hosts.from_items(Host("1.2.3.4")).to_list()
+        """
 
         return [i.to_dict() for i in self._all]
 
@@ -187,12 +277,10 @@ class Items(Collection):
     def from_json(
         cls: t.Type[ItemsType], json: str, *args: object, **kwargs: object
     ) -> ItemsType:
-        """Initialize items from given JSON data."""
 
         return cls.from_list(loadjson(json))
 
     def to_json(self: ItemsType, *args: object, **kwargs: object) -> str:
-        """Represent the item as JSON data."""
 
         return dumpjson(self.to_list(), *args, **kwargs)
 
@@ -200,33 +288,39 @@ class Items(Collection):
         return self._all[key]
 
     def __len__(self: ItemsType) -> int:
-        """Count the number of items."""
         return len(self._all)
 
     def count(self: ItemsType) -> int:
         """Count the number of items."""
-        return len(self._all)
+        return len(self)
 
     def first(self: ItemsType) -> Item:
-        """Get the first item from the list."""
-        return self.index(0)
+        """Get the first item from the group of items."""
+        return self[0]
 
     def last(self: ItemsType) -> Item:
-        """Get the last item from the list."""
-        return self.index(-1)
+        """Get the last item from the group of items."""
+        return self[-1]
 
     def index(self: ItemsType, index: int) -> Item:
         """The the item from a given index."""
-        return self._all[index]
+        return self[index]
 
     def sort(
         self: ItemsType, key: t.Optional[t.Callable[[Item], object]] = None
     ) -> ItemsType:
-        """Sort the items by given key/function."""
+        """Sort the items by given key/function.
+
+        :param callable key: A function similar to the one passed to the built-in `sorted()`.
+        """
         return type(self)(tuple(sorted(self._all, key=key)))
 
-    def filter(self: ItemsType, filter_: FilterType, *args: str) -> ItemsType:
-        """Filter the items by a giver function."""
+    def filter(self: ItemsType, filter_: FilterType, *args: object) -> ItemsType:
+        """Filter the items by a given function.
+
+        :param callable filter_: A function that returns either True or False.
+        :param object args: Arguments to be passed to the filter to manipulate the decision making.
+        """
         return type(self)(tuple(filter(lambda i: filter_(i, *args), self._all)))
 
     def all(self: ItemsType) -> t.Sequence[Item]:
@@ -254,15 +348,16 @@ class Host(Item):
 
     @classmethod
     def from_dict(cls, dict_):
-        """Overriding to_json"""
         return cls(**dict(dict_, meta=tuple(dict_.get("meta", {}).items())))
 
     def to_dict(self):
-        """Overriding to_json"""
         return dict(vars(self), meta=dict(self.meta))
 
     def fqdn(self) -> str:
-        """Get the FQDN from hostname and domainname."""
+        """Get the FQDN from hostname and domain name.
+
+        :raises ValueError: If either of hostname or domain name is not set.
+        """
 
         if not self.hostname and not self.domain:
             raise AttributeError("hostname and domain not set")
@@ -276,12 +371,43 @@ class Host(Item):
         return f"{self.hostname}.{self.domain}"
 
     def task(self, task: Task, *args: str) -> Runner:
-        """Assigns a task to be run."""
+        """Assigns a task to be run.
+
+        :param viper.collections.Task task: The task to be assigned.
+        :param str args: The arguments to be used to create the command from `command_factory`.
+
+        :rtype: viper.collections.Runner
+
+        :example:
+
+        .. code-block::
+
+            Host("1.2.3.4").task(ping)
+
+        .. tip::
+            See :py:class:`viper.demo.tasks.ping`
+        """
 
         return Runner(task=task, host=self, args=args)
 
     def run_task(self, task: Task, *args: str) -> Result:
-        """Assign the task to the host and then run it."""
+        """Assign the task to the host and then run it.
+
+        :param viper.collections.Task task: The task to be assigned.
+        :param str args: The arguments to be used to create the command
+            from :py:attr:`viper.collections.Task.command_factory`.
+
+        :rtype: viper.collections.Result
+
+        :example:
+
+        .. code-block::
+
+            Host("1.2.3.4").task_task(ping)
+
+        .. tip::
+            See :py:class:`viper.demo.tasks.ping`
+        """
 
         return self.task(task, *args).run()
 
@@ -292,15 +418,30 @@ class Host(Item):
 
 @dataclass(frozen=True)
 class Hosts(Items):
-    """Hosts manager."""
+    """A group of :py:class:`viper.collections.Host` objects."""
 
     _item_factory: t.Type[Host] = field(init=False, default=Host)
 
     @classmethod
     def from_file(
-        cls, filepath: str, loader: t.Callable[[t.TextIO], "Hosts"] = None
+        cls, filepath: str, loader: t.Optional[t.Callable[[t.TextIO], "Hosts"]] = None
     ) -> Hosts:
-        """Initialize hosts reading from a file."""
+        """Initialize hosts by reading data from a file.
+
+        :param filepath str: The path for the file to read from.
+        :param callable loader (optional): A custom loader.
+
+        :rtype: viper.collections.Hosts
+
+        :example:
+
+        .. code-block::
+
+            Host("1.2.3.4").from_file("/path/to/file/hosts.json", loader=viper.demo.loader.json)
+
+        .. tip::
+            See :py:func:`viper.demo.loaders.json`
+        """
 
         if loader is None:
 
@@ -315,7 +456,22 @@ class Hosts(Items):
             return loader(f)
 
     def task(self, task: Task, *args: str) -> Runners:
-        """Assigns a task to be run on all the hosts."""
+        """Assigns a task to be run on each host in the group.
+
+        :param viper.collections.Task task: The task to be assigned.
+        :param str args: The arguments to be used to create the command from `command_factory`.
+
+        :rtype: viper.collections.Runners
+
+        :example:
+
+        .. code-block::
+
+            Hosts.from_items(Host("1.2.3.4")).task(ping)
+
+        .. tip::
+            See :py:class:`viper.demo.tasks.ping`
+        """
 
         return Runners.from_items(
             *(Runner(task=task, host=h, args=args) for h in self._all)
@@ -324,10 +480,29 @@ class Hosts(Items):
     def run_task(
         self, task: Task, *args: str, max_workers=Config.max_workers.value
     ) -> Results:
-        """Run a task to be run on all hosts and then run it."""
+        """Assign the task to the host and then run it.
+
+        :param viper.collections.Task task: The task to be assigned.
+        :param str args: The arguments to be used to create the command
+            from :py:attr:`viper.collections.Task.command_factory`.
+        :param int max_workers: Maximum number of thread workers.
+            if the value is <= 1, tasks will run in sequence.
+
+        :rtype: viper.collections.Results
+
+        :example:
+
+        .. code-block::
+
+            Hosts.from_items(Host("1.2.3.4")).task_task(ping)
+
+        .. tip::
+            See :py:class:`viper.demo.tasks.ping`
+        """
         return self.task(task, *args).run(max_workers=max_workers)
 
     def results(self) -> Results:
+        """Get the past results of this group of hosts from history."""
         results = []
         for h in self._all:
             for r in h.results():

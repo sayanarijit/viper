@@ -8,11 +8,24 @@ import subprocess
 
 def test_all_cli_examples():
 
-    commands = [
+    lines = [
         line.strip()
         for line in examples_doc.splitlines()
         if line.startswith("   ") and not line.strip().startswith("#")
     ]
+
+    commands = []
+    buffr = []
+    for line in lines:
+        if line.endswith("\\"):
+            buffr.append(line)
+            continue
+
+        if buffr:
+            commands.append("\n".join(buffr + [line]))
+            del buffr[:]
+            continue
+        commands.append(line)
 
     assert subprocess.run(["viper", "init", "-f"]).returncode == 0
 
