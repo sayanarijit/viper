@@ -602,10 +602,22 @@ class Runner(Item):
     def run(self, retry: int = 0) -> Result:
         """Run the task on the host."""
 
+        if not all(isinstance(a, str) for a in self.args):
+            raise ValueError("{self.args}: args must be a list/tuple of strings.")
+
+        command = self.task.command_factory(self.host, *self.args)
+
+        if not command:
+            raise ValueError(
+                f"{self.task.command_factory} generated empty command ({command})."
+            )
+
+        if not all(isinstance(c, str) for c in command):
+            raise ValueError(f"{command}: command must be a list/tuple of strings.")
+
         if self.task.pre_run:
             self.task.pre_run(self)
 
-        command = self.task.command_factory(self.host, *self.args)
         start = time()
 
         try:
