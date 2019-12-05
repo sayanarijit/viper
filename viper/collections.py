@@ -71,7 +71,7 @@ class Collection:
     """The base collection class.
 
     This is the parent class for all Viper native objects such as
-    :py:class:`Host`, :py:class:`Results` etc.
+    :py:class:`viper.collections.Host`, :py:class:`viper.collections.Results` etc.
     """
 
     def __str__(self):
@@ -79,11 +79,13 @@ class Collection:
 
     def from_json(
         cls: t.Type[CollectionType], json: str, *args: object, **kwargs: object
-    ) -> ItemType:
+    ) -> CollectionType:
         """Initialise a new object of this class from the given JSON string.
 
         :param str json: The JSON data to parse.
         :param object args and kwargs: These will be passed to `json.laods`.
+
+        :rtype: viper.collections.Collection
 
         :example:
 
@@ -97,6 +99,8 @@ class Collection:
         """Represent the collection as JSON data.
 
         :param object args and kwargs: These will be passed to `json.laods`.
+
+        :rtype: str
 
         :example:
 
@@ -112,6 +116,8 @@ class Collection:
 
         :param str funcpath: The path to a Python function that returns an
             instance of this class.
+
+        :rtype: Collection
 
         :example:
 
@@ -155,6 +161,8 @@ class Collection:
         """Get the hash value.
 
         By convention all Viper native objects are frozen and thus hashable.
+
+        :rtype: int
         """
         return hash(self)
 
@@ -163,7 +171,7 @@ class Collection:
 class Item(Collection):
     """The base class for a single Viper object.
 
-    :py:class:`Host`, :py:class:`Task` etc. inherits this base class.
+    :py:class:`viper.collections.Host`, :py:class:`viper.collections.Task` etc. inherits this base class.
     """
 
     @classmethod
@@ -171,6 +179,8 @@ class Item(Collection):
         """Initialize item from the given dict.
 
         :param dict dict_: The dictionary containing the properties for this object.
+
+        :rtype: viper.collections.Item
 
         :example:
 
@@ -187,6 +197,8 @@ class Item(Collection):
     def to_dict(self: ItemType) -> t.Dict[str, object]:
         """Represent the item as dict.
 
+        :rtype: dict
+
         :example:
 
         .. code-block:: python
@@ -202,12 +214,26 @@ class Item(Collection):
     def to_json(self: ItemType, *args, **kwargs) -> str:
         return dumpjson(self.to_dict(), *args, **kwargs)
 
+    def format(self: Item, template: str) -> str:
+        """Get a custom string representation of this object.
+
+        :param str template: The template to be used as `"template".format(**self.to_dict())`
+        :rtype: str
+
+        :example:
+
+        .. code-block:: python
+
+            Host("1.2.3.4").format("{ip} {hostname} {meta[tag]}")
+        """
+        return template.format(**self.to_dict())
+
 
 @dataclass(frozen=True)
 class Items(Collection):
     """The base class for collection objects for a group of similar items.
 
-    :py:class:`Hosts`, :py:class:`Results` etc. inherits this base class.
+    :py:class:`viper.collections.Hosts`, :py:class:`viper.collections.Results` etc. inherits this base class.
     """
 
     _all: t.Sequence[Item] = ()
@@ -217,7 +243,9 @@ class Items(Collection):
     def from_items(cls: t.Type[Item], *items: Item) -> ItemsType:
         """Create this an instance of this object using the given items.
 
-        :param Item items: The group of items to hold.
+        :param viper.collections.Item items: The group of items to hold.
+
+        :rtype: viper.collections.Items
 
         .. note::
             Classes that inherits from :py:class:`Items` should not be
@@ -240,6 +268,8 @@ class Items(Collection):
 
         :param list list_: The list of dictiionaries containing the item properties.
 
+        :rtype: viper.collections.Items
+
         This is used for loading JSON data into an instance of this class.
 
         :example:
@@ -261,6 +291,8 @@ class Items(Collection):
         """Represent the items as a list of dictiionaries.
 
         This is used for dumping an instance of this object as JSON data.
+
+        :rtype: list
 
         :example:
 
@@ -289,20 +321,48 @@ class Items(Collection):
         return len(self._all)
 
     def count(self: ItemsType) -> int:
-        """Count the number of items."""
+        """Count the number of items.
+
+        :rtype: int
+        """
         return len(self)
 
     def first(self: ItemsType) -> Item:
-        """Get the first item from the group of items."""
+        """Get the first item from the group of items.
+
+        :rtype: viper.collections.Item
+        """
         return self[0]
 
     def last(self: ItemsType) -> Item:
-        """Get the last item from the group of items."""
+        """Get the last item from the group of items.
+
+        :rtype: viper.collections.Item
+        """
         return self[-1]
 
     def index(self: ItemsType, index: int) -> Item:
-        """The the item from a given index."""
+        """The the item from a given index.
+
+        :param int index: Index number.
+
+        :rtype: viper.collections.Item
+        """
         return self[index]
+
+    def range(
+        self: ItemsType, i: t.Optional[int] = None, j: t.Optional[int] = None
+    ) -> t.Sequence[Item]:
+        """get the items in given range.
+
+        :param int i (optional): The first index.
+        :param int j (optional): The last index.
+
+        :rtype: tuple
+
+        This has the same behaviour as Python's [i:j]
+        """
+        return self._all[i:j]
 
     def sort(
         self: ItemsType, key: t.Optional[t.Callable[[Item], object]] = None
@@ -322,8 +382,27 @@ class Items(Collection):
         return type(self)(tuple(filter(lambda i: filter_(i, *args), self._all)))
 
     def all(self: ItemsType) -> t.Sequence[Item]:
-        """Get a tuple of all the items."""
+        """Get a tuple of all the items.
+
+        :rtype: tuple
+        """
         return self._all
+
+    def format(self: ItemsType, template: str, sep="\n") -> str:
+        """Get a custom string representation of this list of objects.
+
+        :param str template: The template to be used as `"template".format(**item.to_dict())`
+        :param str sep: The separator used to separate all the items.
+
+        :rtype: str
+
+        :example:
+
+        .. code-block:: python
+
+            Hosts.from_items(Host("1.2.3.4")).format("{ip} {hostname} {meta[tag]}")
+        """
+        return sep.join(template.format(**x.to_dict()) for x in self._all)
 
 
 @dataclass(frozen=True, order=True)
@@ -353,6 +432,8 @@ class Host(Item):
 
     def fqdn(self) -> str:
         """Get the FQDN from hostname and domain name.
+
+        :rtype: str
 
         :raises ValueError: If either of hostname or domain name is not set.
         """
@@ -414,7 +495,10 @@ class Host(Item):
 
 @dataclass(frozen=True)
 class Hosts(Items):
-    """A group of :py:class:`viper.collections.Host` objects."""
+    """A group of :py:class:`viper.collections.Host` objects.
+
+    .. tip:: See :py:mod:`viper.demo.hosts`
+    """
 
     _item_factory: t.Type[Host] = field(init=False, default=Host)
 
@@ -495,7 +579,10 @@ class Hosts(Items):
         return self.task(task, *args).run(max_workers=max_workers)
 
     def results(self) -> Results:
-        """Get the past results of this group of hosts from history."""
+        """Get the past results of this group of hosts from history.
+
+        :rtype: viper.collections.Results
+        """
         results = []
         for h in self._all:
             for r in h.results():
@@ -505,7 +592,13 @@ class Hosts(Items):
 
 @dataclass(frozen=True, order=True)
 class Task(Item):
-    """An infra task."""
+    """A task is a definition of a single operation.
+
+    A task must contain name and a **named function** to generate the
+    command.
+
+    .. tip:: See :py:mod:`viper.demo.tasks`
+    """
 
     name: str
     command_factory: CommandFactoryType
@@ -519,8 +612,6 @@ class Task(Item):
 
     @classmethod
     def from_dict(cls, dict_: t.Dict[str, object]) -> Task:
-        """Overriding from_dict()."""
-
         outp = dict_.get("stdout_processor")
         errp = dict_.get("stderr_processor")
         pre = dict_.get("pre_run")
@@ -542,8 +633,6 @@ class Task(Item):
         )
 
     def to_dict(self) -> t.Dict[str, object]:
-        """Overriding to_dict()."""
-
         cf = self.command_factory
         outp = self.stdout_processor
         errp = self.stderr_processor
@@ -561,14 +650,21 @@ class Task(Item):
         )
 
     def results(self) -> Results:
-        """Get the past results of this task."""
+        """Get the past results of this task.
 
+        :rtype: Rviper.collections.esults
+        """
         return self.pipe(Results.by_task)
 
 
 @dataclass(frozen=True, order=True)
 class Runner(Item):
-    """A runner."""
+    """A single task runner.
+
+    A runner owns the responsibility of actually generating and running
+    the command, store the result, calling, retrying, etc.
+    We generally do not use it directly.
+    """
 
     host: Host
     task: Task
@@ -576,8 +672,6 @@ class Runner(Item):
 
     @classmethod
     def from_dict(cls, dict_: t.Dict[str, object]) -> Runner:
-        """Overriding from_dict()."""
-
         return cls(
             **dict(
                 dict_,
@@ -588,12 +682,18 @@ class Runner(Item):
         )
 
     def to_dict(self) -> t.Dict[str, object]:
-        """Overriding to_dict()."""
-
         return dict(vars(self), task=self.task.to_dict(), host=self.host.to_dict())
 
-    def run(self, retry: int = 0) -> Result:
-        """Run the task on the host."""
+    def run(self, retry: int = 0, trigger_time: t.Optional[float] = None) -> Result:
+        """Run the task on the host.
+
+        :param int retry: Count of retries used.
+        :param float trigger_time (optional): The trigger time used for grouping (auto generated).
+
+        :rtype: viper.collections.Result
+        """
+        if not trigger_time:
+            trigger_time = time()
 
         if not all(isinstance(a, str) for a in self.args):
             raise ValueError("{self.args}: args must be a list/tuple of strings.")
@@ -633,6 +733,7 @@ class Runner(Item):
             stderr = self.task.stderr_processor(stderr)
 
         result = Result(
+            trigger_time,
             self.task,
             self.host,
             self.args,
@@ -649,12 +750,15 @@ class Runner(Item):
             self.task.post_run(result)
 
         if result.errored() and result.retry_left():
-            return self.run(retry=retry + 1)
+            return self.run(trigger_time=trigger_time, retry=retry + 1)
 
         return result
 
     def results(self) -> Results:
-        """Fetch recent results of current runner from database."""
+        """Fetch recent results of current runner from database.
+
+        :rtype: viper.collections.Results
+        """
         return self.pipe(Results.by_runner)
 
 
@@ -662,15 +766,22 @@ class Runner(Item):
 class Runners(Items):
     _item_factory: t.Type[Runner] = field(init=False, default=Runner)
 
-    def run(self, max_workers=Config.max_workers.value) -> Results:
-        """Run the tasks."""
+    def run(self, max_workers: int = Config.max_workers.value) -> Results:
+        """Run the tasks.
+
+        :param int max_workers: Maximum number of thread workers to use.
+
+        :rtype: viper.collections.Results
+        """
+
+        trigger_time = time()
 
         if max_workers <= 1:
             # Run in sequence
             results = []
             for r in self.all():
                 try:
-                    results.append(r.run())
+                    results.append(r.run(trigger_time=trigger_time))
                 except Exception:
                     print(traceback.format_exc(), file=sys.stderr)
             return Results.from_items(*results)
@@ -688,7 +799,10 @@ class Runners(Items):
         return Results.from_items(*results)
 
     def hosts(self) -> Hosts:
-        """Get the list of hosts from the runners."""
+        """Get the list of hosts from the runners.
+
+        :rtype: viper.collections.Hosts
+        """
         return Hosts.from_items(*(t.host for t in self._all))
 
 
@@ -696,6 +810,7 @@ class Runners(Items):
 class Result(Item):
     """The result of an executed task."""
 
+    trigger_time: float
     task: Task
     host: Host
     args: t.Sequence[str]
@@ -709,13 +824,20 @@ class Result(Item):
 
     @classmethod
     def by_hash(cls, hash_: int) -> Result:
+        """Fetch the result from DB by hash.
+
+        :param int hash_: The hash value.
+
+        :rtype: viper.collections.Result
+        """
+
         with ViperDB(ViperDB.url) as conn:
 
             data = next(
                 conn.execute(
                     """
                     SELECT
-                        task, host, args, command, stdout, stderr,
+                        trigger_time, task, host, args, command, stdout, stderr,
                         returncode, start, end, retry
                     FROM results WHERE hash = ?
                     """,
@@ -725,23 +847,22 @@ class Result(Item):
 
         return cls.from_dict(
             dict(
-                task=loadjson(data[0]),
-                host=loadjson(data[1]),
-                args=tuple(loadjson(data[2])),
-                command=tuple(loadjson(data[3])),
-                stdout=data[4],
-                stderr=data[5],
-                returncode=data[6],
-                start=data[7],
-                end=data[8],
-                retry=data[9],
+                trigger_time=data[0],
+                task=loadjson(data[1]),
+                host=loadjson(data[2]),
+                args=tuple(loadjson(data[3])),
+                command=tuple(loadjson(data[4])),
+                stdout=data[5],
+                stderr=data[6],
+                returncode=data[7],
+                start=data[8],
+                end=data[9],
+                retry=data[10],
             )
         )
 
     @classmethod
     def from_dict(cls, dict_: t.Dict[str, object]) -> Task:
-        """Overriding from_dict()."""
-
         return cls(
             **dict(
                 dict_,
@@ -753,36 +874,48 @@ class Result(Item):
         )
 
     def to_dict(self) -> t.Dict[str, object]:
-        """Overriding to_dict()."""
-
         return dict(vars(self), task=self.task.to_dict(), host=self.host.to_dict())
 
     def ok(self) -> bool:
-        """If the result is success."""
+        """Returns True the result is success.
+
+        :rtype: bool
+        """
         return self.returncode == 0
 
     def errored(self) -> bool:
-        """If the result is failure."""
+        """returns True if the result is failure.
+
+        :rtype: bool
+        """
         return self.returncode != 0
 
     def retry_left(self) -> int:
-        """Get how many retries are left."""
+        """Get how many retries are left.
+
+        :rtype: int
+        """
         return self.task.retry - self.retry
 
     def save(self) -> Result:
-        """Save the result dump."""
+        """Save the result in DB.
+
+        :rtype: viper.collections.Result
+        """
 
         with ViperDB() as conn:
             conn.execute(
                 """
                 INSERT INTO results (
-                    hash, task, host, args, command, stdout, stderr, returncode, start, end, retry
+                    hash, trigger_time, task, host, args, command,
+                    stdout, stderr, returncode, start, end, retry
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                 )
                 """,
                 (
                     self.hash(),
+                    self.trigger_time,
                     self.task.to_json(),
                     self.host.to_json(),
                     dumpjson(self.args),
@@ -801,10 +934,16 @@ class Result(Item):
 
 @dataclass(frozen=True)
 class Results(Items):
+    """A group of :py:class:`viper.collections.Results`."""
+
     _item_factory: t.Type[Results] = field(init=False, default=Result)
 
     @classmethod
     def from_history(cls) -> Results:
+        """Fetch and return all the results from history.
+
+        :rtype: ciper.collections.Results
+        """
         with ViperDB(ViperDB.url) as conn:
             rows = conn.execute("SELECT hash FROM results ORDER BY start DESC")
             results = [cls._item_factory.by_hash(r[0]) for r in rows]
@@ -813,6 +952,11 @@ class Results(Items):
 
     @classmethod
     def by_host(cls, host: Host) -> Results:
+        """Fetch and return results from history of the given host.
+
+        :param viper.collections.Host host: Fetch results of this host.
+        :rtype: viper.collections.Results
+        """
         with ViperDB(ViperDB.url) as conn:
             rows = conn.execute(
                 f"""
@@ -828,6 +972,11 @@ class Results(Items):
 
     @classmethod
     def by_task(cls, task: Task) -> Results:
+        """Fetch and return results from history of the given task.
+
+        :param viper.collections.Host host: Fetch results of this task.
+        :rtype: viper.collections.Results
+        """
         with ViperDB(ViperDB.url) as conn:
             rows = conn.execute(
                 f"""
@@ -841,22 +990,9 @@ class Results(Items):
 
         return cls.from_items(*results)
 
-    @classmethod
-    def by_runner(cls, runner: Runner) -> Results:
-        with ViperDB(ViperDB.url) as conn:
-            rows = conn.execute(
-                f"""
-                SELECT hash FROM results
-                WHERE JSON_EXTRACT(host, '$.ip') = ?
-                    AND JSON_EXTRACT(task, '$.name') = ?
-                ORDER BY start DESC
-                """,
-                (runner.host.ip, runner.task.name),
-            )
-            results = [cls._item_factory.by_hash(r[0]) for r in rows]
-
-        return cls.from_items(*results)
-
     def hosts(self) -> Hosts:
-        """Get the list of hosts from the results."""
+        """Get the list of hosts from the results.
+
+        :rtype: viper.collections.Hosts
+        """
         return Hosts.from_items(*(r.host for r in self._all))

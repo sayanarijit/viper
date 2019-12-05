@@ -26,6 +26,7 @@ class ViperDB:
                 CREATE TABLE results (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     hash INTEGER UNIQUE NOT NULL,
+                    trigger_time REAL NOT NULL,
                     task JSON NOT NULL,
                     host JSON NOT NULL,
                     args JSON NOT NULL,
