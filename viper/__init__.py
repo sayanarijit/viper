@@ -12,7 +12,6 @@ from viper.collections import Results  # noqa: F401
 from viper.collections import Runner  # noqa: F401
 from viper.collections import Runners  # noqa: F401
 from viper.collections import Task  # noqa: F401
-from viper.demo import __doc__ as __viper_cli_examples__
 
 __all__ = ["Host", "Hosts", "Result", "Results", "Runner", "Runners", "Task"]
 __doc__ = f"""{__description__}
@@ -24,6 +23,10 @@ Installation
     pip install -U viper-infra-commander
 
 
+Documentations
+==============
+Getting Started Guide: https://viper-infrastructure-commander.readthedocs.io/en/latest/viper.demo.html#viper-cli-examples
 
-{__viper_cli_examples__}
+
+Viperfile Examples and Use Cases: https://viper-infrastructure-commander.readthedocs.io/en/latest/viper.html#viper-project-apis-the-viperfile-py
 """
