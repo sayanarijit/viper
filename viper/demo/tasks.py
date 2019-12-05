@@ -4,9 +4,7 @@ A :py:class:`viper.Task` contains the necessary things that :py:class:`viper.Run
 generate the command to execute, call the `pre run` and `post run` callbacks,
 format the `stdout` and `stderr`, and also time out and retry the execution.
 
-.. tip::
-
-    See :py:class:`viper.Task` for more details.
+.. tip:: See :py:class:`viper.Task` for more details.
 
 
 Viper Task Definition Structure
@@ -67,7 +65,7 @@ Task CLI Usage Example
     # Execute the task
     viper hosts viper.demo.hosts.group1 | \\
             viper hosts:task viper.demo.tasks.remote_execute "df -lh" | \\
-            viper runner:run --indent 4
+            viper runners:run --indent 4
 
     # Or skip a step
     viper hosts viper.demo.hosts.group1 | \\
