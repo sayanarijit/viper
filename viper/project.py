@@ -185,12 +185,13 @@ class Project:
                     if args:
                         for arg in args:
                             parser.add_argument(*arg[0], **arg[1])
+                    parser.add_argument("-i", "--indent", type=int, default=None)
 
                 def __call__(self, args: Namespace) -> int:
                     print(
                         objtype.from_json(input())
                         .filter(lambda host: func(host, args))
-                        .to_json()
+                        .to_json(indent=args.indent)
                     )
                     return 0
 
