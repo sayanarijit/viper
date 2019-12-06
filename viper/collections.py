@@ -26,6 +26,7 @@ ItemType = t.TypeVar("ItemType", bound="Item")
 ItemsType = t.TypeVar("ItemsType", bound="Items")
 
 __all__ = [
+    "WhereConditions",
     "Collection",
     "Item",
     "Items",
@@ -67,13 +68,17 @@ class CommandFactoryType:
     pass
 
 
-class WhereQueryOptions(Enum):
-    """Where query options for viper Items"""
+class WhereConditions(Enum):
+    """Where query conditions for viper Items"""
 
     is_ = "IS"
+    is_not = "IS_NOT"
     contains = "CONTAINS"
+    not_contains = "NOT_CONTAINS"
     startswith = "STARTSWITH"
+    not_startswith = "NOT_STARTSWITH"
     endswith = "ENDSWITH"
+    not_endswith = "NOT_ENDSWITH"
 
 
 @dataclass(frozen=True, order=True)
@@ -415,12 +420,12 @@ class Items(Collection):
         return sep.join(template.format(**x.to_dict()) for x in self._all)
 
     def where(
-        self, key: str, option: WhereQueryOptions, values: t.Sequence[str]
+        self, key: str, condition: WhereConditions, values: t.Sequence[str]
     ) -> ItemsType:
         """Select items by a custom query.
 
         :param str key: The key will be compiled by Python's `.format()`.
-        :param WhereQueryOptions option: The filter logic.
+        :param WhereConditions condition: The where condition.
         :param list values: The values for the key.
 
         :rtype: Items
@@ -430,23 +435,40 @@ class Items(Collection):
         for obj in self._all:
             val = f"{{{key}}}".format(**obj.to_dict())
 
-            if option is WhereQueryOptions.is_:
+            if condition is WhereConditions.is_:
                 if val in values:
                     result.append(obj)
 
-            elif option is WhereQueryOptions.contains:
+            elif condition is WhereConditions.is_not:
+                if val not in values:
+                    result.append(obj)
+
+            elif condition is WhereConditions.contains:
                 if any(map(lambda x: x in val, values)):
                     result.append(obj)
 
-            elif option is WhereQueryOptions.startswith:
+            elif condition is WhereConditions.not_contains:
+                if any(map(lambda x: x not in val, values)):
+                    result.append(obj)
+
+            elif condition is WhereConditions.startswith:
                 if any(map(lambda x: val.startswith(x), values)):
                     result.append(obj)
 
-            elif option is WhereQueryOptions.endswith:
+            elif condition is WhereConditions.not_startswith:
+                if any(map(lambda x: not val.startswith(x), values)):
+                    result.append(obj)
+
+            elif condition is WhereConditions.endswith:
                 if any(map(lambda x: val.endswith(x), values)):
                     result.append(obj)
+
+            elif condition is WhereConditions.not_endswith:
+                if any(map(lambda x: not val.endswith(x), values)):
+                    result.append(obj)
+
             else:
-                raise ValueError(f"expecting enum {WhereQueryOptions}")
+                raise ValueError(f"expecting enum {WhereConditions}")
 
         return type(self).from_items(*result)
 

@@ -15,7 +15,7 @@ from viper.cli_base import SubCommand
 from viper.collections import Collection as ViperCollection
 from viper.collections import FilterType
 from viper.collections import HandlerType
-from viper.collections import WhereQueryOptions
+from viper.collections import WhereConditions
 from viper.const import Config
 from viper.db import ViperDB
 
@@ -318,7 +318,7 @@ class HostsWhereCommand(SubCommand):
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("key", help="property name/path of each item")
         parser.add_argument(
-            "query_option", choices=[o.value for o in WhereQueryOptions],
+            "condition", choices=[o.value for o in WhereConditions],
         )
         parser.add_argument("values", nargs="*")
         parser.add_argument("-i", "--indent", type=int, default=None)
@@ -326,7 +326,7 @@ class HostsWhereCommand(SubCommand):
     def __call__(self, args: Namespace) -> int:
         print(
             Hosts.from_json(input())
-            .where(args.key, WhereQueryOptions(args.query_option), args.values)
+            .where(args.key, WhereConditions(args.condition), args.values)
             .to_json(indent=args.indent)
         )
         return 0
@@ -442,7 +442,7 @@ class RunnersWhereCommand(SubCommand):
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("key", help="property name/path of each item")
         parser.add_argument(
-            "query_option", choices=[o.value for o in WhereQueryOptions],
+            "condition", choices=[o.value for o in WhereConditions],
         )
         parser.add_argument("values", nargs="*")
         parser.add_argument("-i", "--indent", type=int, default=None)
@@ -450,7 +450,7 @@ class RunnersWhereCommand(SubCommand):
     def __call__(self, args: Namespace) -> int:
         print(
             Runners.from_json(input())
-            .where(args.key, WhereQueryOptions(args.query_option), args.values)
+            .where(args.key, WhereConditions(args.condition), args.values)
             .to_json(indent=args.indent)
         )
         return 0
@@ -600,17 +600,19 @@ class ResultsWhereCommand(SubCommand):
     name = "results:where"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
-        parser.add_argument("key", help="property name/path of each item")
+        parser.add_argument("key", help="property name of each item")
         parser.add_argument(
-            "query_option", choices=[o.value for o in WhereQueryOptions],
+            "condition",
+            choices=[o.value for o in WhereConditions],
+            help="condition to apply",
         )
-        parser.add_argument("values", nargs="*")
+        parser.add_argument("values", nargs="*", help="values for the key")
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
         print(
             Results.from_json(input())
-            .where(args.key, WhereQueryOptions(args.query_option), args.values)
+            .where(args.key, WhereConditions(args.condition), args.values)
             .to_json(indent=args.indent)
         )
         return 0
