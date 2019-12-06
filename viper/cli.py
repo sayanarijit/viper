@@ -118,6 +118,19 @@ class TaskResultsCommand(SubCommand):
         return 0
 
 
+class TaskFormatCommand(SubCommand):
+    """[Task -> str] format the data using the given template."""
+
+    name = "task:format"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("template", help="use Python's string format syntax")
+
+    def __call__(self, args: Namespace) -> int:
+        print(Task.from_json(input()).format(args.template))
+        return 0
+
+
 class HostsFromFuncCommand(SubCommand):
     """[-> Hosts] get a group of hosts from a Python function location"""
 
@@ -280,6 +293,22 @@ class HostsPipeCommand(SubCommand):
         return 0
 
 
+class HostsFormatCommand(SubCommand):
+    """[Hosts -> str] format the data using the given template."""
+
+    name = "hosts:format"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("template", help="use Python's string format syntax")
+        parser.add_argument(
+            "-s", "--sep", help="separator used to join the strings", default="\n"
+        )
+
+    def __call__(self, args: Namespace) -> int:
+        print(Hosts.from_json(input()).format(args.template, sep=args.sep))
+        return 0
+
+
 class HostsResultsCommand(SubCommand):
     """[Hosts -> Results] get the past results of the hosts"""
 
@@ -365,6 +394,21 @@ class RunnersPipeCommand(SubCommand):
 
         print(obj)
         return 0
+
+
+class RunnersFormatCommand(SubCommand):
+    """[Runners -> str] format the data using the given template."""
+
+    name = "runners:format"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("template", help="use Python's string format syntax")
+        parser.add_argument(
+            "-s", "--sep", help="separator used to join the strings", default="\n"
+        )
+
+    def __call__(self, args: Namespace) -> int:
+        print(Runners.from_json(input()).format(args.template, sep=args.sep))
 
 
 class RunnersRunCommand(SubCommand):
@@ -489,6 +533,22 @@ class ResultsPipeCommand(SubCommand):
         return 0
 
 
+class ResultsFormatCommand(SubCommand):
+    """[Results -> str] format the data using the given template."""
+
+    name = "results:format"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("template", help="use Python's string format syntax")
+        parser.add_argument(
+            "-s", "--sep", help="separator used to join the strings", default="\n"
+        )
+
+    def __call__(self, args: Namespace) -> int:
+        print(Results.from_json(input()).format(args.template, sep=args.sep))
+        return 0
+
+
 class ResultsHostsCommand(SubCommand):
     """[Results -> Hosts] get the hosts from the results"""
 
@@ -534,6 +594,7 @@ def run() -> int:
     # Task commands
     TaskFromFuncCommand.attach_to(subparsers)
     TaskResultsCommand.attach_to(subparsers)
+    TaskFormatCommand.attach_to(subparsers)
 
     # Hosts commands
     HostsFromFileCommand.attach_to(subparsers)
@@ -543,6 +604,7 @@ def run() -> int:
     HostsCountCommand.attach_to(subparsers)
     HostsSortCommand.attach_to(subparsers)
     HostsPipeCommand.attach_to(subparsers)
+    HostsFormatCommand.attach_to(subparsers)
 
     HostsTaskCommand.attach_to(subparsers)
     HostsRunTaskCommand.attach_to(subparsers)
@@ -553,6 +615,7 @@ def run() -> int:
     RunnersCountCommand.attach_to(subparsers)
     RunnersSortCommand.attach_to(subparsers)
     RunnersPipeCommand.attach_to(subparsers)
+    RunnersFormatCommand.attach_to(subparsers)
 
     RunnersRunCommand.attach_to(subparsers)
     RunnersHostsCommand.attach_to(subparsers)
@@ -563,6 +626,7 @@ def run() -> int:
     ResultsCountCommand.attach_to(subparsers)
     ResultsSortCommand.attach_to(subparsers)
     ResultsPipeCommand.attach_to(subparsers)
+    ResultsFormatCommand.attach_to(subparsers)
 
     ResultsHostsCommand.attach_to(subparsers)
     ResultsByTaskCommand.attach_to(subparsers)

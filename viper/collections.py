@@ -20,7 +20,7 @@ import sys
 import traceback
 import typing as t
 
-CollectionType = t.TypeVar("CollectionType", bound="Item")
+CollectionType = t.TypeVar("CollectionType", bound="Collection")
 ItemType = t.TypeVar("ItemType", bound="Item")
 ItemsType = t.TypeVar("ItemsType", bound="Items")
 
