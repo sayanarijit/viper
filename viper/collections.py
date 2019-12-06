@@ -857,7 +857,7 @@ class Runners(Items):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Run in parallel
             futures = [
-                lambda r: executor.submit(r.run(trigger_time=trigger_time))
+                executor.submit(r.run, **{"trigger_time": trigger_time})
                 for r in self._all
             ]
             results = []
