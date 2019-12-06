@@ -425,7 +425,7 @@ class Items(Collection):
         """Select items by a custom query.
 
         :param str key: The key will be compiled by Python's `.format()`.
-        :param WhereConditions condition: The where condition.
+        :param viper.collections.WhereConditions condition: The where condition.
         :param list values: The values for the key.
 
         :rtype: Items

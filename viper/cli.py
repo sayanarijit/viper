@@ -66,7 +66,7 @@ class InitCommand(SubCommand):
 
 
 class RunJobCommand(SubCommand):
-    """[? -> ?] run a custom defined job"""
+    """[Hosts -> Results] run a job on the given hosts"""
 
     name = "run-job"
     aliases = ("run",)
@@ -77,15 +77,12 @@ class RunJobCommand(SubCommand):
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
-        obj = args.job(input(), *args.args)
-        if obj is None:
-            return 0
-
-        if isinstance(obj, ViperCollection):
-            print(obj.to_json(indent=args.indent))
-            return 0
-
-        print(obj)
+        results = args.job(Hosts.from_json(input()), *args.args)
+        if not isinstance(results, Results):
+            raise ValueError(
+                f"a job must return {Results} object but got {type(results)}"
+            )
+        print(results.to_json(indent=args.indent))
         return 0
 
 

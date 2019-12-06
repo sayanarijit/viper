@@ -31,12 +31,12 @@ usage: viper [-h] [--version] [--debug]
              {init,run-job,run,task:from-func,task,task:results,task:format,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:format,hosts:where,hosts:task,hosts:run-task,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:format,runners:where,runners:run,runners:hosts,results:from-history,results,results:filter,results:count,results:sort,results:pipe,results:format,results:where,results:hosts,results:by-task}
              ...
 
-Viper CLI v0.19.0
+Viper CLI v0.20.0
 
 positional arguments:
   {init,run-job,run,task:from-func,task,task:results,task:format,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:format,hosts:where,hosts:task,hosts:run-task,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:format,runners:where,runners:run,runners:hosts,results:from-history,results,results:filter,results:count,results:sort,results:pipe,results:format,results:where,results:hosts,results:by-task}
     init                initialize the current workspace
-    run-job             [? -> ?] run a custom defined job
+    run-job             [Hosts -> Results] run a job on the given hosts
     run                 alias of 'run-job'
     task:from-func      [-> Task] get the task from a Python function location
     task                alias of 'task:from-func'

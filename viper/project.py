@@ -27,6 +27,7 @@ from viper.cli_base import SubCommand
 from viper.collections import Collection as ViperCollection
 from viper.collections import Hosts
 from viper.collections import Items
+from viper.collections import Results
 
 import typing as t
 
@@ -274,15 +275,10 @@ class Project:
         return wrapper
 
     def job(
-        self,
-        fromtype: type,
-        totype: t.Optional[type] = None,
-        args: t.Optional[t.Sequence[ArgType]] = None,
+        self, args: t.Optional[t.Sequence[ArgType]] = None,
     ):
         '''Use this decorator to define a job.
 
-        :param type fromtype: The type of object this handler is expecting.
-        :param type totype: The type of object this handler returns.
         :param list args (optional): List of arguments for :py:class:`argparse.ArgumentParser`.
 
         Custom project specific handlers can be defined in the ``viperfile.py`` like below.
@@ -292,8 +288,6 @@ class Project:
         .. code-block:: python
 
             @myproj.job(
-                fromtype=Hosts,
-                totype=Results,
                 args=[
                     arg("command"),
                     arg("file", type=FileType("w"), help="CSV file path for the result"),
@@ -321,7 +315,7 @@ class Project:
 
             viper @myproj:remote_exec --help
 
-        .. tip:: See :py:func:`viper.demo.viperfile.allhosts`.
+        .. tip:: See :py:func:`viper.demo.viperfile.remote_exec`.
         '''
 
         def wrapper(
@@ -331,8 +325,8 @@ class Project:
             doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
 
             class WorkFlowCommand(SubCommand):
+                __doc__ = f"[Hosts -> Results] {doc}"
                 name = f"@{self.prefix}:{func.__name__}"
-                __doc__ = f"[{fromtype.__name__} -> {totype.__name__}] {doc}"
 
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
@@ -341,18 +335,12 @@ class Project:
                     parser.add_argument("-i", "--indent", type=int, default=None)
 
                 def __call__(self, args: Namespace) -> int:
-                    if issubclass(fromtype, ViperCollection):
-                        data = fromtype.from_json(input())
-                    else:
-                        data = fromtype(input())
-
-                    if totype:
-                        obj = func(data, args)
-                        print(
-                            obj.to_json(indent=args.indent)
-                            if isinstance(obj, ViperCollection)
-                            else totype(obj)
+                    results = func(Hosts.from_json(input()), args)
+                    if not isinstance(results, Results):
+                        raise ValueError(
+                            f"a job must return {Results} object but got {type(results)}"
                         )
+                    print(results.to_json(indent=args.indent))
                     return 0
 
             self.job_commands.append(WorkFlowCommand)

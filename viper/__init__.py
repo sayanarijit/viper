@@ -3,7 +3,7 @@ __description__ = "Viper is a handy tool for easily running infrastructure manag
 __email__ = "sayanarijit@gmail.com"
 __homepage__ = "https://github.com/sayanarijit/viper"
 __license__ = "MIT"
-__version__ = "v0.19.0"
+__version__ = "v0.20.0"
 
 from viper.collections import Host  # noqa: F401
 from viper.collections import Hosts  # noqa: F401
@@ -12,8 +12,18 @@ from viper.collections import Results  # noqa: F401
 from viper.collections import Runner  # noqa: F401
 from viper.collections import Runners  # noqa: F401
 from viper.collections import Task  # noqa: F401
+from viper.collections import WhereConditions  # noqa: F401
 
-__all__ = ["Host", "Hosts", "Result", "Results", "Runner", "Runners", "Task"]
+__all__ = [
+    "Host",
+    "Hosts",
+    "Result",
+    "Results",
+    "Runner",
+    "Runners",
+    "Task",
+    "WhereConditions",
+]
 __doc__ = f"""{__description__}
 
 

@@ -187,8 +187,6 @@ def remote_exec_command(host: Host, command: str) -> t.Sequence[str]:
 
 
 @myproj.job(
-    fromtype=Hosts,
-    totype=Results,
     args=[
         arg("command"),
         arg("file", type=FileType("w"), help="CSV file path for the result"),
@@ -216,8 +214,6 @@ def app_version_command(host: Host, app: str) -> t.Sequence[str]:
 
 
 @myproj.job(
-    fromtype=Hosts,
-    totype=Results,
     args=[
         arg("app"),
         arg("file", type=FileType("w"), help="CSV file path for the result"),
@@ -245,8 +241,6 @@ def update_via_apt_command(host: Host, app: str) -> t.Sequence[str]:
 
 
 @myproj.job(
-    fromtype=Hosts,
-    totype=Results,
     args=[
         arg("app"),
         arg("version"),
