@@ -28,21 +28,20 @@ Viper CLI Reference
 ===================
 ```
 usage: viper [-h] [--version] [--debug]
-             {init,run-job,run,task:from-func,task,task:results,task:format,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:format,hosts:task,hosts:run-task,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:format,runners:run,runners:hosts,results:from-history,results,results:filter,results:count,results:sort,results:pipe,results:format,results:hosts,results:by-task}
+             {init,run-job,run,task:from-func,task,task:results,task:format,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:format,hosts:where,hosts:task,hosts:run-task,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:format,runners:where,runners:run,runners:hosts,results:from-history,results,results:filter,results:count,results:sort,results:pipe,results:format,results:where,results:hosts,results:by-task}
              ...
 
-Viper CLI v0.17.1
+Viper CLI v0.18.0
 
 positional arguments:
-  {init,run-job,run,task:from-func,task,task:results,task:format,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:format,hosts:task,hosts:run-task,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:format,runners:run,runners:hosts,results:from-history,results,results:filter,results:count,results:sort,results:pipe,results:format,results:hosts,results:by-task}
+  {init,run-job,run,task:from-func,task,task:results,task:format,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:format,hosts:where,hosts:task,hosts:run-task,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:format,runners:where,runners:run,runners:hosts,results:from-history,results,results:filter,results:count,results:sort,results:pipe,results:format,results:where,results:hosts,results:by-task}
     init                initialize the current workspace
     run-job             [? -> ?] run a custom defined job
     run                 alias of 'run-job'
     task:from-func      [-> Task] get the task from a Python function location
     task                alias of 'task:from-func'
     task:results        [Task -> Results] get the past results of given task
-    task:format         [Task -> str] format the data using the given
-                        template.
+    task:format         [Task -> str] format the data using the given template
     hosts:from-file     [-> Hosts] get a group of hosts from a file
     hosts:from-func     [-> Hosts] get a group of hosts from a Python function
                         location
@@ -52,7 +51,8 @@ positional arguments:
     hosts:sort          [Hosts -> Hosts] sort the hosts
     hosts:pipe          [Hosts -> ?] pipe the hosts to the given handler
     hosts:format        [Hosts -> str] format the data using the given
-                        template.
+                        template
+    hosts:where         [Hosts -> Hosts] select hosts matching the given query
     hosts:task          [Hosts -> Runners] assign a task to each host
     hosts:run-task      [Hosts -> Results] assign a task to each host and run
     hosts:results       [Hosts -> Results] get the past results of the hosts
@@ -62,7 +62,9 @@ positional arguments:
     runners:sort        [Runners -> Runners] sort the runners
     runners:pipe        [Runners -> ?] pipe the runners to the given handler
     runners:format      [Runners -> str] format the data using the given
-                        template.
+                        template
+    runners:where       [Runners -> Runners] select runners matching the given
+                        query
     runners:run         [Runners -> Results] run the assigned tasks
     runners:hosts       [Runners -> Hosts] get the hosts from the runners
     results:from-history
@@ -73,7 +75,9 @@ positional arguments:
     results:sort        [Results -> Results] sort the results
     results:pipe        [Results -> ?] pipe the results to the given handler
     results:format      [Results -> str] format the data using the given
-                        template.
+                        template
+    results:where       [Results -> Results] select results matching the given
+                        query
     results:hosts       [Results -> Hosts] get the hosts from the results
     results:by-task     [Task -> Results] get the past results of given task
 

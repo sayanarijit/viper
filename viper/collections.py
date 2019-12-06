@@ -8,6 +8,7 @@ from concurrent.futures import as_completed
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from dataclasses import field
+from enum import Enum
 from json import dumps as dumpjson
 from json import loads as loadjson
 from pydoc import locate
@@ -64,6 +65,15 @@ class CommandFactoryType:
     """TODO: This should be a protocol"""
 
     pass
+
+
+class WhereQueryOptions(Enum):
+    """Where query options for viper Items"""
+
+    is_ = "IS"
+    contains = "CONTAINS"
+    startswith = "STARTSWITH"
+    endswith = "ENDSWITH"
 
 
 @dataclass(frozen=True, order=True)
@@ -352,17 +362,17 @@ class Items(Collection):
 
     def range(
         self: ItemsType, i: t.Optional[int] = None, j: t.Optional[int] = None
-    ) -> t.Sequence[Item]:
+    ) -> ItemsType:
         """get the items in given range.
 
         :param int i (optional): The first index.
         :param int j (optional): The last index.
 
-        :rtype: tuple
+        :rtype: Items
 
         This has the same behaviour as Python's [i:j]
         """
-        return self._all[i:j]
+        return type(self).from_items(**self._all[i:j])
 
     def sort(
         self: ItemsType, key: t.Optional[t.Callable[[Item], object]] = None
@@ -391,7 +401,7 @@ class Items(Collection):
     def format(self: ItemsType, template: str, sep="\n") -> str:
         """Get a custom string representation of this list of objects.
 
-        :param str template: The template to be used as `"template".format(**item.to_dict())`
+        :param str template: The template will be compiled by Python's `.format()`.
         :param str sep: The separator used to separate all the items.
 
         :rtype: str
@@ -403,6 +413,42 @@ class Items(Collection):
             Hosts.from_items(Host("1.2.3.4")).format("{ip} {hostname} {meta[tag]}")
         """
         return sep.join(template.format(**x.to_dict()) for x in self._all)
+
+    def where(
+        self, key: str, option: WhereQueryOptions, values: t.Sequence[str]
+    ) -> ItemsType:
+        """Select items by a custom query.
+
+        :param str key: The key will be compiled by Python's `.format()`.
+        :param WhereQueryOptions option: The filter logic.
+        :param list values: The values for the key.
+
+        :rtype: Items
+        """
+        result = []
+
+        for obj in self._all:
+            val = f"{{{key}}}".format(**obj.to_dict())
+
+            if option is WhereQueryOptions.is_:
+                if val in values:
+                    result.append(obj)
+
+            elif option is WhereQueryOptions.contains:
+                if any(map(lambda x: x in val, values)):
+                    result.append(obj)
+
+            elif option is WhereQueryOptions.startswith:
+                if any(map(lambda x: val.startswith(x), values)):
+                    result.append(obj)
+
+            elif option is WhereQueryOptions.endswith:
+                if any(map(lambda x: val.endswith(x), values)):
+                    result.append(obj)
+            else:
+                raise ValueError(f"expecting enum {WhereQueryOptions}")
+
+        return type(self).from_items(*result)
 
 
 @dataclass(frozen=True, order=True)

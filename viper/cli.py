@@ -15,6 +15,7 @@ from viper.cli_base import SubCommand
 from viper.collections import Collection as ViperCollection
 from viper.collections import FilterType
 from viper.collections import HandlerType
+from viper.collections import WhereQueryOptions
 from viper.const import Config
 from viper.db import ViperDB
 
@@ -119,7 +120,7 @@ class TaskResultsCommand(SubCommand):
 
 
 class TaskFormatCommand(SubCommand):
-    """[Task -> str] format the data using the given template."""
+    """[Task -> str] format the data using the given template"""
 
     name = "task:format"
 
@@ -294,7 +295,7 @@ class HostsPipeCommand(SubCommand):
 
 
 class HostsFormatCommand(SubCommand):
-    """[Hosts -> str] format the data using the given template."""
+    """[Hosts -> str] format the data using the given template"""
 
     name = "hosts:format"
 
@@ -306,6 +307,28 @@ class HostsFormatCommand(SubCommand):
 
     def __call__(self, args: Namespace) -> int:
         print(Hosts.from_json(input()).format(args.template, sep=args.sep))
+        return 0
+
+
+class HostsWhereCommand(SubCommand):
+    """[Hosts -> Hosts] select hosts matching the given query"""
+
+    name = "hosts:where"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("key", help="property name/path of each item")
+        parser.add_argument(
+            "query_option", choices=[o.value for o in WhereQueryOptions],
+        )
+        parser.add_argument("values", nargs="*")
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(
+            Hosts.from_json(input())
+            .where(args.key, WhereQueryOptions(args.query_option), args.values)
+            .to_json(indent=args.indent)
+        )
         return 0
 
 
@@ -397,7 +420,7 @@ class RunnersPipeCommand(SubCommand):
 
 
 class RunnersFormatCommand(SubCommand):
-    """[Runners -> str] format the data using the given template."""
+    """[Runners -> str] format the data using the given template"""
 
     name = "runners:format"
 
@@ -409,6 +432,28 @@ class RunnersFormatCommand(SubCommand):
 
     def __call__(self, args: Namespace) -> int:
         print(Runners.from_json(input()).format(args.template, sep=args.sep))
+
+
+class RunnersWhereCommand(SubCommand):
+    """[Runners -> Runners] select runners matching the given query"""
+
+    name = "runners:where"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("key", help="property name/path of each item")
+        parser.add_argument(
+            "query_option", choices=[o.value for o in WhereQueryOptions],
+        )
+        parser.add_argument("values", nargs="*")
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(
+            Runners.from_json(input())
+            .where(args.key, WhereQueryOptions(args.query_option), args.values)
+            .to_json(indent=args.indent)
+        )
+        return 0
 
 
 class RunnersRunCommand(SubCommand):
@@ -534,7 +579,7 @@ class ResultsPipeCommand(SubCommand):
 
 
 class ResultsFormatCommand(SubCommand):
-    """[Results -> str] format the data using the given template."""
+    """[Results -> str] format the data using the given template"""
 
     name = "results:format"
 
@@ -546,6 +591,28 @@ class ResultsFormatCommand(SubCommand):
 
     def __call__(self, args: Namespace) -> int:
         print(Results.from_json(input()).format(args.template, sep=args.sep))
+        return 0
+
+
+class ResultsWhereCommand(SubCommand):
+    """[Results -> Results] select results matching the given query"""
+
+    name = "results:where"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("key", help="property name/path of each item")
+        parser.add_argument(
+            "query_option", choices=[o.value for o in WhereQueryOptions],
+        )
+        parser.add_argument("values", nargs="*")
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(
+            Results.from_json(input())
+            .where(args.key, WhereQueryOptions(args.query_option), args.values)
+            .to_json(indent=args.indent)
+        )
         return 0
 
 
@@ -605,6 +672,7 @@ def run() -> int:
     HostsSortCommand.attach_to(subparsers)
     HostsPipeCommand.attach_to(subparsers)
     HostsFormatCommand.attach_to(subparsers)
+    HostsWhereCommand.attach_to(subparsers)
 
     HostsTaskCommand.attach_to(subparsers)
     HostsRunTaskCommand.attach_to(subparsers)
@@ -616,6 +684,7 @@ def run() -> int:
     RunnersSortCommand.attach_to(subparsers)
     RunnersPipeCommand.attach_to(subparsers)
     RunnersFormatCommand.attach_to(subparsers)
+    RunnersWhereCommand.attach_to(subparsers)
 
     RunnersRunCommand.attach_to(subparsers)
     RunnersHostsCommand.attach_to(subparsers)
@@ -627,6 +696,7 @@ def run() -> int:
     ResultsSortCommand.attach_to(subparsers)
     ResultsPipeCommand.attach_to(subparsers)
     ResultsFormatCommand.attach_to(subparsers)
+    ResultsWhereCommand.attach_to(subparsers)
 
     ResultsHostsCommand.attach_to(subparsers)
     ResultsByTaskCommand.attach_to(subparsers)
