@@ -31,7 +31,7 @@ usage: viper [-h] [--version] [--debug]
              {init,run-job,run,task:from-func,task,task:results,task:format,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:format,hosts:task,hosts:run-task,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:format,runners:run,runners:hosts,results:from-history,results,results:filter,results:count,results:sort,results:pipe,results:format,results:hosts,results:by-task}
              ...
 
-Viper CLI v0.17.0
+Viper CLI v0.17.1
 
 positional arguments:
   {init,run-job,run,task:from-func,task,task:results,task:format,hosts:from-file,hosts:from-func,hosts,hosts:filter,hosts:count,hosts:sort,hosts:pipe,hosts:format,hosts:task,hosts:run-task,hosts:results,runners:filter,runners:count,runners:sort,runners:pipe,runners:format,runners:run,runners:hosts,results:from-history,results,results:filter,results:count,results:sort,results:pipe,results:format,results:hosts,results:by-task}
@@ -41,7 +41,7 @@ positional arguments:
     task:from-func      [-> Task] get the task from a Python function location
     task                alias of 'task:from-func'
     task:results        [Task -> Results] get the past results of given task
-    task:format         [Task -> str] format the data in a using the given
+    task:format         [Task -> str] format the data using the given
                         template.
     hosts:from-file     [-> Hosts] get a group of hosts from a file
     hosts:from-func     [-> Hosts] get a group of hosts from a Python function
@@ -51,7 +51,7 @@ positional arguments:
     hosts:count         [Hosts -> int] count the number of hosts
     hosts:sort          [Hosts -> Hosts] sort the hosts
     hosts:pipe          [Hosts -> ?] pipe the hosts to the given handler
-    hosts:format        [Hosts -> str] format the data in a using the given
+    hosts:format        [Hosts -> str] format the data using the given
                         template.
     hosts:task          [Hosts -> Runners] assign a task to each host
     hosts:run-task      [Hosts -> Results] assign a task to each host and run
@@ -61,7 +61,7 @@ positional arguments:
     runners:count       [Runners -> int] count the number of runners
     runners:sort        [Runners -> Runners] sort the runners
     runners:pipe        [Runners -> ?] pipe the runners to the given handler
-    runners:format      [Runners -> str] format the data in a using the given
+    runners:format      [Runners -> str] format the data using the given
                         template.
     runners:run         [Runners -> Results] run the assigned tasks
     runners:hosts       [Runners -> Hosts] get the hosts from the runners
@@ -72,7 +72,7 @@ positional arguments:
     results:count       [Results -> int] count the number of results
     results:sort        [Results -> Results] sort the results
     results:pipe        [Results -> ?] pipe the results to the given handler
-    results:format      [Results -> str] format the data in a using the given
+    results:format      [Results -> str] format the data using the given
                         template.
     results:hosts       [Results -> Hosts] get the hosts from the results
     results:by-task     [Task -> Results] get the past results of given task
