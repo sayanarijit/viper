@@ -4,13 +4,23 @@ from viper import Result
 from viper import Runner
 from viper import Task
 
+import pytest
 
-def make_echo_command(host):
-    return ("echo", host.ip)
+
+def make_empty_command(host):
+    return ()
+
+
+def make_echo_command(host, what="foo"):
+    return ("echo", what)
 
 
 def make_failing_command(host):
     return ("false",)
+
+
+def make_invalid_command(host):
+    return ("echo", 1, None, True, False)
 
 
 def process_stdout(out):
@@ -27,6 +37,13 @@ def pre_run(task):
 
 def post_run(result):
     pass
+
+
+def test_runner_invalid_data():
+    with pytest.raises(ValueError) as e:
+        Runner.from_dict({})
+
+    assert "invalid input data" in str(e.__dict__)
 
 
 def test_runner_run_save_load():
@@ -49,8 +66,8 @@ def test_runner_run_save_load():
     assert result.task == task
     assert result.host == host
     assert result.args == ()
-    assert result.command == ("echo", "1.1.1.1")
-    assert result.stdout == "output: 1.1.1.1\n"
+    assert result.command == ("echo", "foo")
+    assert result.stdout == "output: foo\n"
     assert result.stderr == "error: "
     assert result.returncode == 0
     assert result.end > result.start
@@ -59,11 +76,41 @@ def test_runner_run_save_load():
     assert Result.by_hash(hash(result)) == result
 
 
+def test_tasks_runner_run_invalid_commands():
+    host = Host("1.1.1.1")
+    task = Task("Fail", command_factory=make_invalid_command)
+
+    with pytest.raises(ValueError) as e:
+        host.task(task).run()
+
+    assert "command must be a list/tuple of strings" in str(e.__dict__)
+
+
+def test_tasks_runner_run_invalid_args():
+    host = Host("1.1.1.1")
+    task = Task("Fail", command_factory=make_echo_command)
+
+    with pytest.raises(ValueError) as e:
+        host.task(task, None).run()
+
+    assert "args must be a list/tuple of strings" in str(e.__dict__)
+
+
+def test_tasks_runner_run_empty_command():
+    host = Host("1.1.1.1")
+    task = Task("Fail", command_factory=make_empty_command)
+
+    with pytest.raises(ValueError) as e:
+        host.task(task).run()
+
+    assert "generated empty command" in str(e.__dict__)
+
+
 def test_tasks_runner_retry():
     host = Host("1.1.1.1")
-    task = Task("Fail", command_factory=make_failing_command, retry=3)
+    task = Task("Fail", command_factory=make_failing_command, retry=1)
 
-    assert host.task(task).run().retry == 3
+    assert host.task(task).run().retry == 1
 
 
 @mock.patch("viper.collections.Results")

@@ -1,5 +1,6 @@
 [run]
 branch = True
+omit = viper/demo/*
 
 [report]
 # Regexes for lines to exclude from consideration
