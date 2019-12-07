@@ -494,10 +494,15 @@ class ResultsFromHistoryCommand(SubCommand):
     aliases = ("results",)
 
     def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument(
+            "--final",
+            action="store_true",
+            help="get the final results only (shortcut to `viper results | viper results:final`)",
+        )
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
-        print(Results.from_history().to_json(indent=args.indent))
+        print(Results.from_history(final=args.final).to_json(indent=args.indent))
         return 0
 
 
@@ -641,8 +646,23 @@ class ResultsByTaskCommand(SubCommand):
         return 0
 
 
+class ResultsFinal(SubCommand):
+    """[Results -> Results] get the final results only (ignoring the previous retries)"""
+
+    name = "results:final"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(Results.from_json(input()).final().to_json(indent=args.indent))
+        return 0
+
+
 def run() -> int:
-    parser = ArgumentParser("viper", description=f"Viper CLI {__version__}")
+    parser = ArgumentParser(
+        "viper", description=f"Viper Infrastructure Commander {__version__}"
+    )
     parser.add_argument("--version", action="version", version=__version__)
     parser.add_argument(
         "--debug",
@@ -690,6 +710,7 @@ def run() -> int:
 
     # Task results commands
     ResultsFromHistoryCommand.attach_to(subparsers)
+    ResultsFinal.attach_to(subparsers)
     ResultsFilterCommand.attach_to(subparsers)
     ResultsCountCommand.attach_to(subparsers)
     ResultsSortCommand.attach_to(subparsers)
@@ -699,6 +720,9 @@ def run() -> int:
 
     ResultsHostsCommand.attach_to(subparsers)
     ResultsByTaskCommand.attach_to(subparsers)
+
+    # Add the modules path
+    sys.path.insert(0, os.path.realpath(Config.modules_path.value))
 
     # Import project specific commands
     if os.path.exists("viperfile.py"):

@@ -124,8 +124,8 @@ class Project:
             doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
 
             class HostGroupCommand(SubCommand):
-                name = f"@{self.prefix}:{func.__name__}"
                 __doc__ = f"[-> Hosts] {doc}"
+                name = f"@{self.prefix}:{func.__name__}"
 
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
@@ -179,8 +179,8 @@ class Project:
             doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
 
             class FilterCommand(SubCommand):
-                name = f"@{self.prefix}:{func.__name__}"
                 __doc__ = f"[{objtype.__name__} -> {objtype.__name__}] {doc}"
+                name = f"@{self.prefix}:{func.__name__}"
 
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:
@@ -250,8 +250,8 @@ class Project:
             doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
 
             class HandlerCommand(SubCommand):
-                name = f"@{self.prefix}:{func.__name__}"
                 __doc__ = f"[{fromtype.__name__} -> {totype.__name__}] {doc}"
+                name = f"@{self.prefix}:{func.__name__}"
 
                 def add_arguments(self, parser: ArgumentParser) -> None:
                     if args:

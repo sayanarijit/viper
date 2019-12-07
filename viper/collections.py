@@ -1010,7 +1010,7 @@ class Results(Items):
     _item_factory: t.Type[Results] = field(init=False, default=Result)
 
     @classmethod
-    def from_history(cls) -> Results:
+    def from_history(cls, final=False) -> Results:
         """Fetch and return all the results from history.
 
         :rtype: ciper.collections.Results
@@ -1019,7 +1019,8 @@ class Results(Items):
             rows = conn.execute("SELECT hash FROM results ORDER BY start DESC")
             results = [cls._item_factory.by_hash(r[0]) for r in rows]
 
-        return cls.from_items(*results)
+        results = cls.from_items(*results)
+        return results.final() if final else results
 
     @classmethod
     def by_host(cls, host: Host) -> Results:
@@ -1067,3 +1068,28 @@ class Results(Items):
         :rtype: viper.collections.Hosts
         """
         return Hosts.from_items(*(r.host for r in self._all))
+
+    def final(self) -> Results:
+        """Get the final results only (ignoring the previous retries).
+
+        :rtype: viper.collections.Results
+        """
+        results: t.Dict[float, t.Dict[Host, Result]] = {}
+        for result in self._all:
+            if result.trigger_time not in results:
+                results[result.trigger_time] = {result.host: result}
+                continue
+
+            res_grp = results[result.trigger_time]
+            if result.host not in res_grp:
+                res_grp[result.host] = result
+                continue
+
+            if res_grp[result.host].retry < result.retry:
+                res_grp[result.host] = result
+
+        out = []
+        for res_grp in results.values():
+            for res in res_grp.values():
+                out.append(res)
+        return Results.from_items(*out)
