@@ -1002,6 +1002,13 @@ class Result(Item):
 
         return self
 
+    def runner(self) -> Runner:
+        """Recreate the runner from the result.
+
+        :rtype: viper.collections.Runner
+        """
+        return Runner(host=self.host, task=self.task, args=self.args)
+
 
 @dataclass(frozen=True)
 class Results(Items):
@@ -1093,3 +1100,17 @@ class Results(Items):
             for res in res_grp.values():
                 out.append(res)
         return Results.from_items(*out)
+
+    def runners(self) -> Runners:
+        """Recreate the runners from the results.
+
+        :rtype: viper.collections.Runners
+        """
+        return Runners.from_items(*(r.runner() for r in self._all))
+
+    def re_run(self, max_workers=Config.max_workers.value) -> Results:
+        """Recreate the runners from the results and run again.
+
+        :rtype: viper.collections.Results
+        """
+        return self.runners().run(max_workers=max_workers)

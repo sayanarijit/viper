@@ -633,6 +633,38 @@ class ResultsHostsCommand(SubCommand):
         return 0
 
 
+class ResultsRunnersCommand(SubCommand):
+    """[Results -> Runners] recreate the runners from the results"""
+
+    name = "results:runners"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(Results.from_json(input()).runners().to_json(indent=args.indent))
+        return 0
+
+
+class ResultsReRunCommand(SubCommand):
+    """[Results -> Results] recreate the runners from the results and run again"""
+
+    name = "results:re-run"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("--max-workers", type=int, default=Config.max_workers.value)
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(
+            Results.from_json(input())
+            .runners()
+            .run(max_workers=args.max_workers)
+            .to_json(indent=args.indent)
+        )
+        return 0
+
+
 class ResultsByTaskCommand(SubCommand):
     """[Task -> Results] get the past results of given task"""
 
@@ -710,7 +742,7 @@ def run() -> int:
 
     # Task results commands
     ResultsFromHistoryCommand.attach_to(subparsers)
-    ResultsFinal.attach_to(subparsers)
+
     ResultsFilterCommand.attach_to(subparsers)
     ResultsCountCommand.attach_to(subparsers)
     ResultsSortCommand.attach_to(subparsers)
@@ -718,7 +750,10 @@ def run() -> int:
     ResultsFormatCommand.attach_to(subparsers)
     ResultsWhereCommand.attach_to(subparsers)
 
+    ResultsFinal.attach_to(subparsers)
     ResultsHostsCommand.attach_to(subparsers)
+    ResultsRunnersCommand.attach_to(subparsers)
+    ResultsReRunCommand.attach_to(subparsers)
     ResultsByTaskCommand.attach_to(subparsers)
 
     # Add the modules path
