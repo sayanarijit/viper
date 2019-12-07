@@ -3,6 +3,7 @@ from viper import Runner
 from viper import Task
 
 import json
+import pytest
 
 
 def make_echo_command(host):
@@ -32,11 +33,11 @@ def test_task_to_json():
     assert task.to_json() == json.dumps(
         {
             "name": "print IP address",
-            "command_factory": "test_task.make_echo_command",
+            "command_factory": "tests.test_task.make_echo_command",
             "timeout": None,
             "retry": 0,
-            "stdout_processor": "test_task.process_stdout",
-            "stderr_processor": "test_task.process_stderr",
+            "stdout_processor": "tests.test_task.process_stdout",
+            "stderr_processor": "tests.test_task.process_stderr",
             "pre_run": None,
             "post_run": None,
             "meta": {},
@@ -56,10 +57,10 @@ def test_task_from_json():
         json.dumps(
             {
                 "name": "print IP address",
-                "command_factory": "test_task.make_echo_command",
+                "command_factory": "tests.test_task.make_echo_command",
                 "timeout": None,
-                "stdout_processor": "test_task.process_stdout",
-                "stderr_processor": "test_task.process_stderr",
+                "stdout_processor": "tests.test_task.process_stdout",
+                "stderr_processor": "tests.test_task.process_stderr",
                 "pre_run": None,
                 "post_run": None,
             }
@@ -67,6 +68,16 @@ def test_task_from_json():
     )
 
     assert task == task_json
+
+    with pytest.raises(ValueError) as e:
+        Task.from_json("{}")
+
+    assert "invalid input data" in str(e.__dict__)
+
+    with pytest.raises(ValueError) as e:
+        Task.from_json('{"command_factory": "viper.demo.commands.ping_command"}')
+
+    assert "invalid input data" in str(e.__dict__)
 
 
 def test_runner_to_from_json():
@@ -88,7 +99,7 @@ def test_runner_to_from_json():
             },
             "task": {
                 "name": "print IP address",
-                "command_factory": "test_task.make_echo_command",
+                "command_factory": "tests.test_task.make_echo_command",
                 "timeout": None,
                 "retry": 0,
                 "stdout_processor": None,
@@ -103,3 +114,8 @@ def test_runner_to_from_json():
 
     assert runner.to_json() == runner_json
     assert Runner.from_json(runner_json) == runner
+
+    with pytest.raises(ValueError) as e:
+        Task.from_json('{"command_factory": "foo"}')
+
+    assert "could not locate" in str(e.__dict__)

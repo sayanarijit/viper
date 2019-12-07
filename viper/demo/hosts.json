@@ -1,0 +1,14 @@
+[
+    {
+        "ip": "999.999.999.999",
+        "name": "nano",
+        "provider": "IBM",
+        "alias": "nanometer"
+    },
+    {
+        "ip": "999.000.000.999",
+        "name": "max",
+        "provider": "AWS",
+        "alias": "maxima"
+    }
+]

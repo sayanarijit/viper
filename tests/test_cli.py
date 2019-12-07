@@ -1,16 +1,14 @@
+from viper.cli import __doc__
 from viper.cli import func
-from viper.demo import __doc__ as examples_doc
 
 import pytest
-import shutil
 import subprocess
 
 
 def test_all_cli_examples():
-
     lines = [
         line.strip()
-        for line in examples_doc.splitlines()
+        for line in __doc__.splitlines()
         if line.startswith("   ") and not line.strip().startswith("#")
     ]
 
@@ -26,8 +24,6 @@ def test_all_cli_examples():
             del buffr[:]
             continue
         commands.append(line)
-
-    assert subprocess.run(["viper", "init", "-f"]).returncode == 0
 
     for command in commands:
         print(command)
@@ -50,14 +46,3 @@ def test_print_usage():
 
     assert p.returncode == 1
     assert "usage: viper" in out.decode()
-
-
-def test_print_usage_with_viperfile():
-    shutil.copyfile("viper/demo/viperfile.py", "/tmp/viperfile.py")
-    p = subprocess.Popen(
-        ["viper"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd="/tmp",
-    )
-    out, err = p.communicate()
-
-    assert p.returncode == 1
-    assert "@myproj:allhosts" in out.decode()

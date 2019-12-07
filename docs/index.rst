@@ -8,9 +8,9 @@ Viper Infrastructure Commander
 
 .. toctree::
    :maxdepth: 5
-   :caption: Contents:
 
-   viper.rst
+   intro.rst
+   modules.rst
 
 
 Indices and tables

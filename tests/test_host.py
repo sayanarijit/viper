@@ -5,17 +5,33 @@ import json
 import pytest
 
 
+def test_from_func():
+    with pytest.raises(ValueError) as e:
+        Host.from_func("foo")
+
+    assert "could not resolve" in str(e.__dict__)
+
+    with pytest.raises(ValueError) as e:
+        Host.from_func("viper.demo.tasks.ping")
+
+    assert "does not produce a valid" in str(e.__dict__)
+
+
 def test_host_to_json():
-    assert Host("1.1.1.1").to_json() == json.dumps(
-        {
-            "ip": "1.1.1.1",
-            "hostname": None,
-            "domain": None,
-            "port": 22,
-            "login_name": None,
-            "identity_file": None,
-            "meta": {},
-        }
+    assert (
+        Host("1.1.1.1").to_json()
+        == json.dumps(
+            {
+                "ip": "1.1.1.1",
+                "hostname": None,
+                "domain": None,
+                "port": 22,
+                "login_name": None,
+                "identity_file": None,
+                "meta": {},
+            }
+        )
+        == str(Host("1.1.1.1"))
     )
 
 
@@ -34,6 +50,11 @@ def test_from_json():
         )
     ) == Host("1.1.1.1")
 
+    with pytest.raises(ValueError) as e:
+        Host.from_json("{}")
+
+    assert "invalid input data" in str(e.__dict__)
+
 
 def test_fqdn():
     with pytest.raises(AttributeError) as e:
@@ -49,6 +70,10 @@ def test_fqdn():
     assert "hostname" in str(vars(e))
 
     assert Host("1.1.1.1", "host1", "domain.com").fqdn() == "host1.domain.com"
+
+
+def test_format():
+    assert Host("1.1.1.1").format("<{ip}>") == "<1.1.1.1>"
 
 
 @mock.patch("viper.collections.Task")

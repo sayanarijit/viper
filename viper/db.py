@@ -48,6 +48,6 @@ class ViperDB:
     def __exit__(self, exc_type: type, exc_value: t.Any, exc_traceback: Exception):
         try:
             self.engine.commit()
-        except Exception:  # no cover
+        except Exception:  # pragma: no cover
             self.engine.rollback()
         self.engine.close()

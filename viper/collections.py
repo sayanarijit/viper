@@ -51,14 +51,14 @@ __all__ = [
 class HandlerType:
     """TODO: This should be a protocol"""
 
-    def __call__(self, obj: object, *args: object) -> object:
+    def __call__(self, obj: object, *args: object) -> object:  # pragma: no cover
         pass
 
 
 class FilterType:
     """TODO: This should be a protocol"""
 
-    def __call__(self, obj: object, *args: object) -> bool:
+    def __call__(self, obj: object, *args: object) -> bool:  # pragma: no cover
         pass
 
 
@@ -94,7 +94,7 @@ class Collection:
 
     def from_json(
         cls: t.Type[CollectionType], json: str, *args: object, **kwargs: object
-    ) -> CollectionType:
+    ) -> CollectionType:  # pragma: no cover
         """Initialise a new object of this class from the given JSON string.
 
         :param str json: The JSON data to parse.
@@ -110,7 +110,7 @@ class Collection:
         """
         raise NotImplementedError()
 
-    def to_json(self, *args: object, **kwargs: object) -> str:
+    def to_json(self, *args: object, **kwargs: object) -> str:  # pragma: no cover
         """Represent the collection as JSON data.
 
         :param object args and kwargs: These will be passed to `json.laods`.
@@ -190,7 +190,9 @@ class Item(Collection):
     """
 
     @classmethod
-    def from_dict(cls: t.Type[ItemType], dict_: t.Dict[str, object]) -> ItemType:
+    def from_dict(  # pragma: no cover
+        cls: t.Type[ItemType], dict_: t.Dict[str, object]
+    ) -> ItemType:
         """Initialize item from the given dict.
 
         :param dict dict_: The dictionary containing the properties for this object.
@@ -203,13 +205,9 @@ class Item(Collection):
 
             Host.from_dict({"ip": "1.2.3.4"})
         """
+        raise NotImplementedError()
 
-        try:
-            return cls(**dict_)
-        except Exception:
-            raise ValueError(f"invalid input data for {cls.__name__}")
-
-    def to_dict(self: ItemType) -> t.Dict[str, object]:
+    def to_dict(self: ItemType) -> t.Dict[str, object]:  # pragma: no cover
         """Represent the item as dict.
 
         :rtype: dict
@@ -220,7 +218,7 @@ class Item(Collection):
 
             Host("1.2.3.4").to_dict()
         """
-        return vars(self)
+        raise NotImplementedError()
 
     @classmethod
     def from_json(cls: t.Type[ItemType], json, *args, **kwargs) -> ItemType:
@@ -294,7 +292,7 @@ class Items(Collection):
             Hosts.from_list([{"ip": "1.2.3.4"}])
         """
 
-        if cls._item_factory is None:
+        if cls._item_factory is None:  # pragma: no cover
             raise NotImplementedError()
 
         try:
@@ -329,9 +327,6 @@ class Items(Collection):
 
         return dumpjson(self.to_list(), *args, **kwargs)
 
-    def __getitem__(self: ItemsType, key: int) -> Item:
-        return self._all[key]
-
     def __len__(self: ItemsType) -> int:
         return len(self._all)
 
@@ -342,28 +337,23 @@ class Items(Collection):
         """
         return len(self)
 
-    def first(self: ItemsType) -> Item:
-        """Get the first item from the group of items.
+    def first(self: ItemsType, n: int) -> ItemsType:
+        """Get the first n items from the group of items.
+
+        Works like Python's [:n] index
 
         :rtype: viper.collections.Item
         """
-        return self[0]
+        return self.range(None, n)
 
-    def last(self: ItemsType) -> Item:
-        """Get the last item from the group of items.
+    def last(self: ItemsType, n: int) -> ItemsType:
+        """Get the last n item from the group of items.
 
-        :rtype: viper.collections.Item
-        """
-        return self[-1]
-
-    def index(self: ItemsType, index: int) -> Item:
-        """The the item from a given index.
-
-        :param int index: Index number.
+        Works like Python's [-n:] index
 
         :rtype: viper.collections.Item
         """
-        return self[index]
+        return self.range(-n)
 
     def range(
         self: ItemsType, i: t.Optional[int] = None, j: t.Optional[int] = None
@@ -377,7 +367,7 @@ class Items(Collection):
 
         This has the same behaviour as Python's [i:j]
         """
-        return type(self).from_items(**self._all[i:j])
+        return type(self).from_items(*self._all[i:j])
 
     def sort(
         self: ItemsType, key: t.Optional[t.Callable[[Item], object]] = None
@@ -493,7 +483,11 @@ class Host(Item):
 
     @classmethod
     def from_dict(cls, dict_):
-        return cls(**dict(dict_, meta=tuple(dict_.get("meta", {}).items())))
+        try:
+            host = cls(**dict(dict_, meta=tuple(dict_.get("meta", {}).items())))
+        except Exception:
+            raise ValueError(f"invalid input data for {cls.__name__}")
+        return host
 
     def to_dict(self):
         return dict(vars(self), meta=dict(self.meta))
@@ -653,7 +647,7 @@ class Hosts(Items):
         """
         results = []
         for h in self._all:
-            for r in h.results():
+            for r in h.results().all():
                 results.append(r)
         return Results.from_items(*results)
 
@@ -684,21 +678,28 @@ class Task(Item):
         errp = dict_.get("stderr_processor")
         pre = dict_.get("pre_run")
         post = dict_.get("post_run")
+        if "command_factory" not in dict_:
+            raise ValueError(f"invalid input data for {cls.__name__}")
+
         cf = locate(dict_["command_factory"])
         if not cf:
             raise ValueError(f"could not locate {repr(dict_['command_factory'])}")
 
-        return cls(
-            **dict(
-                dict_,
-                command_factory=cf,
-                stdout_processor=locate(outp) if outp else None,
-                stderr_processor=locate(errp) if errp else None,
-                pre_run=locate(pre) if pre else None,
-                post_run=locate(post) if post else None,
-                meta=tuple(dict_.get("meta", {}).items()),
+        try:
+            hosts = cls(
+                **dict(
+                    dict_,
+                    command_factory=cf,
+                    stdout_processor=locate(outp) if outp else None,
+                    stderr_processor=locate(errp) if errp else None,
+                    pre_run=locate(pre) if pre else None,
+                    post_run=locate(post) if post else None,
+                    meta=tuple(dict_.get("meta", {}).items()),
+                )
             )
-        )
+        except Exception:
+            raise ValueError(f"invalid input data for {cls.__name__}")
+        return hosts
 
     def to_dict(self) -> t.Dict[str, object]:
         cf = self.command_factory
@@ -740,14 +741,17 @@ class Runner(Item):
 
     @classmethod
     def from_dict(cls, dict_: t.Dict[str, object]) -> Runner:
-        return cls(
-            **dict(
-                dict_,
-                task=Task.from_dict(dict_["task"]),
-                host=Host.from_dict(dict_["host"]),
-                args=tuple(dict_.get("args", [])),
+        try:
+            return cls(
+                **dict(
+                    dict_,
+                    task=Task.from_dict(dict_["task"]),
+                    host=Host.from_dict(dict_["host"]),
+                    args=tuple(dict_.get("args", [])),
+                )
             )
-        )
+        except Exception:
+            raise ValueError(f"invalid input data for {cls.__name__}")
 
     def to_dict(self) -> t.Dict[str, object]:
         return dict(vars(self), task=self.task.to_dict(), host=self.host.to_dict())
@@ -850,7 +854,7 @@ class Runners(Items):
             for r in self.all():
                 try:
                     results.append(r.run(trigger_time=trigger_time))
-                except Exception:
+                except Exception:  # pragma: no cover
                     print(traceback.format_exc(), file=sys.stderr)
             return Results.from_items(*results)
 
@@ -864,7 +868,7 @@ class Runners(Items):
             for f in as_completed(futures):
                 try:
                     results.append(f.result())
-                except Exception:
+                except Exception:  # pragma: no cover
                     print(traceback.format_exc(), file=sys.stderr)
 
         return Results.from_items(*results)
@@ -934,15 +938,18 @@ class Result(Item):
 
     @classmethod
     def from_dict(cls, dict_: t.Dict[str, object]) -> Task:
-        return cls(
-            **dict(
-                dict_,
-                args=tuple(dict_["args"]),
-                command=tuple(dict_["command"]),
-                task=Task.from_dict(dict_["task"]),
-                host=Host.from_dict(dict_["host"]),
+        try:
+            return cls(
+                **dict(
+                    dict_,
+                    args=tuple(dict_["args"]),
+                    command=tuple(dict_["command"]),
+                    task=Task.from_dict(dict_["task"]),
+                    host=Host.from_dict(dict_["host"]),
+                )
             )
-        )
+        except Exception:
+            raise ValueError(f"invalid input data for {cls.__name__}")
 
     def to_dict(self) -> t.Dict[str, object]:
         return dict(vars(self), task=self.task.to_dict(), host=self.host.to_dict())

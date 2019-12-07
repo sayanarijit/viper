@@ -3,6 +3,7 @@ from viper import Result
 from viper import Task
 
 import json
+import pytest
 
 
 def make_echo_command(host):
@@ -41,7 +42,7 @@ def test_result_to_from_json():
             "trigger_time": 1.0,
             "task": {
                 "name": "print IP address",
-                "command_factory": "test_result.make_echo_command",
+                "command_factory": "tests.test_result.make_echo_command",
                 "timeout": None,
                 "retry": 0,
                 "stdout_processor": None,
@@ -72,3 +73,8 @@ def test_result_to_from_json():
 
     assert result_json == result.to_json()
     assert Result.from_json(result_json) == result
+
+    with pytest.raises(ValueError) as e:
+        Result.from_dict({})
+
+    assert "invalid input data" in str(e.__dict__)

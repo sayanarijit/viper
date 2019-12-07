@@ -52,8 +52,8 @@ def test_runners_run_in_sequence():
     runners = hosts.task(task)
     results = runners.run()
 
-    runner = runners.first()
-    result = results.first()
+    runner = runners.all()[0]
+    result = results.all()[0]
 
     assert runner == Runner(host, task)
     assert result.task == task
@@ -81,8 +81,8 @@ def test_runners_run_in_parallel():
     runners = hosts.task(task)
     results = runners.run(max_workers=5)
 
-    runner = runners.first()
-    result = results.first()
+    runner = runners.all()[0]
+    result = results.all()[0]
 
     assert runner == Runner(host, task)
     assert result.task == task

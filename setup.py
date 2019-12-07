@@ -14,7 +14,7 @@ import typing as t
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
-with open(path.join(here, "README.md"), encoding="utf-8") as f:
+with open(path.join(here, "README.rst"), encoding="utf-8") as f:
     long_description = f.read()
 
 install_requires: t.List[str] = []
@@ -35,7 +35,6 @@ setup(
     version=__version__,
     description=__description__,
     long_description=long_description,
-    long_description_content_type="text/markdown",
     url=__homepage__,
     author=__author__,
     author_email=__email__,
