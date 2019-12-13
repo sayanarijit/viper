@@ -411,3 +411,12 @@ def install_via_apt(hosts: Hosts, args: Namespace) -> Results:
         .final()  # Filter only the final results
         .pipe(lambda results: results2csv(results, args))
     )
+
+
+@myproj.action()
+def get_triggers(args: Namespace) -> t.Sequence[float]:
+    """Get the unique trigger times from history"""
+
+    results = Results.from_history(final=True).all()
+    triggers = set(x.trigger_time for x in results)
+    return tuple(sorted(triggers))

@@ -52,6 +52,7 @@ class Project:
     """
 
     prefix: str
+    action_commands: t.List[SubCommand] = field(default_factory=lambda: [])
     hostgroup_commands: t.List[SubCommand] = field(default_factory=lambda: [])
     filter_commands: t.List[SubCommand] = field(default_factory=lambda: [])
     handler_commands: t.List[SubCommand] = field(default_factory=lambda: [])
@@ -60,7 +61,8 @@ class Project:
     def all_commands(self) -> t.List[SubCommand]:
         """Return all sub commands"""
         return (
-            self.hostgroup_commands
+            self.action_commands
+            + self.hostgroup_commands
             + self.filter_commands
             + self.handler_commands
             + self.job_commands
@@ -202,12 +204,12 @@ class Project:
         """
 
         def wrapper(
-            func: t.Callable[[ViperCollection, Namespace], object]
-        ) -> t.Callable[[ViperCollection, Namespace], object]:
+            func: t.Callable[[ViperCollection, Namespace], Results]
+        ) -> t.Callable[[ViperCollection, Namespace], Results]:
 
             doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
 
-            class WorkFlowCommand(SubCommand):
+            class JobCommand(SubCommand):
                 __doc__ = f"[Hosts -> Results] {doc}"
                 name = f"@{self.prefix}:{func.__name__}"
 
@@ -226,7 +228,45 @@ class Project:
                     print(results.to_json(indent=args.indent))
                     return 0
 
-            self.job_commands.append(WorkFlowCommand)
+            self.job_commands.append(JobCommand)
+            return func
+
+        return wrapper
+
+    def action(
+        self, args: t.Optional[t.Sequence[ArgType]] = None,
+    ):
+        """Use this decorator to define an action.
+
+        :param list args (optional): List of arguments for :py:class:`argparse.ArgumentParser`.
+
+        .. tip:: See :py:func:`viper.demo.viperfile.get_triggers`.
+        """
+
+        def wrapper(
+            func: t.Callable[[Namespace], object]
+        ) -> t.Callable[[Namespace], object]:
+
+            doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
+
+            class ActionCommand(SubCommand):
+                __doc__ = f"{doc}"
+                name = f"@{self.prefix}:{func.__name__}"
+
+                def add_arguments(self, parser: ArgumentParser) -> None:
+                    if args:
+                        for arg in args:
+                            parser.add_argument(*arg[0], **arg[1])
+
+                def __call__(self, args: Namespace) -> int:
+                    res = func(args)
+                    if res is not None:
+                        print(
+                            "\n".join(map(str, res)) if isinstance(res, tuple) else res
+                        )
+                    return 0
+
+            self.action_commands.append(ActionCommand)
             return func
 
         return wrapper

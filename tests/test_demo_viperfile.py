@@ -179,3 +179,26 @@ def test_install_via_apt():
     with open(RESULTS_PATH) as f:
         data = f.read()
     assert "returncode" in data  # only the table headers will be there
+
+
+def test_get_triggers():
+
+    run("viper init -f")
+
+    res = run("viper @myproj:get_triggers")
+    assert res.returncode == 0
+    assert res.stdout.strip() == ""
+
+    run(
+        "viper @myproj:allhosts"
+        " | viper @myproj:app_version python results.csv --max-workers 50"
+    )
+
+    run(
+        "viper @myproj:allhosts"
+        " | viper @myproj:app_version python results.csv --max-workers 50"
+    )
+
+    res = run("viper @myproj:get_triggers")
+    assert res.returncode == 0
+    assert len(res.stdout.strip().split()) == 2
