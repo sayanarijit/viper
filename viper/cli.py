@@ -512,6 +512,34 @@ class HostsWhereCommand(SubCommand):
         return 0
 
 
+class HostsHeadCommand(SubCommand):
+    """[Hosts -> Hosts] get the first 'n' hosts"""
+
+    name = "hosts:head"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("-n", type=int, help="number of hosts", default=10)
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(Hosts.from_json(input()).head(args.n).to_json(indent=args.indent))
+        return 0
+
+
+class HostsTailCommand(SubCommand):
+    """[Hosts -> Hosts] get the last 'n' hosts"""
+
+    name = "hosts:tail"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("-n", type=int, help="number of hosts", default=10)
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(Hosts.from_json(input()).tail(args.n).to_json(indent=args.indent))
+        return 0
+
+
 class HostsResultsCommand(SubCommand):
     """[Hosts -> Results] get the past results of the hosts"""
 
@@ -633,6 +661,34 @@ class RunnersWhereCommand(SubCommand):
             .where(args.key, WhereConditions(args.condition), args.values)
             .to_json(indent=args.indent)
         )
+        return 0
+
+
+class RunnersHeadCommand(SubCommand):
+    """[Runners -> Runners] get the first 'n' runners"""
+
+    name = "runners:head"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("-n", type=int, help="number of hosts", default=10)
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(Runners.from_json(input()).head(args.n).to_json(indent=args.indent))
+        return 0
+
+
+class RunnersTailCommand(SubCommand):
+    """[Runners -> Runners] get the last 'n' runners"""
+
+    name = "runners:tail"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("-n", type=int, help="number of hosts", default=10)
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(Runners.from_json(input()).tail(args.n).to_json(indent=args.indent))
         return 0
 
 
@@ -803,6 +859,34 @@ class ResultsWhereCommand(SubCommand):
         return 0
 
 
+class ResultsHeadCommand(SubCommand):
+    """[Results -> Results] get the first 'n' results"""
+
+    name = "results:head"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("-n", type=int, help="number of hosts", default=10)
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(Results.from_json(input()).head(args.n).to_json(indent=args.indent))
+        return 0
+
+
+class ResultsTailCommand(SubCommand):
+    """[Results -> Results] get the last 'n' results"""
+
+    name = "results:tail"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("-n", type=int, help="number of hosts", default=10)
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(Results.from_json(input()).tail(args.n).to_json(indent=args.indent))
+        return 0
+
+
 class ResultsHostsCommand(SubCommand):
     """[Results -> Hosts] get the hosts from the results"""
 
@@ -907,6 +991,8 @@ def run() -> int:
     HostsPipeCommand.attach_to(subparsers)
     HostsFormatCommand.attach_to(subparsers)
     HostsWhereCommand.attach_to(subparsers)
+    HostsHeadCommand.attach_to(subparsers)
+    HostsTailCommand.attach_to(subparsers)
 
     HostsTaskCommand.attach_to(subparsers)
     HostsRunTaskCommand.attach_to(subparsers)
@@ -919,6 +1005,8 @@ def run() -> int:
     RunnersPipeCommand.attach_to(subparsers)
     RunnersFormatCommand.attach_to(subparsers)
     RunnersWhereCommand.attach_to(subparsers)
+    RunnersHeadCommand.attach_to(subparsers)
+    RunnersTailCommand.attach_to(subparsers)
 
     RunnersRunCommand.attach_to(subparsers)
     RunnersHostsCommand.attach_to(subparsers)
@@ -932,6 +1020,8 @@ def run() -> int:
     ResultsPipeCommand.attach_to(subparsers)
     ResultsFormatCommand.attach_to(subparsers)
     ResultsWhereCommand.attach_to(subparsers)
+    ResultsHeadCommand.attach_to(subparsers)
+    ResultsTailCommand.attach_to(subparsers)
 
     ResultsFinal.attach_to(subparsers)
     ResultsHostsCommand.attach_to(subparsers)

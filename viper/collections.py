@@ -337,8 +337,8 @@ class Items(Collection):
         """
         return len(self)
 
-    def first(self: ItemsType, n: int) -> ItemsType:
-        """Get the first n items from the group of items.
+    def head(self: ItemsType, n: int = 10) -> ItemsType:
+        """Get the first 'n' items from the group of items.
 
         Works like Python's [:n] index
 
@@ -346,8 +346,8 @@ class Items(Collection):
         """
         return self.range(None, n)
 
-    def last(self: ItemsType, n: int) -> ItemsType:
-        """Get the last n item from the group of items.
+    def tail(self: ItemsType, n: int = 10) -> ItemsType:
+        """Get the last 'n' item from the group of items.
 
         Works like Python's [-n:] index
 
