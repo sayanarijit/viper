@@ -120,13 +120,11 @@ def test_hosts_filter():
 
 
 def test_hosts_first():
-    assert Hosts.from_file(CSV_FILE).sort().first(1) == Hosts.from_items(
-        Host("1.1.1.1")
-    )
+    assert Hosts.from_file(CSV_FILE).sort().head(1) == Hosts.from_items(Host("1.1.1.1"))
 
 
 def test_hosts_last():
-    assert Hosts.from_file(CSV_FILE).sort().last(1) == Hosts.from_items(Host("2.2.2.2"))
+    assert Hosts.from_file(CSV_FILE).sort().tail(1) == Hosts.from_items(Host("2.2.2.2"))
 
 
 def test_hosts_count():
