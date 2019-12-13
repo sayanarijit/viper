@@ -184,6 +184,14 @@ Let's do that again in one go
     viper hosts viper.demo.hosts.group1 \\
             | viper hosts:run-task viper.demo.tasks.ping \\
             | viper results:pipe viper.demo.handlers.export_csv /tmp/results.csv
+
+
+Get the unique trigger times from history (custom defined action)
+-----------------------------------------------------------------
+
+.. code-block:: bash
+
+    viper lets viper.demo.actions.get_triggers
 """
 
 from argparse import ArgumentParser
@@ -245,6 +253,22 @@ class InitCommand(SubCommand):
                 "database already exists!"
                 " use '-f'/'--force' to force re-create the database."
             )
+        return 0
+
+
+class LetsCommand(SubCommand):
+    """perform any defined action"""
+
+    name = "lets"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("action", type=func, help="action definition location")
+        parser.add_argument("args", nargs="*", help="optional arguments for the action")
+
+    def __call__(self, args: Namespace) -> int:
+        res = args.action(*args.args)
+        if res is not None:
+            print("\n".join(map(str, res)) if isinstance(res, tuple) else res)
         return 0
 
 
@@ -888,6 +912,9 @@ def run() -> int:
 
     # Init command
     InitCommand.attach_to(subparsers)
+
+    # Init command
+    LetsCommand.attach_to(subparsers)
 
     # Job run command
     RunJobCommand.attach_to(subparsers)
