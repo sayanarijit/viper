@@ -14,6 +14,18 @@ CSV_FILE = f"{TEST_DATA_DIR}/hosts.csv"
 JSON_FILE = f"{TEST_DATA_DIR}/hosts.json"
 
 
+def test_hosts_from_items_errors():
+    with pytest.raises(ValueError) as e:
+        Hosts.from_items(1, 2, 3)
+
+    assert "expecting 'Item' or generator of 'Item's" in str(e.__dict__)
+
+    with pytest.raises(ValueError) as e:
+        Hosts.from_items(iter([1, 2, 3]))
+
+    assert "expecting 'Item'" in str(e.__dict__)
+
+
 def test_hosts_to_from_json():
     hosts = Hosts.from_items(Host("1.1.1.1"))
 
@@ -43,7 +55,7 @@ def test_hosts_from_csv_file():
     CSV_FILE = f"{TEST_DATA_DIR}/hosts.csv"
 
     with open(CSV_FILE) as f:
-        hosts = Hosts.from_items(*(Host(ip.strip()) for ip in f.read().strip().split()))
+        hosts = Hosts.from_items(Host(ip.strip()) for ip in f.read().strip().split())
 
     assert (
         hosts.sort()
