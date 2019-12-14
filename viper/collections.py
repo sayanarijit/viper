@@ -4,6 +4,7 @@ The data types for Viper objects are defined here.
 """
 
 from __future__ import annotations
+from collections.abc import Iterable
 from concurrent.futures import as_completed
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -253,7 +254,9 @@ class Items(Collection):
     _item_factory: t.Type[Item] = field(init=False)
 
     @classmethod
-    def from_items(cls: t.Type[Item], *items: Item) -> ItemsType:
+    def from_items(
+        cls: t.Type[Item], *items: t.Union[t.Iterable[Item], Item]
+    ) -> ItemsType:
         """Create this an instance of this object using the given items.
 
         :param viper.collections.Item items: The group of items to hold.
@@ -271,7 +274,24 @@ class Items(Collection):
 
             Hosts.from_items(Host("1.2.3.4"))
         """
-        return cls(tuple(set(items)))
+        items_set = set()
+        for item in items:
+            if not isinstance(item, Item) and not isinstance(item, Iterable):
+                raise ValueError(
+                    f"{item}: expecting 'Item' or generator of 'Item's but got {type(item)}"
+                )
+
+            if isinstance(item, Item):
+                items_set.add(item)
+                continue
+
+            if isinstance(item, Iterable):
+                for i in item:
+                    if not isinstance(i, Item):
+                        raise ValueError(f"{i}: expecting 'Item' but got {type(i)}")
+                    items_set.add(i)
+
+        return cls(tuple(items_set))
 
     @classmethod
     def from_list(
@@ -296,7 +316,7 @@ class Items(Collection):
             raise NotImplementedError()
 
         try:
-            return cls.from_items(*map(cls._item_factory.from_dict, list_))
+            return cls.from_items(map(cls._item_factory.from_dict, list_))
         except Exception:
             raise ValueError(f"invalid input data for {cls.__name__}")
 
@@ -588,7 +608,7 @@ class Hosts(Items):
 
             def _loader(f: t.TextIO) -> Hosts:
                 return cls.from_items(
-                    *(Host(ip.strip()) for ip in f.read().strip().split())
+                    Host(ip.strip()) for ip in f.read().strip().split()
                 )
 
             loader = _loader
@@ -614,7 +634,7 @@ class Hosts(Items):
         """
 
         return Runners.from_items(
-            *(Runner(task=task, host=h, args=args) for h in self._all)
+            Runner(task=task, host=h, args=args) for h in self._all
         )
 
     def run_task(
@@ -878,7 +898,7 @@ class Runners(Items):
 
         :rtype: viper.collections.Hosts
         """
-        return Hosts.from_items(*(t.host for t in self._all))
+        return Hosts.from_items(t.host for t in self._all)
 
 
 @dataclass(frozen=True, order=True)
@@ -1081,7 +1101,7 @@ class Results(Items):
 
         :rtype: viper.collections.Hosts
         """
-        return Hosts.from_items(*(r.host for r in self._all))
+        return Hosts.from_items(r.host for r in self._all)
 
     def final(self) -> Results:
         """Get the final results only (ignoring the previous retries).
@@ -1113,7 +1133,7 @@ class Results(Items):
 
         :rtype: viper.collections.Runners
         """
-        return Runners.from_items(*(r.runner() for r in self._all))
+        return Runners.from_items(r.runner() for r in self._all)
 
     def re_run(self, max_workers=Config.max_workers.value) -> Results:
         """Recreate the runners from the results and run again.

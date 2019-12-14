@@ -98,16 +98,14 @@ def allhosts(args: Namespace) -> Hosts:
     data = json.load(args.file)
 
     return Hosts.from_items(
-        *(
-            Host(
-                ip=d["ip"],
-                hostname=d["name"],
-                login_name="root",
-                identity_file=args.identity_file,
-                meta=tuple(d.items()),
-            )
-            for d in data
+        Host(
+            ip=d["ip"],
+            hostname=d["name"],
+            login_name="root",
+            identity_file=args.identity_file,
+            meta=tuple(d.items()),
         )
+        for d in data
     )
 
 
