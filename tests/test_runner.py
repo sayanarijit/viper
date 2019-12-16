@@ -1,6 +1,5 @@
 from unittest import mock
 from viper import Host
-from viper import Result
 from viper import Runner
 from viper import Task
 
@@ -73,7 +72,6 @@ def test_runner_run_save_load():
     assert result.end > result.start
     assert result.ok()
     assert not result.errored()
-    assert Result.by_hash(hash(result)) == result
 
 
 def test_tasks_runner_run_invalid_commands():
