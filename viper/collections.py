@@ -38,14 +38,6 @@ __all__ = [
     "Runners",
     "Result",
     "Results",
-    "Item",
-    "Items",
-    "Host",
-    "Hosts",
-    "Runner",
-    "Runners",
-    "Result",
-    "Results",
 ]
 
 
@@ -918,7 +910,7 @@ class Result(Item):
     retry: int
 
     @classmethod
-    def by_hash(cls, hash_: int) -> Result:
+    def by_id(cls, id_: int) -> Result:
         """Fetch the result from DB by hash.
 
         :param int hash_: The hash value.
@@ -934,9 +926,9 @@ class Result(Item):
                     SELECT
                         trigger_time, task, host, args, command, stdout, stderr,
                         returncode, start, end, retry
-                    FROM results WHERE hash = ?
+                    FROM results WHERE id = ?
                     """,
-                    (hash_,),
+                    (id_,),
                 )
             )
 
@@ -1050,8 +1042,8 @@ class Results(Items):
         :rtype: ciper.collections.Results
         """
         with ViperDB(ViperDB.url) as conn:
-            rows = conn.execute("SELECT hash FROM results ORDER BY start DESC")
-            results = [cls._item_factory.by_hash(r[0]) for r in rows]
+            rows = conn.execute("SELECT id FROM results ORDER BY start DESC")
+            results = [cls._item_factory.by_id(r[0]) for r in rows]
 
         results = cls.from_items(*results)
         return results.final() if final else results
@@ -1066,13 +1058,13 @@ class Results(Items):
         with ViperDB(ViperDB.url) as conn:
             rows = conn.execute(
                 f"""
-                SELECT hash FROM results
+                SELECT id FROM results
                 WHERE JSON_EXTRACT(host, '$.ip') = ?
                 ORDER BY start DESC
                 """,
                 (host.ip,),
             )
-            results = [cls._item_factory.by_hash(r[0]) for r in rows]
+            results = [cls._item_factory.by_id(r[0]) for r in rows]
 
         return cls.from_items(*results)
 
@@ -1086,13 +1078,13 @@ class Results(Items):
         with ViperDB(ViperDB.url) as conn:
             rows = conn.execute(
                 f"""
-                SELECT hash FROM results
+                SELECT id FROM results
                 WHERE JSON_EXTRACT(task, '$.name') = ?
                 ORDER BY start DESC
                 """,
                 (task.name,),
             )
-            results = [cls._item_factory.by_hash(r[0]) for r in rows]
+            results = [cls._item_factory.by_id(r[0]) for r in rows]
 
         return cls.from_items(*results)
 
