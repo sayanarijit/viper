@@ -18,7 +18,8 @@ with open(path.join(here, "README.rst"), encoding="utf-8") as f:
     long_description = f.read()
 
 install_requires: t.List[str] = []
-testing_requires = install_requires + [
+autocomplete_requires = ["argcomplete==1.10.3"]
+testing_requires = autocomplete_requires + [
     "pytest>=4.4.1",
     "pytest-cov>=2.7.1",
     "black>=19.3b0",
@@ -60,6 +61,10 @@ setup(
     keywords="viper infrastructure commander",
     packages=find_packages(exclude=["contrib", "docs", "tests", "examples"]),
     install_requires=install_requires,
-    extras_require={"testing": testing_requires, "dev": dev_requires},
+    extras_require={
+        "autocomplete": autocomplete_requires,
+        "testing": testing_requires,
+        "dev": dev_requires,
+    },
     entry_points={"console_scripts": ["viper = viper.main:main"]},
 )

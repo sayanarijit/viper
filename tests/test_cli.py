@@ -27,7 +27,7 @@ def test_all_cli_examples():
 
     for command in commands:
         print(command)
-        assert subprocess.run(command, shell=True).returncode == 0
+        assert subprocess.run(["bash", "-c", command]).returncode == 0
 
 
 def test_load_func_errors():

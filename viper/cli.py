@@ -4,6 +4,14 @@ Demos and examples are probably the best way to explain viper CLI.
 
 Let's get started.
 
+Enable viper auto completion
+----------------------------
+
+.. code-block:: bash
+
+    # Assuming you are using bash
+    eval "$(viper autocomplete bash)"
+
 
 Initialize current workspace (creates a `viperdb.sqlite3` file)
 ---------------------------------------------------------------
@@ -230,6 +238,40 @@ def func(objpath: str) -> t.Union[HandlerType, FilterType]:
         raise ValueError(f"{repr(objpath)} is not a valid function.")
 
     return funcobj
+
+
+class AutocompleteCommand(SubCommand):
+    """generate the auto completion script"""
+
+    name = "autocomplete"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument(
+            "shell", help="the target shell", choices=["bash", "tcsh", "zsh", "fish"]
+        )
+
+    def __call__(self, args: Namespace) -> int:
+        import subprocess
+
+        try:
+            import argcomplete  # noqa F401
+        except ImportError:
+            raise RuntimeError(
+                '"argcomplete" is missing! run `pip install -U "viper-infra-commander[autocomplete]"`'
+            )
+
+        _shell = "bash" if args.shell == "zsh" else args.shell
+        script = subprocess.run(
+            ["register-python-argcomplete", "viper", "-s", _shell],
+            stdout=subprocess.PIPE,
+            check=True,
+        ).stdout.decode("latin1")
+
+        if args.shell == "zsh":
+            script = f"autoload bashcompinit\nbashcompinit\n{script}"
+
+        print(script)
+        return 0
 
 
 class InitCommand(SubCommand):
@@ -994,6 +1036,9 @@ def run() -> int:
     )
     subparsers = parser.add_subparsers()
 
+    # Autocomplete command
+    AutocompleteCommand.attach_to(subparsers)
+
     # Init command
     InitCommand.attach_to(subparsers)
 
@@ -1072,6 +1117,14 @@ def run() -> int:
 
             for subcommand in v.all_commands():
                 subcommand.attach_to(subparsers)
+
+    try:
+        # Add support for auto completion
+        import argcomplete
+
+        argcomplete.autocomplete(parser)
+    except ImportError:
+        pass
 
     args = parser.parse_args()
 
