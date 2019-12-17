@@ -64,6 +64,10 @@ Installation
 
     pip install -U viper-infra-commander
 
+    # Or with tab autocomplete support
+
+    pip install -U "viper-infra-commander[autocomplete]"
+
 
 Getting Started
 ~~~~~~~~~~~~~~~
