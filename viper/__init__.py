@@ -3,7 +3,7 @@ __description__ = "Viper is a handy tool for easily running infrastructure manag
 __email__ = "sayanarijit@gmail.com"
 __homepage__ = "https://github.com/sayanarijit/viper"
 __license__ = "MIT"
-__version__ = "v0.26.0"
+__version__ = "v0.26.1"
 
 from viper.collections import Host  # noqa: F401
 from viper.collections import Hosts  # noqa: F401
