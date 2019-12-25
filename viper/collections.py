@@ -4,6 +4,7 @@ The data types for Viper objects are defined here.
 """
 
 from __future__ import annotations
+from collections import OrderedDict
 from collections.abc import Iterable
 from concurrent.futures import as_completed
 from concurrent.futures import ThreadPoolExecutor
@@ -266,7 +267,7 @@ class Items(Collection):
 
             Hosts.from_items(Host("1.2.3.4"))
         """
-        items_set = set()
+        items_set = OrderedDict()
         for item in items:
             if not isinstance(item, Item) and not isinstance(item, Iterable):
                 raise ValueError(
@@ -274,14 +275,14 @@ class Items(Collection):
                 )
 
             if isinstance(item, Item):
-                items_set.add(item)
+                items_set[item] = None
                 continue
 
             if isinstance(item, Iterable):
                 for i in item:
                     if not isinstance(i, Item):
                         raise ValueError(f"{i}: expecting 'Item' but got {type(i)}")
-                    items_set.add(i)
+                    items_set[i] = None
 
         return cls(tuple(items_set))
 
