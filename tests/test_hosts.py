@@ -150,6 +150,12 @@ def test_hosts_sort():
         == Hosts((Host("1.1.1.1"), Host("1.2.3.4"), Host("2.2.2.2")))
     )
 
+    assert (
+        Hosts.from_file(CSV_FILE).sort(reverse=True)
+        == Hosts.from_file(CSV_FILE).sort(lambda h: h.ip, reverse=True)
+        == Hosts((Host("2.2.2.2"), Host("1.2.3.4"), Host("1.1.1.1")))
+    )
+
 
 def test_hosts_task():
 
@@ -175,3 +181,15 @@ def test_hosts_run_task(Runners, Task):
     Runners.from_items().run.assert_called_with(max_workers=3)
 
     assert hosts.results() == Results.from_items()
+
+
+def test_hosts_order_by():
+    assert Hosts.from_file(CSV_FILE).order_by("ip") == Hosts(
+        (Host("1.1.1.1"), Host("1.2.3.4"), Host("2.2.2.2"))
+    )
+    assert Hosts.from_file(CSV_FILE).order_by("ip", reverse=True) == Hosts(
+        (Host("2.2.2.2"), Host("1.2.3.4"), Host("1.1.1.1"))
+    )
+    assert Hosts.from_file(CSV_FILE).order_by("hostname", "ip") == Hosts(
+        (Host("1.1.1.1"), Host("1.2.3.4"), Host("2.2.2.2"))
+    )
