@@ -500,17 +500,47 @@ class HostsCountCommand(SubCommand):
         return 0
 
 
+class HostsOrderByCommand(SubCommand):
+    """[Hosts -> Hosts] sort the hosts by the given properties"""
+
+    name = "hosts:order-by"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument(
+            "properties", nargs="*", help="items will be sorted in order"
+        )
+        parser.add_argument(
+            "--reverse", action="store_true", help="reverse the order after sort"
+        )
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(
+            Hosts.from_json(input())
+            .order_by(*args.properties, reverse=args.reverse)
+            .to_json(indent=args.indent)
+        )
+        return 0
+
+
 class HostsSortCommand(SubCommand):
-    """[Hosts -> Hosts] sort the hosts"""
+    """[Hosts -> Hosts] sort the hosts by the given function"""
 
     name = "hosts:sort"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
-        parser.add_argument("--key", type=func)
+        parser.add_argument("--key", type=func, help="the sorting function")
+        parser.add_argument(
+            "--reverse", action="store_true", help="reverse the order after sort"
+        )
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
-        print(Hosts.from_json(input()).sort(key=args.key).to_json(indent=args.indent))
+        print(
+            Hosts.from_json(input())
+            .sort(key=args.key, reverse=args.reverse)
+            .to_json(indent=args.indent)
+        )
         return 0
 
 
@@ -653,17 +683,47 @@ class RunnersCountCommand(SubCommand):
         return 0
 
 
+class RunnersOrderByCommand(SubCommand):
+    """[Runners -> Runners] sort the runners by the given properties"""
+
+    name = "runners:order-by"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument(
+            "properties", nargs="*", help="items will be sorted in order"
+        )
+        parser.add_argument(
+            "--reverse", action="store_true", help="reverse the order after sort"
+        )
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(
+            Runners.from_json(input())
+            .order_by(*args.properties, reverse=args.reverse)
+            .to_json(indent=args.indent)
+        )
+        return 0
+
+
 class RunnersSortCommand(SubCommand):
-    """[Runners -> Runners] sort the runners"""
+    """[Runners -> Runners] sort the runners by the given funtion"""
 
     name = "runners:sort"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("--key", type=func)
+        parser.add_argument(
+            "--reverse", action="store_true", help="reverse the order after sort"
+        )
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
-        print(Runners.from_json(input()).sort(key=args.key).to_json(indent=args.indent))
+        print(
+            Runners.from_json(input())
+            .sort(key=args.key, reverse=args.reverse)
+            .to_json(indent=args.indent)
+        )
         return 0
 
 
@@ -845,17 +905,47 @@ class ResultsCountCommand(SubCommand):
         return 0
 
 
+class ResultsOrderByCommand(SubCommand):
+    """[Results -> Results] sort the results by the given properties"""
+
+    name = "results:order-by"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument(
+            "properties", nargs="*", help="items will be sorted in order"
+        )
+        parser.add_argument(
+            "--reverse", action="store_true", help="reverse the order after sort"
+        )
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(
+            Results.from_json(input())
+            .order_by(*args.properties, reverse=args.reverse)
+            .to_json(indent=args.indent)
+        )
+        return 0
+
+
 class ResultsSortCommand(SubCommand):
-    """[Results -> Results] sort the results"""
+    """[Results -> Results] sort the results by the given function"""
 
     name = "results:sort"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("--key", type=func)
+        parser.add_argument(
+            "--reverse", action="store_true", help="reverse the order after sort"
+        )
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
-        print(Results.from_json(input()).sort(key=args.key).to_json(indent=args.indent))
+        print(
+            Results.from_json(input())
+            .sort(key=args.key, reverse=args.reverse)
+            .to_json(indent=args.indent)
+        )
         return 0
 
 
@@ -1057,12 +1147,13 @@ def run() -> int:
     HostsFromFileCommand.attach_to(subparsers)
     HostsFromFuncCommand.attach_to(subparsers)
 
+    HostsWhereCommand.attach_to(subparsers)
     HostsFilterCommand.attach_to(subparsers)
-    HostsCountCommand.attach_to(subparsers)
+    HostsOrderByCommand.attach_to(subparsers)
     HostsSortCommand.attach_to(subparsers)
+    HostsCountCommand.attach_to(subparsers)
     HostsPipeCommand.attach_to(subparsers)
     HostsFormatCommand.attach_to(subparsers)
-    HostsWhereCommand.attach_to(subparsers)
     HostsHeadCommand.attach_to(subparsers)
     HostsTailCommand.attach_to(subparsers)
 
@@ -1071,12 +1162,13 @@ def run() -> int:
     HostsResultsCommand.attach_to(subparsers)
 
     # Task runners commands
+    RunnersWhereCommand.attach_to(subparsers)
     RunnersFilterCommand.attach_to(subparsers)
-    RunnersCountCommand.attach_to(subparsers)
+    RunnersOrderByCommand.attach_to(subparsers)
     RunnersSortCommand.attach_to(subparsers)
+    RunnersCountCommand.attach_to(subparsers)
     RunnersPipeCommand.attach_to(subparsers)
     RunnersFormatCommand.attach_to(subparsers)
-    RunnersWhereCommand.attach_to(subparsers)
     RunnersHeadCommand.attach_to(subparsers)
     RunnersTailCommand.attach_to(subparsers)
 
@@ -1086,12 +1178,13 @@ def run() -> int:
     # Task results commands
     ResultsFromHistoryCommand.attach_to(subparsers)
 
+    ResultsWhereCommand.attach_to(subparsers)
     ResultsFilterCommand.attach_to(subparsers)
-    ResultsCountCommand.attach_to(subparsers)
+    ResultsOrderByCommand.attach_to(subparsers)
     ResultsSortCommand.attach_to(subparsers)
+    ResultsCountCommand.attach_to(subparsers)
     ResultsPipeCommand.attach_to(subparsers)
     ResultsFormatCommand.attach_to(subparsers)
-    ResultsWhereCommand.attach_to(subparsers)
     ResultsHeadCommand.attach_to(subparsers)
     ResultsTailCommand.attach_to(subparsers)
 

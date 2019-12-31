@@ -383,13 +383,38 @@ class Items(Collection):
         return type(self).from_items(*self._all[i:j])
 
     def sort(
-        self: ItemsType, key: t.Optional[t.Callable[[Item], object]] = None
+        self: ItemsType,
+        key: t.Optional[t.Callable[[Item], object]] = None,
+        reverse: bool = False,
     ) -> ItemsType:
         """Sort the items by given key/function.
 
         :param callable key: A function similar to the one passed to the built-in `sorted()`.
+        :param bool reverse: Reverse the order after sort.
+
+        :rtype: Items
         """
-        return type(self)(tuple(sorted(self._all, key=key)))
+        return type(self)(tuple(sorted(self._all, key=key, reverse=reverse)))
+
+    def order_by(self: ItemsType, *properties: str, reverse: bool = False) -> ItemsType:
+        """Sort the items by multiple properties
+
+        :param list properties: The item will be sorted by the given properties in order.
+        :param bool reverse: Reverse the order after sort.
+
+        :rtype: Items
+        """
+        return type(self)(
+            tuple(
+                sorted(
+                    self._all,
+                    key=lambda x: [
+                        f"{{{p}}}".format(**x.to_dict()) for p in properties
+                    ],
+                    reverse=reverse,
+                )
+            )
+        )
 
     def filter(self: ItemsType, filter_: FilterType, *args: object) -> ItemsType:
         """Filter the items by a given function.
