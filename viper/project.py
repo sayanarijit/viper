@@ -21,20 +21,26 @@ a list of hosts from `stdin`.
 from __future__ import annotations
 from argparse import ArgumentParser
 from argparse import Namespace
+from collections.abc import Iterable
 from dataclasses import dataclass
 from dataclasses import field
 from viper.cli_base import SubCommand
 from viper.collections import Collection as ViperCollection
 from viper.collections import Hosts
-from viper.collections import Items
 from viper.collections import Results
 
 import typing as t
 
-ArgType = t.Tuple[t.Sequence[str], t.Dict[str, object]]
+T = t.TypeVar("T")
+C = t.TypeVar("C")
+ArgType = t.Tuple[t.Tuple[str, ...], t.Dict[str, t.Any]]
+HostsFuncType = t.Callable[[Namespace], Hosts]
+HandlerFuncType = t.Callable[[T, Namespace], C]
+JobFuncType = t.Callable[[Hosts, Namespace], Results]
+ActionFuncType = t.Callable[[Namespace], T]
 
 
-def arg(*args: str, **kwargs: object) -> ArgType:
+def arg(*args: str, **kwargs: t.Any) -> ArgType:
     """Argumenst to be passed to argparse"""
     return args, kwargs
 
@@ -52,13 +58,13 @@ class Project:
     """
 
     prefix: str
-    action_commands: t.List[SubCommand] = field(default_factory=lambda: [])
-    hostgroup_commands: t.List[SubCommand] = field(default_factory=lambda: [])
-    filter_commands: t.List[SubCommand] = field(default_factory=lambda: [])
-    handler_commands: t.List[SubCommand] = field(default_factory=lambda: [])
-    job_commands: t.List[SubCommand] = field(default_factory=lambda: [])
+    action_commands: t.List[t.Type[SubCommand]] = field(default_factory=lambda: [])
+    hostgroup_commands: t.List[t.Type[SubCommand]] = field(default_factory=lambda: [])
+    filter_commands: t.List[t.Type[SubCommand]] = field(default_factory=lambda: [])
+    handler_commands: t.List[t.Type[SubCommand]] = field(default_factory=lambda: [])
+    job_commands: t.List[t.Type[SubCommand]] = field(default_factory=lambda: [])
 
-    def all_commands(self) -> t.List[SubCommand]:
+    def all_commands(self) -> t.List[t.Type[SubCommand]]:
         """Return all sub commands"""
         return (
             self.action_commands
@@ -68,7 +74,9 @@ class Project:
             + self.job_commands
         )
 
-    def hostgroup(self, args: t.Optional[t.Sequence[ArgType]] = None) -> Hosts:
+    def hostgroup(
+        self, args: t.Optional[t.Sequence[ArgType]] = None
+    ) -> t.Callable[[HostsFuncType], HostsFuncType]:
         """Use this decorator to define host groups
 
         :param list args (optional): Arguments to be parsed by py:class:`argparse.ArgumentParser`
@@ -76,9 +84,7 @@ class Project:
         .. tip:: See :py:func:`viper.demo.viperfile.allhosts`.
         """
 
-        def wrapper(
-            func: t.Callable[[Namespace], Hosts]
-        ) -> t.Callable[[Namespace], Hosts]:
+        def wrapper(func: HostsFuncType) -> HostsFuncType:
 
             doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
 
@@ -101,55 +107,12 @@ class Project:
 
         return wrapper
 
-    def filter(
-        self, objtype: t.Type[Items], args: t.Optional[t.Sequence[ArgType]] = None
-    ):
-        """Use this decorator to define filters.
-
-        :param type objtype: The object type that the filter is expecting.
-        :param list args (optional): List of arguments for :py:class:`argparse.ArgumentParser`.
-
-        .. tip:: See :py:func:`viper.demo.viperfile.hosts_by`.
-        """
-
-        if not issubclass(objtype, Items):
-            raise ValueError(f"{objtype} does not have filter option")
-
-        def wrapper(
-            func: t.Callable[[Items, Namespace], bool],
-        ) -> t.Callable[[Items, Namespace], bool]:
-
-            doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
-
-            class FilterCommand(SubCommand):
-                __doc__ = f"[{objtype.__name__} -> {objtype.__name__}] {doc}"
-                name = f"@{self.prefix}:{func.__name__}"
-
-                def add_arguments(self, parser: ArgumentParser) -> None:
-                    if args:
-                        for arg in args:
-                            parser.add_argument(*arg[0], **arg[1])
-                    parser.add_argument("-i", "--indent", type=int, default=None)
-
-                def __call__(self, args: Namespace) -> int:
-                    print(
-                        objtype.from_json(input())
-                        .filter(lambda host: func(host, args))
-                        .to_json(indent=args.indent)
-                    )
-                    return 0
-
-            self.filter_commands.append(FilterCommand)
-            return func
-
-        return wrapper
-
     def handler(
         self,
-        fromtype: ViperCollection,
-        totype: t.Optional[type] = None,
+        fromtype: t.Type[T],
+        totype: t.Type[C],
         args: t.Optional[t.Sequence[ArgType]] = None,
-    ):
+    ) -> t.Callable[[HandlerFuncType[T, C]], HandlerFuncType[T, C]]:
         """Use this decorator to define handlers
 
         :param type fromtype: The type of object this handler is expecting.
@@ -162,9 +125,7 @@ class Project:
         if not issubclass(fromtype, ViperCollection):
             raise ValueError(f"{fromtype} does not have pipe option")
 
-        def wrapper(
-            func: t.Callable[[ViperCollection, Namespace], object]
-        ) -> t.Callable[[ViperCollection, Namespace], object]:
+        def wrapper(func: HandlerFuncType[T, C]) -> HandlerFuncType[T, C]:
 
             doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
 
@@ -179,13 +140,15 @@ class Project:
                     parser.add_argument("-i", "--indent", type=int, default=None)
 
                 def __call__(self, args: Namespace) -> int:
+                    if not issubclass(fromtype, ViperCollection):
+                        raise ValueError(f"{fromtype}: invalid fromtype {fromtype}")
+
                     obj = fromtype.from_json(input()).pipe(lambda obj: func(obj, args))
-                    if totype:
-                        print(
-                            obj.to_json(indent=args.indent)
-                            if isinstance(obj, ViperCollection)
-                            else totype(obj)
-                        )
+                    print(
+                        obj.to_json(indent=args.indent)
+                        if isinstance(obj, ViperCollection)
+                        else totype(obj)
+                    )
                     return 0
 
             self.handler_commands.append(HandlerCommand)
@@ -195,7 +158,7 @@ class Project:
 
     def job(
         self, args: t.Optional[t.Sequence[ArgType]] = None,
-    ):
+    ) -> t.Callable[[JobFuncType], JobFuncType]:
         """Use this decorator to define a job.
 
         :param list args (optional): List of arguments for :py:class:`argparse.ArgumentParser`.
@@ -203,9 +166,7 @@ class Project:
         .. tip:: See :py:func:`viper.demo.viperfile.remote_exec`.
         """
 
-        def wrapper(
-            func: t.Callable[[ViperCollection, Namespace], Results]
-        ) -> t.Callable[[ViperCollection, Namespace], Results]:
+        def wrapper(func: JobFuncType) -> JobFuncType:
 
             doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
 
@@ -234,8 +195,10 @@ class Project:
         return wrapper
 
     def action(
-        self, args: t.Optional[t.Sequence[ArgType]] = None,
-    ):
+        self,
+        args: t.Optional[t.Sequence[ArgType]] = None,
+        totype: t.Optional[t.Type[T]] = None,
+    ) -> t.Callable[[ActionFuncType[T]], ActionFuncType[T]]:
         """Use this decorator to define an action.
 
         :param list args (optional): List of arguments for :py:class:`argparse.ArgumentParser`.
@@ -243,14 +206,12 @@ class Project:
         .. tip:: See :py:func:`viper.demo.viperfile.get_triggers`.
         """
 
-        def wrapper(
-            func: t.Callable[[Namespace], object]
-        ) -> t.Callable[[Namespace], object]:
+        def wrapper(func: ActionFuncType[T]) -> ActionFuncType[T]:
 
             doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
 
             class ActionCommand(SubCommand):
-                __doc__ = f"{doc}"
+                __doc__ = f"[-> totype.__name__] {doc}" if totype else doc
                 name = f"@{self.prefix}:{func.__name__}"
 
                 def add_arguments(self, parser: ArgumentParser) -> None:
@@ -260,10 +221,28 @@ class Project:
 
                 def __call__(self, args: Namespace) -> int:
                     res = func(args)
-                    if res is not None:
-                        print(
-                            "\n".join(map(str, res)) if isinstance(res, tuple) else res
+                    if res is None:
+                        if totype is None:
+                            return 0
+                        else:
+                            raise ValueError(f"expected an object of type {totype}")
+
+                    if totype is None:
+                        raise ValueError(
+                            f"not expecting any result, but got a result of type {type(res)}"
                         )
+
+                    if not isinstance(res, totype):
+                        raise ValueError(
+                            f"expected result of type {totype} but got result of type {type(res)}"
+                        )
+
+                    if isinstance(res, ViperCollection):
+                        print(res.to_json())
+                    elif isinstance(res, Iterable):
+                        print("\n".join(map(str, res)))
+                    else:
+                        print(res)
                     return 0
 
             self.action_commands.append(ActionCommand)

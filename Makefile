@@ -14,6 +14,7 @@ install-hooks:
 checks:
 	pre-commit run -a
 	@$(MAKE) readme
+	@$(MAKE) types
 
 
 .PHONY: docs
@@ -27,6 +28,11 @@ docs:
 readme:
 	@python -c "import viper; print(viper.__doc__)" | tee README.rst
 
+.PHONY: types
+types:
+	# TODO: remove the "|| true"
+	mypy --strict viper || true
+	python -m typecov 100 typecov/linecount.txt
 
 .PHONY: apidocs
 apidocs:

@@ -15,17 +15,16 @@ from json import dumps as dumpjson
 from json import loads as loadjson
 from pydoc import locate
 from time import time
+from types import FunctionType
 from viper.const import Config
 from viper.db import ViperDB
+from viper.utils import optional
+from viper.utils import required
 
 import subprocess
 import sys
 import traceback
 import typing as t
-
-CollectionType = t.TypeVar("CollectionType", bound="Collection")
-ItemType = t.TypeVar("ItemType", bound="Item")
-ItemsType = t.TypeVar("ItemsType", bound="Items")
 
 __all__ = [
     "WhereConditions",
@@ -42,24 +41,13 @@ __all__ = [
 ]
 
 
-class HandlerType:
-    """TODO: This should be a protocol"""
-
-    def __call__(self, obj: object, *args: object) -> object:  # pragma: no cover
-        pass
-
-
-class FilterType:
-    """TODO: This should be a protocol"""
-
-    def __call__(self, obj: object, *args: object) -> bool:  # pragma: no cover
-        pass
-
-
-class CommandFactoryType:
-    """TODO: This should be a protocol"""
-
-    pass
+T = t.TypeVar("T")
+C = t.TypeVar("C")
+CollectionType = t.TypeVar("CollectionType", bound="Collection")
+ItemType = t.TypeVar("ItemType", bound="Item")
+ItemsType = t.TypeVar("ItemsType", bound="Items[t.Any]")
+JSONValueType = t.Optional[t.Union[str, bool, int, float]]
+MetaType = t.Dict[str, JSONValueType]
 
 
 class WhereConditions(Enum):
@@ -83,12 +71,13 @@ class Collection:
     :py:class:`viper.collections.Host`, :py:class:`viper.collections.Results` etc.
     """
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.to_json()
 
+    @classmethod
     def from_json(
-        cls: t.Type[CollectionType], json: str, *args: object, **kwargs: object
-    ) -> CollectionType:  # pragma: no cover
+        cls: t.Type[CollectionType], json: str, *args: t.Any, **kwargs: t.Any
+    ) -> CollectionType:
         """Initialise a new object of this class from the given JSON string.
 
         :param str json: The JSON data to parse.
@@ -104,7 +93,7 @@ class Collection:
         """
         raise NotImplementedError()
 
-    def to_json(self, *args: object, **kwargs: object) -> str:  # pragma: no cover
+    def to_json(self, *args: t.Any, **kwargs: t.Any) -> str:  # pragma: no cover
         """Represent the collection as JSON data.
 
         :param object args and kwargs: These will be passed to `json.laods`.
@@ -120,7 +109,7 @@ class Collection:
         raise NotImplementedError()
 
     @classmethod
-    def from_func(cls: t.Type[CollectionType], funcpath: str) -> CollectionType:
+    def from_func(cls: t.Type[CollectionType], funcpath: str, /) -> CollectionType:
         """Load the object from the given Python function.
 
         :param str funcpath: The path to a Python function that returns an
@@ -137,10 +126,13 @@ class Collection:
         .. tip:: See :py:class:`viper.demo.tasks.ping`
         """
 
-        func: t.Optional[t.Callable[[], CollectionType]] = locate(funcpath)
+        func: object = locate(funcpath)
 
         if not func:
             raise ValueError(f"could not resolve {repr(funcpath)}.")
+
+        if not callable(func):
+            raise ValueError(f"{repr(funcpath)} is not callable.")
 
         obj = func()
         if not isinstance(obj, cls):
@@ -150,7 +142,7 @@ class Collection:
 
         return obj
 
-    def pipe(self: CollectionType, handler: HandlerType, *args: object) -> object:
+    def pipe(self, handler: FunctionType, *args: t.Any) -> t.Any:
         """Pipe this object to the given function.
 
         :param callable handler: A callable that expects this object.
@@ -166,7 +158,7 @@ class Collection:
         """
         return handler(self, *args)
 
-    def hash(self: CollectionType) -> int:
+    def hash(self) -> int:
         """Get the hash value.
 
         By convention all Viper native objects are frozen and thus hashable.
@@ -185,7 +177,7 @@ class Item(Collection):
 
     @classmethod
     def from_dict(  # pragma: no cover
-        cls: t.Type[ItemType], dict_: t.Dict[str, object]
+        cls: t.Type[ItemType], dict_: t.Dict[object, object], /,
     ) -> ItemType:
         """Initialize item from the given dict.
 
@@ -201,7 +193,7 @@ class Item(Collection):
         """
         raise NotImplementedError()
 
-    def to_dict(self: ItemType) -> t.Dict[str, object]:  # pragma: no cover
+    def to_dict(self) -> t.Dict[str, object]:  # pragma: no cover
         """Represent the item as dict.
 
         :rtype: dict
@@ -215,13 +207,15 @@ class Item(Collection):
         raise NotImplementedError()
 
     @classmethod
-    def from_json(cls: t.Type[ItemType], json, *args, **kwargs) -> ItemType:
+    def from_json(
+        cls: t.Type[ItemType], json: str, *args: t.Any, **kwargs: t.Any
+    ) -> ItemType:
         return cls.from_dict(loadjson(json, *args, **kwargs))
 
-    def to_json(self: ItemType, *args, **kwargs) -> str:
+    def to_json(self, *args: t.Any, **kwargs: t.Any) -> str:
         return dumpjson(self.to_dict(), *args, **kwargs)
 
-    def format(self: Item, template: str) -> str:
+    def format(self, template: str) -> str:
         """Get a custom string representation of this object.
 
         :param str template: The template to be used as `"template".format(**self.to_dict())`
@@ -237,18 +231,18 @@ class Item(Collection):
 
 
 @dataclass(frozen=True)
-class Items(Collection):
+class Items(Collection, t.Generic[T]):
     """The base class for collection objects for a group of similar items.
 
     :py:class:`viper.collections.Hosts`, :py:class:`viper.collections.Results` etc. inherits this base class.
     """
 
-    _all: t.Sequence[Item] = ()
-    _item_factory: t.Type[Item] = field(init=False)
+    _all: t.Sequence[T] = ()
+    _item_type: t.Type[Item] = field(init=False)
 
     @classmethod
     def from_items(
-        cls: t.Type[Item], *items: t.Union[t.Iterable[Item], Item]
+        cls: t.Type[ItemsType], *items: t.Union[t.Iterable[T], T]
     ) -> ItemsType:
         """Create this an instance of this object using the given items.
 
@@ -267,7 +261,7 @@ class Items(Collection):
 
             Hosts.from_items(Host("1.2.3.4"))
         """
-        items_set = OrderedDict()
+        items_set: t.Dict[Item, None] = OrderedDict()
         for item in items:
             if not isinstance(item, Item) and not isinstance(item, Iterable):
                 raise ValueError(
@@ -288,7 +282,7 @@ class Items(Collection):
 
     @classmethod
     def from_list(
-        cls: t.Type[ItemsType], list_: t.Sequence[t.Dict[str, object]]
+        cls: t.Type[ItemsType], list_: t.Sequence[t.Dict[object, object]], /,
     ) -> ItemsType:
         """Initialize items from given list of dictiionaries.
 
@@ -305,15 +299,15 @@ class Items(Collection):
             Hosts.from_list([{"ip": "1.2.3.4"}])
         """
 
-        if cls._item_factory is None:  # pragma: no cover
+        if cls._item_type is None:  # pragma: no cover
             raise NotImplementedError()
 
         try:
-            return cls.from_items(map(cls._item_factory.from_dict, list_))
+            return cls.from_items(map(cls._item_type.from_dict, list_))
         except Exception:
             raise ValueError(f"invalid input data for {cls.__name__}")
 
-    def to_list(self: ItemsType) -> t.List[t.Dict[str, object]]:
+    def to_list(self) -> t.List[t.Dict[str, object]]:
         """Represent the items as a list of dictiionaries.
 
         This is used for dumping an instance of this object as JSON data.
@@ -327,23 +321,23 @@ class Items(Collection):
             Hosts.from_items(Host("1.2.3.4")).to_list()
         """
 
-        return [i.to_dict() for i in self._all]
+        return [i.to_dict() for i in self._all if isinstance(i, Item)]
 
     @classmethod
     def from_json(
-        cls: t.Type[ItemsType], json: str, *args: object, **kwargs: object
+        cls: t.Type[ItemsType], json: str, *args: t.Any, **kwargs: t.Any
     ) -> ItemsType:
 
         return cls.from_list(loadjson(json))
 
-    def to_json(self: ItemsType, *args: object, **kwargs: object) -> str:
+    def to_json(self, *args: t.Any, **kwargs: t.Any) -> str:
 
         return dumpjson(self.to_list(), *args, **kwargs)
 
-    def __len__(self: ItemsType) -> int:
+    def __len__(self) -> int:
         return len(self._all)
 
-    def count(self: ItemsType) -> int:
+    def count(self) -> int:
         """Count the number of items.
 
         :rtype: int
@@ -380,7 +374,7 @@ class Items(Collection):
 
         This has the same behaviour as Python's [i:j]
         """
-        return type(self).from_items(*self._all[i:j])
+        return type(self).from_items(self._all[i:j])
 
     def sort(
         self: ItemsType,
@@ -416,7 +410,7 @@ class Items(Collection):
             )
         )
 
-    def filter(self: ItemsType, filter_: FilterType, *args: object) -> ItemsType:
+    def filter(self: ItemsType, filter_: FunctionType, *args: object) -> ItemsType:
         """Filter the items by a given function.
 
         :param callable filter_: A function that returns either True or False.
@@ -424,14 +418,14 @@ class Items(Collection):
         """
         return type(self)(tuple(filter(lambda i: filter_(i, *args), self._all)))
 
-    def all(self: ItemsType) -> t.Sequence[Item]:
+    def all(self) -> t.Sequence[T]:
         """Get a tuple of all the items.
 
         :rtype: tuple
         """
         return self._all
 
-    def format(self: ItemsType, template: str, sep="\n") -> str:
+    def format(self: ItemsType, template: str, sep: str = "\n") -> str:
         """Get a custom string representation of this list of objects.
 
         :param str template: The template will be compiled by Python's `.format()`.
@@ -448,7 +442,7 @@ class Items(Collection):
         return sep.join(template.format(**x.to_dict()) for x in self._all)
 
     def where(
-        self, key: str, condition: WhereConditions, values: t.Sequence[str]
+        self: ItemsType, key: str, condition: WhereConditions, values: t.Sequence[str]
     ) -> ItemsType:
         """Select items by a custom query.
 
@@ -511,23 +505,35 @@ class Host(Item):
     port: int = 22
     login_name: t.Optional[str] = None
     identity_file: t.Optional[str] = None
-    meta: t.Sequence[t.Tuple[object, object]] = ()
+    meta: t.Sequence[t.Tuple[str, JSONValueType]] = ()
 
     def __hash__(self) -> int:
         return hash(self.ip)
 
-    def __eq__(self, value):
-        return type(self) == type(value) and self.ip == value.ip
+    def __eq__(self, value: object) -> bool:
+        return isinstance(value, self.__class__) and self.ip == value.ip
 
     @classmethod
-    def from_dict(cls, dict_):
-        try:
-            host = cls(**dict(dict_, meta=tuple(dict_.get("meta", {}).items())))
-        except Exception:
-            raise ValueError(f"invalid input data for {cls.__name__}")
+    def from_dict(cls: t.Type[Host], dict_: t.Dict[object, object], /) -> Host:
+        ip: str = required(dict_, "ip", str)
+        hostname = optional(dict_, "hostname", str)
+        domain = optional(dict_, "domain", str)
+        port = required(dict_, "port", int, default=22)
+        login_name = optional(dict_, "login_name", str)
+        identity_file = optional(dict_, "identity_file", str)
+        meta: MetaType = required(dict_, "meta", dict, default_factory=lambda: {})
+        host = cls(
+            ip=ip,
+            hostname=hostname,
+            domain=domain,
+            port=port,
+            login_name=login_name,
+            identity_file=identity_file,
+            meta=tuple(meta.items()),
+        )
         return host
 
-    def to_dict(self):
+    def to_dict(self) -> t.Dict[str, object]:
         return dict(vars(self), meta=dict(self.meta))
 
     def fqdn(self) -> str:
@@ -590,35 +596,33 @@ class Host(Item):
 
     def results(self) -> Results:
         """Fetch recent results of current host from database."""
-        return self.pipe(Results.by_host)
+        return Results.by_host(self)
 
 
 @dataclass(frozen=True)
-class Hosts(Items):
+class Hosts(Items[Host]):
     """A group of :py:class:`viper.collections.Host` objects.
 
     .. tip:: See :py:mod:`viper.demo.hosts`
     """
 
-    _item_factory: t.Type[Host] = field(init=False, default=Host)
+    _all: t.Sequence[Host] = ()
+    _item_type: t.Type[Host] = field(init=False, default=Host)
 
     @classmethod
     def from_file(
-        cls, filepath: str, loader: t.Optional[t.Callable[[t.TextIO], "Hosts"]] = None
+        cls: t.Type[Hosts],
+        filepath: str,
+        /,
+        loader: t.Optional[t.Callable[[t.TextIO], Hosts]] = None,
     ) -> Hosts:
         """Initialize hosts by reading data from a file.
-
         :param filepath str: The path for the file to read from.
         :param callable loader (optional): A custom loader.
-
         :rtype: viper.collections.Hosts
-
         :example:
-
         .. code-block:: python
-
             Host("1.2.3.4").from_file("/path/to/file/hosts.json", loader=viper.demo.loader.json)
-
         .. tip:: See :py:func:`viper.demo.loaders.json`
         """
 
@@ -656,7 +660,7 @@ class Hosts(Items):
         )
 
     def run_task(
-        self, task: Task, *args: str, max_workers=Config.max_workers.value
+        self, task: Task, *args: str, max_workers: int = Config.max_workers.value
     ) -> Results:
         """Assign the task to the host and then run it.
 
@@ -701,8 +705,8 @@ class Task(Item):
     """
 
     name: str
-    command_factory: CommandFactoryType
-    timeout: t.Optional[int] = None
+    command_factory: FunctionType
+    timeout: t.Optional[t.Union[int, float]] = None
     retry: int = 0
     stdout_processor: t.Optional[t.Callable[[str], str]] = None
     stderr_processor: t.Optional[t.Callable[[str], str]] = None
@@ -711,32 +715,62 @@ class Task(Item):
     meta: t.Sequence[t.Tuple[object, object]] = ()
 
     @classmethod
-    def from_dict(cls, dict_: t.Dict[str, object]) -> Task:
-        outp = dict_.get("stdout_processor")
-        errp = dict_.get("stderr_processor")
-        pre = dict_.get("pre_run")
-        post = dict_.get("post_run")
-        if "command_factory" not in dict_:
-            raise ValueError(f"invalid input data for {cls.__name__}")
+    def from_dict(cls: t.Type[Task], dict_: t.Dict[object, object], /) -> Task:
 
-        cf = locate(dict_["command_factory"])
-        if not cf:
-            raise ValueError(f"could not locate {repr(dict_['command_factory'])}")
+        name: str = required(dict_, "name", str)
 
-        try:
-            hosts = cls(
-                **dict(
-                    dict_,
-                    command_factory=cf,
-                    stdout_processor=locate(outp) if outp else None,
-                    stderr_processor=locate(errp) if errp else None,
-                    pre_run=locate(pre) if pre else None,
-                    post_run=locate(post) if post else None,
-                    meta=tuple(dict_.get("meta", {}).items()),
-                )
-            )
-        except Exception:
-            raise ValueError(f"invalid input data for {cls.__name__}")
+        command_factory: FunctionType = required(
+            dict_,
+            "command_factory",
+            FunctionType,
+            parser=lambda dict_, key: locate(str(dict_.get(key))),
+        )
+
+        timeout = optional(dict_, "timeout", (int, float,))
+
+        retry = required(dict_, "retry", int, default=0)
+
+        stdout_processor = optional(
+            dict_,
+            "stdout_processor",
+            FunctionType,
+            parser=lambda dict_, key: locate(str(dict_.get(key))),
+        )
+
+        stderr_processor = optional(
+            dict_,
+            "stderr_processor",
+            FunctionType,
+            parser=lambda dict_, key: locate(str(dict_.get(key))),
+        )
+
+        pre_run = optional(
+            dict_,
+            "pre_run",
+            FunctionType,
+            parser=lambda dict_, key: locate(str(dict_.get(key))),
+        )
+
+        post_run = optional(
+            dict_,
+            "post_run",
+            FunctionType,
+            parser=lambda dict_, key: locate(str(dict_.get(key))),
+        )
+
+        meta: MetaType = required(dict_, "meta", dict, default_factory=lambda: {})
+
+        hosts = cls(
+            name=name,
+            command_factory=command_factory,
+            timeout=timeout,
+            retry=retry,
+            stdout_processor=stdout_processor,
+            stderr_processor=stderr_processor,
+            pre_run=pre_run,
+            post_run=post_run,
+            meta=tuple(meta.items()),
+        )
         return hosts
 
     def to_dict(self) -> t.Dict[str, object]:
@@ -761,7 +795,7 @@ class Task(Item):
 
         :rtype: Rviper.collections.esults
         """
-        return self.pipe(Results.by_task)
+        return Results.by_task(self)
 
 
 @dataclass(frozen=True, order=True)
@@ -775,24 +809,38 @@ class Runner(Item):
 
     host: Host
     task: Task
-    args: t.Sequence[str] = ()
+    args: t.Tuple[str, ...] = ()
 
     @classmethod
-    def from_dict(cls, dict_: t.Dict[str, object]) -> Runner:
-        try:
-            return cls(
-                **dict(
-                    dict_,
-                    task=Task.from_dict(dict_["task"]),
-                    host=Host.from_dict(dict_["host"]),
-                    args=tuple(dict_.get("args", [])),
-                )
-            )
-        except Exception:
-            raise ValueError(f"invalid input data for {cls.__name__}")
+    def from_dict(cls: t.Type[Runner], dict_: t.Dict[object, object], /) -> Runner:
+        host: Host = required(
+            dict_,
+            "host",
+            Host,
+            parser=lambda dict_, key: Host.from_dict(
+                required(dict_, key, dict, default_factory=dict)
+            ),
+        )
+        task: Task = required(
+            dict_,
+            "task",
+            Task,
+            parser=lambda dict_, key: Task.from_dict(
+                required(dict_, key, dict, default_factory=dict)
+            ),
+        )
+        args: t.Tuple[str, ...] = tuple(
+            required(dict_, "args", list, default_factory=list)
+        )
+        return cls(host=host, task=task, args=args)
 
-    def to_dict(self) -> t.Dict[str, object]:
-        return dict(vars(self), task=self.task.to_dict(), host=self.host.to_dict())
+    def to_dict(self) -> t.Dict[str, t.Any]:
+        return dict(
+            vars(self),
+            task=self.task.to_dict(),
+            host=self.host.to_dict(),
+            args=list(self.args),
+        )
 
     def run(self, retry: int = 0, trigger_time: t.Optional[float] = None) -> Result:
         """Run the task on the host.
@@ -806,7 +854,7 @@ class Runner(Item):
             trigger_time = time()
 
         if not all(isinstance(a, str) for a in self.args):
-            raise ValueError("{self.args}: args must be a list/tuple of strings.")
+            raise ValueError(f"{self.args}: args must be a list/tuple of strings.")
 
         command = self.task.command_factory(self.host, *self.args)
 
@@ -836,10 +884,10 @@ class Runner(Item):
 
         end = time()
 
-        if self.task.stderr_processor:
+        if self.task.stdout_processor is not None:
             stdout = self.task.stdout_processor(stdout)
 
-        if self.task.stderr_processor:
+        if self.task.stderr_processor is not None:
             stderr = self.task.stderr_processor(stderr)
 
         result = Result(
@@ -864,17 +912,11 @@ class Runner(Item):
 
         return result
 
-    def results(self) -> Results:
-        """Fetch recent results of current runner from database.
-
-        :rtype: viper.collections.Results
-        """
-        return self.pipe(Results.by_runner)
-
 
 @dataclass(frozen=True)
-class Runners(Items):
-    _item_factory: t.Type[Runner] = field(init=False, default=Runner)
+class Runners(Items[Runner]):
+    _all: t.Sequence[Runner] = ()
+    _item_type: t.Type[Runner] = field(init=False, default=Runner)
 
     def run(self, max_workers: int = Config.max_workers.value) -> Results:
         """Run the tasks.
@@ -889,7 +931,7 @@ class Runners(Items):
         if max_workers <= 1:
             # Run in sequence
             results = []
-            for r in self.all():
+            for r in self._all:
                 try:
                     results.append(r.run(trigger_time=trigger_time))
                 except Exception:  # pragma: no cover
@@ -926,8 +968,8 @@ class Result(Item):
     trigger_time: float
     task: Task
     host: Host
-    args: t.Sequence[str]
-    command: t.Sequence[str]
+    args: t.Tuple[str, ...]
+    command: t.Tuple[str, ...]
     stdout: str
     stderr: str
     returncode: int
@@ -963,8 +1005,8 @@ class Result(Item):
                 trigger_time=data[0],
                 task=loadjson(data[1]),
                 host=loadjson(data[2]),
-                args=tuple(loadjson(data[3])),
-                command=tuple(loadjson(data[4])),
+                args=loadjson(data[3]),
+                command=loadjson(data[4]),
                 stdout=data[5],
                 stderr=data[6],
                 returncode=data[7],
@@ -975,22 +1017,42 @@ class Result(Item):
         )
 
     @classmethod
-    def from_dict(cls, dict_: t.Dict[str, object]) -> Task:
-        try:
-            return cls(
-                **dict(
-                    dict_,
-                    args=tuple(dict_["args"]),
-                    command=tuple(dict_["command"]),
-                    task=Task.from_dict(dict_["task"]),
-                    host=Host.from_dict(dict_["host"]),
-                )
-            )
-        except Exception:
-            raise ValueError(f"invalid input data for {cls.__name__}")
+    def from_dict(cls: t.Type[Result], dict_: t.Dict[object, object], /) -> Result:
+        return cls(
+            trigger_time=required(dict_, "trigger_time", float),
+            task=required(
+                dict_,
+                "task",
+                Task,
+                parser=lambda dict_, key: Task.from_dict(
+                    required(dict_, key, dict, default_factory=dict)
+                ),
+            ),
+            host=required(
+                dict_,
+                "host",
+                Host,
+                parser=lambda dict_, key: Host.from_dict(
+                    required(dict_, key, dict, default_factory=dict)
+                ),
+            ),
+            args=tuple(required(dict_, "args", list, default_factory=list)),
+            command=tuple(required(dict_, "command", list, default_factory=list)),
+            stdout=required(dict_, "stdout", str),
+            stderr=required(dict_, "stderr", str),
+            returncode=required(dict_, "returncode", int),
+            start=required(dict_, "start", float),
+            end=required(dict_, "end", float),
+            retry=required(dict_, "retry", int),
+        )
 
-    def to_dict(self) -> t.Dict[str, object]:
-        return dict(vars(self), task=self.task.to_dict(), host=self.host.to_dict())
+    def to_dict(self) -> t.Dict[str, t.Any]:
+        return dict(
+            vars(self),
+            task=self.task.to_dict(),
+            host=self.host.to_dict(),
+            args=list(self.args),
+        )
 
     def ok(self) -> bool:
         """Returns True the result is success.
@@ -1056,22 +1118,23 @@ class Result(Item):
 
 
 @dataclass(frozen=True)
-class Results(Items):
+class Results(Items[Result]):
     """A group of :py:class:`viper.collections.Results`."""
 
-    _item_factory: t.Type[Results] = field(init=False, default=Result)
+    _all: t.Sequence[Result] = ()
+    _item_type: t.Type[Result] = field(init=False, default=Result)
 
     @classmethod
-    def from_history(cls, final=False) -> Results:
+    def from_history(cls: t.Type[Results], final: bool = False) -> Results:
         """Fetch and return all the results from history.
 
         :rtype: ciper.collections.Results
         """
         with ViperDB(ViperDB.url) as conn:
             rows = conn.execute("SELECT id FROM results ORDER BY start DESC")
-            results = [cls._item_factory.by_id(r[0]) for r in rows]
+            result_list = [cls._item_type.by_id(r[0]) for r in rows]
 
-        results = cls.from_items(*results)
+        results = cls.from_items(*result_list)
         return results.final() if final else results
 
     @classmethod
@@ -1090,7 +1153,7 @@ class Results(Items):
                 """,
                 (host.ip,),
             )
-            results = [cls._item_factory.by_id(r[0]) for r in rows]
+            results = [cls._item_type.by_id(r[0]) for r in rows]
 
         return cls.from_items(*results)
 
@@ -1110,7 +1173,7 @@ class Results(Items):
                 """,
                 (task.name,),
             )
-            results = [cls._item_factory.by_id(r[0]) for r in rows]
+            results = [cls._item_type.by_id(r[0]) for r in rows]
 
         return cls.from_items(*results)
 
@@ -1153,7 +1216,7 @@ class Results(Items):
         """
         return Runners.from_items(r.runner() for r in self._all)
 
-    def re_run(self, max_workers=Config.max_workers.value) -> Results:
+    def re_run(self, max_workers: int = Config.max_workers.value) -> Results:
         """Recreate the runners from the results and run again.
 
         :rtype: viper.collections.Results

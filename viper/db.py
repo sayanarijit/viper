@@ -45,9 +45,12 @@ class ViperDB:
         self.engine = sqlite3.connect(self.url)
         return self.engine.cursor()
 
-    def __exit__(self, exc_type: type, exc_value: t.Any, exc_traceback: Exception):
-        try:
-            self.engine.commit()
-        except Exception:  # pragma: no cover
-            self.engine.rollback()
-        self.engine.close()
+    def __exit__(
+        self, exc_type: type, exc_value: t.Any, exc_traceback: Exception
+    ) -> None:
+        if self.engine:
+            try:
+                self.engine.commit()
+            except Exception:  # pragma: no cover
+                self.engine.rollback()
+            self.engine.close()

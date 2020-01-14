@@ -39,4 +39,4 @@ def startswith(obj: t.Union[Hosts, Runners, Results], key: str, val: str) -> boo
 
 def endswith(obj: t.Union[Hosts, Runners, Results], key: str, val: str) -> bool:
     """A generic filter for all items."""
-    return hasattr(obj, key) and str(getattr(obj, key)).endsswith(val)
+    return hasattr(obj, key) and str(getattr(obj, key)).endswith(val)

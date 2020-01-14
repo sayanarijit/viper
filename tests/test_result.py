@@ -77,4 +77,4 @@ def test_result_to_from_json():
     with pytest.raises(ValueError) as e:
         Result.from_dict({})
 
-    assert "invalid input data" in str(e.__dict__)
+    assert "value is required" in str(e.__dict__)
