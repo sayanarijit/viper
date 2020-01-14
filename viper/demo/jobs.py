@@ -47,10 +47,11 @@ def ping_then_execute(hosts: Hosts, command: str, resultsfile: str) -> Results:
         viper hosts viper.demo.hosts.group1 \\
                 | viper run-job viper.demo.jobs.ping_then_execute "df -h" results.csv
     """
-    return (
+    results: Results = (
         hosts.run_task(ping(), max_workers=50)
         .filter(lambda result: result.ok())
         .hosts()
         .run_task(remote_execute(), command, max_workers=50)
         .pipe(export_csv, resultsfile)
     )
+    return results

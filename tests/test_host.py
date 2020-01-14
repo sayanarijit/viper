@@ -53,7 +53,7 @@ def test_from_json():
     with pytest.raises(ValueError) as e:
         Host.from_json("{}")
 
-    assert "invalid input data" in str(e.__dict__)
+    assert "value is required" in str(e.__dict__)
 
 
 def test_fqdn():

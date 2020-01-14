@@ -205,6 +205,7 @@ Get the unique trigger times from history (custom defined action)
 from argparse import ArgumentParser
 from argparse import Namespace
 from pydoc import locate
+from types import FunctionType
 from viper import __version__
 from viper import Hosts
 from viper import Results
@@ -212,8 +213,6 @@ from viper import Runners
 from viper import Task
 from viper.cli_base import SubCommand
 from viper.collections import Collection as ViperCollection
-from viper.collections import FilterType
-from viper.collections import HandlerType
 from viper.collections import WhereConditions
 from viper.const import Config
 from viper.db import ViperDB
@@ -222,19 +221,18 @@ import os
 import sqlite3
 import sys
 import traceback
-import typing as t
 
 __all__ = ["func", "run"]
 
 
-def func(objpath: str) -> t.Union[HandlerType, FilterType]:
-    """Resolved python function from given string."""
+def func(objpath: str) -> FunctionType:
+    """Resolved Python function from given string."""
 
     funcobj = locate(objpath)
     if not func:
         raise ValueError(f"could not resolve {repr(objpath)}.")
 
-    if not callable(funcobj):
+    if not isinstance(funcobj, FunctionType):
         raise ValueError(f"{repr(objpath)} is not a valid function.")
 
     return funcobj
@@ -343,7 +341,7 @@ class TaskFromFuncCommand(SubCommand):
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
-            "func", type=Task.from_func, help=Task.from_func.__doc__.lower()
+            "func", type=Task.from_func, help="load task from a Python function"
         )
         parser.add_argument("-i", "--indent", type=int, default=None)
 
@@ -386,7 +384,7 @@ class HostsFromFuncCommand(SubCommand):
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
-            "func", type=Hosts.from_func, help=Hosts.from_func.__doc__.lower()
+            "func", type=Hosts.from_func, help="load hosts from a Python function"
         )
         parser.add_argument("-i", "--indent", type=int, default=None)
 
@@ -425,7 +423,7 @@ class HostsTaskCommand(SubCommand):
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
-            "task", type=Task.from_func, help=Task.from_func.__doc__.lower()
+            "task", type=Task.from_func, help="load task from Python function"
         )
         parser.add_argument(
             "args", nargs="*", help="arguments to be passed to the command factory"
@@ -449,7 +447,7 @@ class HostsRunTaskCommand(SubCommand):
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
-            "task", type=Task.from_func, help=Task.from_func.__doc__.lower()
+            "task", type=Task.from_func, help="load task from a Python function"
         )
         parser.add_argument(
             "args", nargs="*", help="arguments to be passed to the command factory"
@@ -766,6 +764,7 @@ class RunnersFormatCommand(SubCommand):
 
     def __call__(self, args: Namespace) -> int:
         print(Runners.from_json(input()).format(args.template, sep=args.sep))
+        return 0
 
 
 class RunnersWhereCommand(SubCommand):
@@ -824,16 +823,13 @@ class RunnersRunCommand(SubCommand):
     name = "runners:run"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
-        parser.add_argument(
-            "args", nargs="*", help="arguments to be passed to the command factory"
-        )
         parser.add_argument("--max-workers", type=int, default=Config.max_workers.value)
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
         print(
             Runners.from_json(input())
-            .run(*args.args, max_workers=args.max_workers)
+            .run(max_workers=args.max_workers)
             .to_json(indent=args.indent)
         )
         return 0
@@ -1226,7 +1222,7 @@ def run() -> int:
         return 1
 
     try:
-        return args._handler(args)
+        return int(args._handler(args))
     except Exception as e:
         print(f"error: {e}", file=sys.stderr)
         if args.debug:

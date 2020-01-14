@@ -72,12 +72,12 @@ def test_task_from_json():
     with pytest.raises(ValueError) as e:
         Task.from_json("{}")
 
-    assert "invalid input data" in str(e.__dict__)
+    assert "value is required" in str(e.__dict__)
 
     with pytest.raises(ValueError) as e:
         Task.from_json('{"command_factory": "viper.demo.commands.ping_command"}')
 
-    assert "invalid input data" in str(e.__dict__)
+    assert "value is required" in str(e.__dict__)
 
 
 def test_runner_to_from_json():
@@ -115,7 +115,5 @@ def test_runner_to_from_json():
     assert runner.to_json() == runner_json
     assert Runner.from_json(runner_json) == runner
 
-    with pytest.raises(ValueError) as e:
-        Task.from_json('{"command_factory": "foo"}')
-
-    assert "could not locate" in str(e.__dict__)
+    with pytest.raises(ValueError):
+        Task.from_json('{"name": "foo", "command_factory": "foo"}')

@@ -36,13 +36,6 @@ def test_all_hosts():
     assert "/root/.ssh/id_rsa.pub" in res.stdout
 
 
-def test_hosts_by():
-    res = run("viper @myproj:allhosts | viper @myproj:hosts_by ip 999.999.999.999")
-    assert res.returncode == 0
-    assert "999.999.999.999" in res.stdout
-    assert "999.000.000.999" not in res.stdout
-
-
 def test_hosts2csv():
     if os.path.exists(RESULTS_PATH):
         os.remove(RESULTS_PATH)
@@ -121,7 +114,7 @@ def test_final():
     run("viper init -f")
     res = run(
         "viper @myproj:allhosts"
-        " | viper @myproj:hosts_by ip 999.999.999.999"
+        " | viper hosts:where ip IS 999.999.999.999"
         ' | viper @myproj:remote_exec "df -h" results.csv --max-workers 50'
     )
 
@@ -199,6 +192,6 @@ def test_get_triggers():
         " | viper @myproj:app_version python results.csv --max-workers 50"
     )
 
-    res = run("viper @myproj:get_triggers")
+    res = run("viper @myproj:get_triggers --debug")
     assert res.returncode == 0
     assert len(res.stdout.strip().split()) == 2

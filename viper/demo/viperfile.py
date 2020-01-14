@@ -17,7 +17,7 @@ Example Viperfile CLI Usage
     viper @myproj:allhosts --help
 
     viper @myproj:allhosts | \\
-            viper @myproj:hosts_by ip 127.0.0.1 | \\
+            viper hosts:where port IS 22 | \\
             viper @myproj:remote_exec "df -h" results.csv --max-workers 50
 
 .. tip:: See :py:mod:`viper.project` for more details on available project APIs.
@@ -39,6 +39,8 @@ import csv
 import json
 import sys
 import typing as t
+
+T = t.TypeVar("T")
 
 myproj = Project(prefix="myproj")
 
@@ -106,48 +108,6 @@ def allhosts(args: Namespace) -> Hosts:
             meta=tuple(d.items()),
         )
         for d in data
-    )
-
-
-@myproj.filter(objtype=Hosts, args=[arg("key"), arg("val")])
-def hosts_by(host: Host, args: Namespace) -> bool:
-    """Filter hosts by key and metadata
-
-    :param viper.collections.Host host: Host filters are given this object.
-    :param Namespace args: The parsed arguments.
-    :rtype: bool
-    :example:
-
-    .. code-block:: bash
-
-        viper @myproj:allhosts \\
-                | viper @myproj:hosts_by ip 1.1.1.1
-
-    .. note: We can also use the `hosts:where` command.
-    """
-
-    return str(dict(host.meta)[args.key]) == args.val
-
-
-@myproj.filter(objtype=Results, args=[arg("key"), arg("val")])
-def results_by(result: Result, args: Namespace) -> bool:
-    """Filter hosts by IP address
-
-    :param viper.collections.Result result: Result filters are given this object.
-    :param Namespace args: The parsed arguments.
-    :rtype: bool
-    :example:
-
-    .. code-block:: bash
-
-        viper results \\
-                | viper @myproj:results_by returncode 0
-
-    .. note: We can also use the `results:where` command.
-    """
-
-    return (
-        hasattr(result, args.key) and str(getattr(result, args.key)).strip() == args.val
     )
 
 
@@ -279,7 +239,7 @@ def remote_exec(hosts: Hosts, args: Namespace) -> Results:
         viper @myproj:allhosts \\
                 | viper @myproj:remote_exec "df -h" results.csv --max-workers 50
     """
-    return (
+    results: Results = (
         hosts.task(
             Task(
                 "Remote execute",
@@ -295,6 +255,7 @@ def remote_exec(hosts: Hosts, args: Namespace) -> Results:
         .final()  # Filter only the final results
         .pipe(lambda results: results2csv(results, args))
     )
+    return results
 
 
 def app_version_command(host: Host, app: str) -> t.Sequence[str]:
@@ -327,7 +288,7 @@ def app_version(hosts: Hosts, args: Namespace) -> Results:
         viper @myproj:allhosts \\
                 | viper @myproj:app_version python results.csv --max-workers 50
     """
-    return (
+    results: Results = (
         hosts.task(
             Task(
                 "Get app version",
@@ -343,6 +304,7 @@ def app_version(hosts: Hosts, args: Namespace) -> Results:
         .final()  # Filter only the final results
         .pipe(lambda results: results2csv(results, args))
     )
+    return results
 
 
 def install_via_apt_command(host: Host, app: str, version: str) -> t.Sequence[str]:
@@ -377,7 +339,7 @@ def install_via_apt(hosts: Hosts, args: Namespace) -> Results:
         viper @myproj:allhosts \\
                 | viper @myproj:install_via_apt python 3.8.0 results.csv --max-workers 50
     """
-    return (
+    results: Results = (
         hosts.task(
             Task(
                 "Get app version",
@@ -409,10 +371,11 @@ def install_via_apt(hosts: Hosts, args: Namespace) -> Results:
         .final()  # Filter only the final results
         .pipe(lambda results: results2csv(results, args))
     )
+    return results
 
 
-@myproj.action()
-def get_triggers(args: Namespace) -> t.Sequence[float]:
+@myproj.action(totype=tuple)
+def get_triggers(args: Namespace) -> t.Iterable[T]:
     """Get the unique trigger times from history"""
 
     results = Results.from_history(final=True).all()
