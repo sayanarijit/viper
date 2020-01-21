@@ -67,6 +67,14 @@ viper.project module
    :undoc-members:
    :show-inheritance:
 
+viper.utils module
+------------------
+
+.. automodule:: viper.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------

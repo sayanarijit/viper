@@ -375,7 +375,7 @@ def install_via_apt(hosts: Hosts, args: Namespace) -> Results:
 
 
 @myproj.action(totype=tuple)
-def get_triggers(args: Namespace) -> t.Iterable[T]:
+def get_triggers(args: Namespace) -> t.Tuple[float, ...]:
     """Get the unique trigger times from history"""
 
     results = Results.from_history(final=True).all()

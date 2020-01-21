@@ -30,8 +30,7 @@ readme:
 
 .PHONY: types
 types:
-	# TODO: remove the "|| true"
-	mypy --strict viper || true
+	mypy --strict viper
 	python -m typecov 100 typecov/linecount.txt
 
 .PHONY: apidocs
