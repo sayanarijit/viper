@@ -109,8 +109,8 @@ class Project:
 
     def handler(
         self,
-        fromtype: t.Type[T],
-        totype: t.Type[C],
+        fromtype: type,
+        totype: type,
         args: t.Optional[t.Sequence[ArgType]] = None,
     ) -> t.Callable[[HandlerFuncType[T, C]], HandlerFuncType[T, C]]:
         """Use this decorator to define handlers
@@ -141,14 +141,21 @@ class Project:
 
                 def __call__(self, args: Namespace) -> int:
                     if not issubclass(fromtype, ViperCollection):
-                        raise ValueError(f"{fromtype}: invalid fromtype {fromtype}")
+                        raise ValueError(f"{fromtype}: invalid fromtype")
 
-                    obj = fromtype.from_json(input()).pipe(lambda obj: func(obj, args))
-                    print(
-                        obj.to_json(indent=args.indent)
-                        if isinstance(obj, ViperCollection)
-                        else totype(obj)
+                    obj: C = fromtype.from_json(input()).pipe(
+                        lambda obj: func(obj, args)
                     )
+                    if not isinstance(obj, totype):
+                        raise ValueError(
+                            f"invalid totype, expected {totype} but got {type(obj)}"
+                        )
+
+                    if isinstance(obj, ViperCollection):
+                        print(obj.to_json(indent=args.indent))
+                    else:
+                        print(obj)
+
                     return 0
 
             self.handler_commands.append(HandlerCommand)
@@ -197,7 +204,7 @@ class Project:
     def action(
         self,
         args: t.Optional[t.Sequence[ArgType]] = None,
-        totype: t.Optional[t.Type[T]] = None,
+        totype: t.Optional[type] = None,
     ) -> t.Callable[[ActionFuncType[T]], ActionFuncType[T]]:
         """Use this decorator to define an action.
 

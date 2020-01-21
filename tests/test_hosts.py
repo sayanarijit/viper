@@ -5,7 +5,9 @@ from viper import Hosts
 from viper import Results
 from viper import Runner
 from viper import WhereConditions
+from viper.collections import Item
 from viper.db import ViperDB
+from viper.demo.hosts import group1
 
 import json
 import pytest
@@ -18,12 +20,12 @@ def test_hosts_from_items_errors():
     with pytest.raises(ValueError) as e:
         Hosts.from_items(1, 2, 3)
 
-    assert "expecting 'Item' or generator of 'Item's" in str(e.__dict__)
+    assert f"expecting {Item} or generator of 'Item's" in str(e.__dict__)
 
     with pytest.raises(ValueError) as e:
         Hosts.from_items(iter([1, 2, 3]))
 
-    assert "expecting 'Item'" in str(e.__dict__)
+    assert f"expecting {Item}" in str(e.__dict__)
 
 
 def test_hosts_to_from_json():
@@ -69,6 +71,11 @@ def test_hosts_from_json_file():
     assert Hosts.from_file(CSV_FILE) == Hosts.from_file(
         JSON_FILE, lambda f: Hosts.from_json(f.read())
     )
+
+
+def test_hosts_from_func():
+
+    assert Hosts.from_func("viper.demo.hosts.group1") == group1()
 
 
 def test_hosts_format():
@@ -129,6 +136,19 @@ def test_hosts_filter():
     assert Hosts.from_file(CSV_FILE).filter(
         lambda h: h.ip.startswith("1.")
     ) == Hosts.from_items(Host("1.2.3.4"), Host("1.1.1.1"))
+    with pytest.raises(ValueError) as e:
+        Hosts.from_file(CSV_FILE).filter(1)
+    assert "expected a callable" in str(vars(e))
+
+
+def test_hosts_pipe():
+    assert Hosts.from_file(CSV_FILE).pipe(lambda x: x.head(1)) == Hosts.from_items(
+        Host("1.2.3.4")
+    )
+
+    with pytest.raises(ValueError) as e:
+        Hosts.from_file(CSV_FILE).pipe(1)
+    assert "expected a callable" in str(vars(e))
 
 
 def test_hosts_first():

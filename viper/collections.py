@@ -77,7 +77,7 @@ class Collection:
     @classmethod
     def from_json(
         cls: t.Type[CollectionType], json: str, *args: t.Any, **kwargs: t.Any
-    ) -> CollectionType:
+    ) -> CollectionType:  # pragma: no cover
         """Initialise a new object of this class from the given JSON string.
 
         :param str json: The JSON data to parse.
@@ -142,7 +142,7 @@ class Collection:
 
         return obj
 
-    def pipe(self, handler: FunctionType, *args: t.Any) -> t.Any:
+    def pipe(self, handler: t.Any, *args: t.Any) -> T:
         """Pipe this object to the given function.
 
         :param callable handler: A callable that expects this object.
@@ -156,7 +156,11 @@ class Collection:
 
         .. tip:: See :py:func:`viper.demo.handlers.hosts2csv`
         """
-        return handler(self, *args)
+        if not callable(handler):
+            raise ValueError(f"{handler}: expected a callable but got {type(handler)}")
+
+        res = t.cast(T, handler(self, *args))
+        return res
 
     def hash(self) -> int:
         """Get the hash value.
@@ -176,9 +180,9 @@ class Item(Collection):
     """
 
     @classmethod
-    def from_dict(  # pragma: no cover
+    def from_dict(
         cls: t.Type[ItemType], dict_: t.Dict[object, object], /,
-    ) -> ItemType:
+    ) -> ItemType:  # pragma: no cover
         """Initialize item from the given dict.
 
         :param dict dict_: The dictionary containing the properties for this object.
@@ -265,7 +269,7 @@ class Items(Collection, t.Generic[T]):
         for item in items:
             if not isinstance(item, Item) and not isinstance(item, Iterable):
                 raise ValueError(
-                    f"{item}: expecting 'Item' or generator of 'Item's but got {type(item)}"
+                    f"{item}: expecting {Item} or generator of 'Item's but got {type(item)}"
                 )
 
             if isinstance(item, Item):
@@ -275,7 +279,7 @@ class Items(Collection, t.Generic[T]):
             if isinstance(item, Iterable):
                 for i in item:
                     if not isinstance(i, Item):
-                        raise ValueError(f"{i}: expecting 'Item' but got {type(i)}")
+                        raise ValueError(f"{i}: expecting {Item} but got {type(i)}")
                     items_set[i] = None
 
         return cls(tuple(items_set))
@@ -410,12 +414,15 @@ class Items(Collection, t.Generic[T]):
             )
         )
 
-    def filter(self: ItemsType, filter_: FunctionType, *args: object) -> ItemsType:
+    def filter(self: ItemsType, filter_: t.Any, *args: object) -> ItemsType:
         """Filter the items by a given function.
 
         :param callable filter_: A function that returns either True or False.
         :param object args: Arguments to be passed to the filter to manipulate the decision making.
         """
+        if not callable(filter_):
+            raise ValueError(f"{filter_}: expected a callable, but got {type(filter_)}")
+
         return type(self)(tuple(filter(lambda i: filter_(i, *args), self._all)))
 
     def all(self) -> t.Sequence[T]:
@@ -617,12 +624,16 @@ class Hosts(Items[Host]):
         loader: t.Optional[t.Callable[[t.TextIO], Hosts]] = None,
     ) -> Hosts:
         """Initialize hosts by reading data from a file.
+
         :param filepath str: The path for the file to read from.
         :param callable loader (optional): A custom loader.
         :rtype: viper.collections.Hosts
         :example:
+
         .. code-block:: python
+
             Host("1.2.3.4").from_file("/path/to/file/hosts.json", loader=viper.demo.loader.json)
+
         .. tip:: See :py:func:`viper.demo.loaders.json`
         """
 
@@ -705,7 +716,7 @@ class Task(Item):
     """
 
     name: str
-    command_factory: FunctionType
+    command_factory: t.Any
     timeout: t.Optional[t.Union[int, float]] = None
     retry: int = 0
     stdout_processor: t.Optional[t.Callable[[str], str]] = None

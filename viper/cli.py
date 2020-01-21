@@ -221,6 +221,7 @@ import os
 import sqlite3
 import sys
 import traceback
+import typing as t
 
 __all__ = ["func", "run"]
 
@@ -555,7 +556,7 @@ class HostsPipeCommand(SubCommand):
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
-        obj = Hosts.from_json(input()).pipe(args.handler, *args.args)
+        obj: t.Any = Hosts.from_json(input()).pipe(args.handler, *args.args)
 
         if obj is None:
             return 0
@@ -738,7 +739,7 @@ class RunnersPipeCommand(SubCommand):
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
-        obj = Runners.from_json(input()).pipe(args.handler, *args.args)
+        obj: t.Any = Runners.from_json(input()).pipe(args.handler, *args.args)
 
         if obj is None:
             return 0
@@ -958,7 +959,7 @@ class ResultsPipeCommand(SubCommand):
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
-        obj = Results.from_json(input()).pipe(args.handler, *args.args)
+        obj: t.Any = Results.from_json(input()).pipe(args.handler, *args.args)
 
         if obj is None:
             return 0

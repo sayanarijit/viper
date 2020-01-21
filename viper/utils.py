@@ -28,7 +28,7 @@ def optional(
         raise ValueError(
             f"{dict_}: {repr(key)}: {repr(value)}: invalid type {type(value)}, expecting {expect}"
         )
-    return value
+    return t.cast(T, value)
 
 
 def required(
