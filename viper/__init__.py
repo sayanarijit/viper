@@ -7,6 +7,7 @@ __version__ = "v0.28.0"
 
 from viper.collections import Host  # noqa: F401
 from viper.collections import Hosts  # noqa: F401
+from viper.collections import meta  # noqa: F401
 from viper.collections import Result  # noqa: F401
 from viper.collections import Results  # noqa: F401
 from viper.collections import Runner  # noqa: F401
@@ -15,6 +16,7 @@ from viper.collections import Task  # noqa: F401
 from viper.collections import WhereConditions  # noqa: F401
 
 __all__ = [
+    "meta",
     "Host",
     "Hosts",
     "Result",

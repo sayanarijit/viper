@@ -1,5 +1,6 @@
 from unittest import mock
 from viper import Host
+from viper import meta
 
 import json
 import pytest
@@ -45,15 +46,21 @@ def test_from_json():
                 "port": 22,
                 "login_name": None,
                 "identity_file": None,
-                "meta": {},
+                "meta": {"foo": "bar"},
             }
         )
-    ) == Host("1.1.1.1")
+    ) == Host("1.1.1.1", meta=meta(foo="bar"))
 
     with pytest.raises(ValueError) as e:
         Host.from_json("{}")
 
     assert "value is required" in str(e.__dict__)
+
+
+def test_getitem():
+    assert Host("1.1.1.1")["ip"] == "1.1.1.1"
+    with pytest.raises(KeyError):
+        Host("1.1.1.1")["foo"]
 
 
 def test_fqdn():

@@ -4,6 +4,7 @@ The data types for Viper objects are defined here.
 """
 
 from __future__ import annotations
+from collections import namedtuple
 from collections import OrderedDict
 from collections.abc import Iterable
 from concurrent.futures import as_completed
@@ -29,6 +30,7 @@ import typing as t
 __all__ = [
     "WhereConditions",
     "Collection",
+    "meta",
     "Item",
     "Items",
     "Host",
@@ -47,7 +49,6 @@ CollectionType = t.TypeVar("CollectionType", bound="Collection")
 ItemType = t.TypeVar("ItemType", bound="Item")
 ItemsType = t.TypeVar("ItemsType", bound="Items[t.Any]")
 JSONValueType = t.Optional[t.Union[str, bool, int, float]]
-MetaType = t.Dict[str, JSONValueType]
 
 
 class WhereConditions(Enum):
@@ -61,6 +62,38 @@ class WhereConditions(Enum):
     not_startswith = "NOT_STARTSWITH"
     endswith = "ENDSWITH"
     not_endswith = "NOT_ENDSWITH"
+
+
+def meta(**mapping: JSONValueType) -> t.Any:
+    """Meta data object creator.
+
+    :param `**mapping`: key-value pairs as the meta data.
+    :example:
+
+    .. code-block:: python
+
+        from viper import Host, meta
+
+        host = Host('1.1.1.1', meta=meta(provider="aws"))
+        host.meta.provider
+        # 'aws'
+        host.meta['provider']
+        # 'aws'
+        host['meta']['provider]
+        # 'aws'
+    """
+    BaseMeta = namedtuple("Meta", mapping.keys())  # type: ignore
+
+    class Meta(BaseMeta):
+        """Meta data of an item.
+
+        Supports dict-like indexing.
+        """
+
+        def __getitem__(self, key: str) -> object:  # type: ignore
+            return getattr(self, key)
+
+    return Meta(**mapping)  # type: ignore
 
 
 @dataclass(frozen=True, order=True)
@@ -81,7 +114,7 @@ class Collection:
         """Initialise a new object of this class from the given JSON string.
 
         :param str json: The JSON data to parse.
-        :param object args and kwargs: These will be passed to `json.laods`.
+        :param `*args` and `**kwargs`: These will be passed to `json.laods`.
 
         :rtype: viper.collections.Collection
 
@@ -96,7 +129,7 @@ class Collection:
     def to_json(self, *args: t.Any, **kwargs: t.Any) -> str:  # pragma: no cover
         """Represent the collection as JSON data.
 
-        :param object args and kwargs: These will be passed to `json.laods`.
+        :param object `*args` and `**kwargs`: These will be passed to `json.laods`.
 
         :rtype: str
 
@@ -179,6 +212,11 @@ class Item(Collection):
     :py:class:`viper.collections.Host`, :py:class:`viper.collections.Task` etc. inherits this base class.
     """
 
+    def __getitem__(self, name: str) -> object:
+        if not hasattr(self, name):
+            raise KeyError(name)
+        return getattr(self, name)
+
     @classmethod
     def from_dict(
         cls: t.Type[ItemType], dict_: t.Dict[object, object], /,
@@ -197,7 +235,7 @@ class Item(Collection):
         """
         raise NotImplementedError()
 
-    def to_dict(self) -> t.Dict[str, object]:  # pragma: no cover
+    def to_dict(self) -> t.Dict[str, t.Any]:  # pragma: no cover
         """Represent the item as dict.
 
         :rtype: dict
@@ -222,16 +260,16 @@ class Item(Collection):
     def format(self, template: str) -> str:
         """Get a custom string representation of this object.
 
-        :param str template: The template to be used as `"template".format(**self.to_dict())`
+        :param str template: The template to be used as `"template".format(**vars(self))`
         :rtype: str
 
         :example:
 
         .. code-block:: python
 
-            Host("1.2.3.4").format("{ip} {hostname} {meta[tag]}")
+            Host("1.2.3.4").format("{ip} {hostname} {meta.tag}")
         """
-        return template.format(**self.to_dict())
+        return template.format(**vars(self))
 
 
 @dataclass(frozen=True)
@@ -406,9 +444,7 @@ class Items(Collection, t.Generic[T]):
             tuple(
                 sorted(
                     self._all,
-                    key=lambda x: [
-                        f"{{{p}}}".format(**x.to_dict()) for p in properties
-                    ],
+                    key=lambda x: [f"{{{p}}}".format(**vars(x)) for p in properties],
                     reverse=reverse,
                 )
             )
@@ -512,7 +548,7 @@ class Host(Item):
     port: int = 22
     login_name: t.Optional[str] = None
     identity_file: t.Optional[str] = None
-    meta: t.Sequence[t.Tuple[str, JSONValueType]] = ()
+    meta: t.Any = field(default_factory=meta)
 
     def __hash__(self) -> int:
         return hash(self.ip)
@@ -528,7 +564,7 @@ class Host(Item):
         port = required(dict_, "port", int, default=22)
         login_name = optional(dict_, "login_name", str)
         identity_file = optional(dict_, "identity_file", str)
-        meta: MetaType = required(dict_, "meta", dict, default_factory=lambda: {})
+        meta_: t.Any = required(dict_, "meta", dict, default_factory=lambda: {})
         host = cls(
             ip=ip,
             hostname=hostname,
@@ -536,12 +572,12 @@ class Host(Item):
             port=port,
             login_name=login_name,
             identity_file=identity_file,
-            meta=tuple(meta.items()),
+            meta=meta(**meta_),
         )
         return host
 
     def to_dict(self) -> t.Dict[str, object]:
-        return dict(vars(self), meta=dict(self.meta))
+        return dict(vars(self), meta=self.meta._asdict())
 
     def fqdn(self) -> str:
         """Get the FQDN from hostname and domain name.
@@ -723,7 +759,7 @@ class Task(Item):
     stderr_processor: t.Optional[t.Callable[[str], str]] = None
     pre_run: t.Optional[t.Callable[[Runner], None]] = None
     post_run: t.Optional[t.Callable[[Result], None]] = None
-    meta: t.Sequence[t.Tuple[object, object]] = ()
+    meta: t.Any = field(default_factory=meta)
 
     @classmethod
     def from_dict(cls: t.Type[Task], dict_: t.Dict[object, object], /) -> Task:
@@ -769,7 +805,7 @@ class Task(Item):
             parser=lambda dict_, key: locate(str(dict_.get(key))),
         )
 
-        meta: MetaType = required(dict_, "meta", dict, default_factory=lambda: {})
+        meta_: t.Any = required(dict_, "meta", dict, default_factory=lambda: {})
 
         hosts = cls(
             name=name,
@@ -780,7 +816,7 @@ class Task(Item):
             stderr_processor=stderr_processor,
             pre_run=pre_run,
             post_run=post_run,
-            meta=tuple(meta.items()),
+            meta=meta(**meta_),
         )
         return hosts
 
@@ -798,7 +834,7 @@ class Task(Item):
             stderr_processor=f"{errp.__module__}.{errp.__qualname__}" if errp else None,
             pre_run=f"{pre.__module__}.{pre.__qualname__}" if pre else None,
             post_run=f"{post.__module__}.{post.__qualname__}" if post else None,
-            meta=dict(self.meta),
+            meta=self.meta._asdict(),
         )
 
     def results(self) -> Results:
