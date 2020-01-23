@@ -89,7 +89,7 @@ class Project:
             doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
 
             class HostGroupCommand(SubCommand):
-                __doc__ = f"[-> Hosts] {doc}"
+                __doc__ = f"[Hosts] {doc}"
                 name = f"@{self.prefix}:{func.__name__}"
 
                 def add_arguments(self, parser: ArgumentParser) -> None:
@@ -218,7 +218,7 @@ class Project:
             doc = func.__doc__.splitlines()[0] if func.__doc__ else ""
 
             class ActionCommand(SubCommand):
-                __doc__ = f"[-> totype.__name__] {doc}" if totype else doc
+                __doc__ = f"[{totype.__name__}] {doc}" if totype else doc
                 name = f"@{self.prefix}:{func.__name__}"
 
                 def add_arguments(self, parser: ArgumentParser) -> None:

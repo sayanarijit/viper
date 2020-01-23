@@ -60,14 +60,6 @@ viper.demo.jobs module
    :undoc-members:
    :show-inheritance:
 
-viper.demo.loaders module
--------------------------
-
-.. automodule:: viper.demo.loaders
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 viper.demo.processors module
 ----------------------------
 

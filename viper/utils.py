@@ -54,3 +54,40 @@ def required(
             return default_factory()
         raise ValueError(f"{dict_}: {repr(key)}: value is required")
     return value
+
+
+def flatten_dict(d: t.Dict[t.Any, t.Any]) -> t.Dict[str, object]:
+    def items() -> t.Iterable[t.Tuple[str, object]]:
+        for key, value in d.items():
+            if not isinstance(key, str):
+                raise ValueError(f"{key}: expected {str}, but got {type(key)}")
+            if isinstance(value, dict):
+                for subkey, subvalue in flatten_dict(value).items():
+                    if not isinstance(subkey, str):
+                        raise ValueError(
+                            f"{subkey}: expected {str}, but got {type(subkey)}"
+                        )
+                    yield key + ":" + subkey, subvalue
+            else:
+                yield key, value
+
+    return dict(items())
+
+
+def unflatten_dict(d: t.Dict[object, object]) -> t.Dict[object, object]:
+    dict_: t.Dict[object, object] = {}
+    for k, v in d.items():
+        if not isinstance(k, str):
+            raise ValueError(f"{k}: expected {str}, but got {type(k)}")
+
+        if ":" in k:
+            first, rest = k.split(":", 1)
+            if first not in dict_:
+                dict_[first] = {}
+            subdict = dict_[first]
+            if not isinstance(subdict, dict):
+                raise ValueError()
+            subdict.update(unflatten_dict({rest: v}))
+        else:
+            dict_[k] = v
+    return dict_

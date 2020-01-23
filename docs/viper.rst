@@ -67,6 +67,14 @@ viper.project module
    :undoc-members:
    :show-inheritance:
 
+viper.serializers module
+------------------------
+
+.. automodule:: viper.serializers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 viper.utils module
 ------------------
 

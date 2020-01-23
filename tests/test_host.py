@@ -6,6 +6,13 @@ import json
 import pytest
 
 
+def test_meta():
+    m = meta(a=1, b="two")
+    assert m.a == 1
+    assert m["b"] == "two"
+    assert str(m) == json.dumps({"a": 1, "b": "two"})
+
+
 def test_from_func():
     with pytest.raises(ValueError) as e:
         Host.from_func("foo")

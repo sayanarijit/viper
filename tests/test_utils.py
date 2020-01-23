@@ -1,5 +1,7 @@
+from viper.utils import flatten_dict
 from viper.utils import optional
 from viper.utils import required
+from viper.utils import unflatten_dict
 
 import pytest
 
@@ -38,3 +40,14 @@ def test_required():
     with pytest.raises(ValueError) as e:
         required({}, "key", str)
     assert "value is required" in str(vars(e))
+
+
+def test_flatten_dict():
+    assert flatten_dict({"a": 1, "b": {"c": 2, "d": 3}}) == {"a": 1, "b:c": 2, "b:d": 3}
+
+
+def test_unflatten_dict():
+    assert unflatten_dict({"a": 1, "b:c": 2, "b:d": 3}) == {
+        "a": 1,
+        "b": {"c": 2, "d": 3},
+    }

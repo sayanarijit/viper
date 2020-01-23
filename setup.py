@@ -16,7 +16,9 @@ with open(path.join(here, "README.rst"), encoding="utf-8") as f:
     long_description = f.read()
 
 autocomplete_requires = ["argcomplete==1.10.3"]
-testing_requires = autocomplete_requires + [
+yaml_requires = ["pyyaml==5.3"]
+batteries_requires = autocomplete_requires + yaml_requires
+testing_requires = batteries_requires + [
     "pytest>=4.4.1",
     "pytest-cov>=2.7.1",
     "black>=19.3b0",
@@ -59,6 +61,8 @@ setup(
     install_requires=[],  # This should always be empty. It's decided.
     extras_require={
         "autocomplete": autocomplete_requires,
+        "yaml": yaml_requires,
+        "batteries": batteries_requires,
         "testing": testing_requires,
         "dev": dev_requires,
     },
