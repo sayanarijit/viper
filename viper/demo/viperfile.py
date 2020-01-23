@@ -28,6 +28,7 @@ from argparse import Namespace
 from time import ctime
 from viper import Host
 from viper import Hosts
+from viper import meta
 from viper import Result
 from viper import Results
 from viper import Runner
@@ -105,7 +106,7 @@ def allhosts(args: Namespace) -> Hosts:
             hostname=d["name"],
             login_name="root",
             identity_file=args.identity_file,
-            meta=tuple(d.items()),
+            meta=meta(**d),
         )
         for d in data
     )
@@ -127,9 +128,9 @@ def hosts2csv(hosts: Hosts, args: Namespace) -> Hosts:
     """
 
     writer = csv.writer(args.file)
-    writer.writerow(list(dict(hosts.all()[0].meta).keys()))
+    writer.writerow(hosts.all()[0].meta._fields)
     for host in hosts.all():
-        writer.writerow(list(dict(host.meta).values()))
+        writer.writerow(tuple(host.meta))
     args.file.flush()
     args.file.close()
 
