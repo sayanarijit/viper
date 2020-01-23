@@ -30,7 +30,7 @@ Load hosts from file
 
     # or with a custom loader
 
-    viper hosts:from-file tests/data/hosts.json --loader viper.demo.loaders.json --indent 4
+    viper hosts:from-file tests/data/hosts.json --indent 4
 
 
 Load hosts from a Python function
@@ -335,7 +335,7 @@ class RunJobCommand(SubCommand):
 
 
 class TaskFromFuncCommand(SubCommand):
-    """[-> Task] get the task from a Python function location"""
+    """[Task] get the task from a Python function location"""
 
     name = "task:from-func"
     aliases = ("task",)
@@ -378,7 +378,7 @@ class TaskFormatCommand(SubCommand):
 
 
 class HostsFromFuncCommand(SubCommand):
-    """[-> Hosts] get a group of hosts from a Python function location"""
+    """[Hosts] get a group of hosts from a Python function location"""
 
     name = "hosts:from-func"
     aliases = ("hosts",)
@@ -395,24 +395,31 @@ class HostsFromFuncCommand(SubCommand):
 
 
 class HostsFromFileCommand(SubCommand):
-    """[-> Hosts] get a group of hosts from a file"""
+    """[Hosts] get a group of hosts from a file"""
 
     name = "hosts:from-file"
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("filepath")
-        parser.add_argument(
-            "--loader",
-            type=func,
-            help="function that resolves a file object to a viper.Hosts object",
-        )
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(Hosts.from_file(args.filepath).to_json(indent=args.indent))
+        return 0
+
+
+class HostsToFileCommand(SubCommand):
+    """[Hosts -> Hosts] export the group of hosts to a file"""
+
+    name = "hosts:to-file"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("filepath")
         parser.add_argument("-i", "--indent", type=int, default=None)
 
     def __call__(self, args: Namespace) -> int:
         print(
-            Hosts.from_file(args.filepath, loader=args.loader).to_json(
-                indent=args.indent
-            )
+            Hosts.from_json(input()).to_file(args.filepath).to_json(indent=args.indent)
         )
         return 0
 
@@ -648,6 +655,38 @@ class HostsResultsCommand(SubCommand):
         return 0
 
 
+class RunnersFromFileCommand(SubCommand):
+    """[Runners] get a group of runners from a file"""
+
+    name = "runners:from-file"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("filepath")
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(Runners.from_file(args.filepath).to_json(indent=args.indent))
+        return 0
+
+
+class RunnersToFileCommand(SubCommand):
+    """[Runners -> Runners] export the group of runners to a file"""
+
+    name = "runners:to-file"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("filepath")
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(
+            Runners.from_json(input())
+            .to_file(args.filepath)
+            .to_json(indent=args.indent)
+        )
+        return 0
+
+
 class RunnersFilterCommand(SubCommand):
     """[Runners -> Runners] filter runners by a given function"""
 
@@ -850,7 +889,7 @@ class RunnersHostsCommand(SubCommand):
 
 
 class ResultsFromHistoryCommand(SubCommand):
-    """[-> Results] get the past results from database"""
+    """[Results] get the past results from database"""
 
     name = "results:from-history"
     aliases = ("results",)
@@ -865,6 +904,38 @@ class ResultsFromHistoryCommand(SubCommand):
 
     def __call__(self, args: Namespace) -> int:
         print(Results.from_history(final=args.final).to_json(indent=args.indent))
+        return 0
+
+
+class ResultsFromFileCommand(SubCommand):
+    """[Results] get a group of results from a file"""
+
+    name = "results:from-file"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("filepath")
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(Results.from_file(args.filepath).to_json(indent=args.indent))
+        return 0
+
+
+class ResultsToFileCommand(SubCommand):
+    """[Results -> Results] export the group of results to a file"""
+
+    name = "results:to-file"
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument("filepath")
+        parser.add_argument("-i", "--indent", type=int, default=None)
+
+    def __call__(self, args: Namespace) -> int:
+        print(
+            Results.from_json(input())
+            .to_file(args.filepath)
+            .to_json(indent=args.indent)
+        )
         return 0
 
 
@@ -1141,9 +1212,10 @@ def run() -> int:
     TaskFormatCommand.attach_to(subparsers)
 
     # Hosts commands
-    HostsFromFileCommand.attach_to(subparsers)
     HostsFromFuncCommand.attach_to(subparsers)
 
+    HostsFromFileCommand.attach_to(subparsers)
+    HostsToFileCommand.attach_to(subparsers)
     HostsWhereCommand.attach_to(subparsers)
     HostsFilterCommand.attach_to(subparsers)
     HostsOrderByCommand.attach_to(subparsers)
@@ -1159,6 +1231,8 @@ def run() -> int:
     HostsResultsCommand.attach_to(subparsers)
 
     # Task runners commands
+    RunnersFromFileCommand.attach_to(subparsers)
+    RunnersToFileCommand.attach_to(subparsers)
     RunnersWhereCommand.attach_to(subparsers)
     RunnersFilterCommand.attach_to(subparsers)
     RunnersOrderByCommand.attach_to(subparsers)
@@ -1175,6 +1249,8 @@ def run() -> int:
     # Task results commands
     ResultsFromHistoryCommand.attach_to(subparsers)
 
+    ResultsFromFileCommand.attach_to(subparsers)
+    ResultsToFileCommand.attach_to(subparsers)
     ResultsWhereCommand.attach_to(subparsers)
     ResultsFilterCommand.attach_to(subparsers)
     ResultsOrderByCommand.attach_to(subparsers)

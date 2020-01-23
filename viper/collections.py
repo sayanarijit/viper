@@ -19,8 +19,11 @@ from time import time
 from types import FunctionType
 from viper.const import Config
 from viper.db import ViperDB
+from viper.serializers import Serializers
+from viper.utils import flatten_dict
 from viper.utils import optional
 from viper.utils import required
+from viper.utils import unflatten_dict
 
 import subprocess
 import sys
@@ -90,6 +93,9 @@ def meta(**mapping: JSONValueType) -> t.Any:
         Supports dict-like indexing.
         """
 
+        def __str__(self) -> str:
+            return dumpjson(self._asdict())
+
         def __getitem__(self, key: str) -> object:  # type: ignore
             return getattr(self, key)
 
@@ -109,7 +115,11 @@ class Collection:
 
     @classmethod
     def from_json(
-        cls: t.Type[CollectionType], json: str, *args: t.Any, **kwargs: t.Any
+        cls: t.Type[CollectionType],
+        json: str,
+        *args: t.Any,
+        unflatten: bool = False,
+        **kwargs: t.Any,
     ) -> CollectionType:  # pragma: no cover
         """Initialise a new object of this class from the given JSON string.
 
@@ -126,7 +136,9 @@ class Collection:
         """
         raise NotImplementedError()
 
-    def to_json(self, *args: t.Any, **kwargs: t.Any) -> str:  # pragma: no cover
+    def to_json(
+        self, *args: t.Any, flatten: bool = False, **kwargs: t.Any
+    ) -> str:  # pragma: no cover
         """Represent the collection as JSON data.
 
         :param object `*args` and `**kwargs`: These will be passed to `json.laods`.
@@ -219,7 +231,11 @@ class Item(Collection):
 
     @classmethod
     def from_dict(
-        cls: t.Type[ItemType], dict_: t.Dict[object, object], /,
+        cls: t.Type[ItemType],
+        dict_: t.Dict[object, object],
+        /,
+        *,
+        unflatten: bool = False,
     ) -> ItemType:  # pragma: no cover
         """Initialize item from the given dict.
 
@@ -235,9 +251,12 @@ class Item(Collection):
         """
         raise NotImplementedError()
 
-    def to_dict(self) -> t.Dict[str, t.Any]:  # pragma: no cover
+    def to_dict(
+        self, *, flatten: bool = False
+    ) -> t.Dict[str, t.Any]:  # pragma: no cover
         """Represent the item as dict.
 
+        :param bool flatten: If true, the dict won't be nested.
         :rtype: dict
 
         :example:
@@ -250,12 +269,16 @@ class Item(Collection):
 
     @classmethod
     def from_json(
-        cls: t.Type[ItemType], json: str, *args: t.Any, **kwargs: t.Any
+        cls: t.Type[ItemType],
+        json: str,
+        *args: t.Any,
+        unflatten: bool = False,
+        **kwargs: t.Any,
     ) -> ItemType:
-        return cls.from_dict(loadjson(json, *args, **kwargs))
+        return cls.from_dict(loadjson(json, *args, **kwargs), unflatten=unflatten)
 
-    def to_json(self, *args: t.Any, **kwargs: t.Any) -> str:
-        return dumpjson(self.to_dict(), *args, **kwargs)
+    def to_json(self, *args: t.Any, flatten: bool = False, **kwargs: t.Any) -> str:
+        return dumpjson(self.to_dict(flatten=flatten), *args, **kwargs)
 
     def format(self, template: str) -> str:
         """Get a custom string representation of this object.
@@ -279,7 +302,7 @@ class Items(Collection, t.Generic[T]):
     :py:class:`viper.collections.Hosts`, :py:class:`viper.collections.Results` etc. inherits this base class.
     """
 
-    _all: t.Sequence[T] = ()
+    _all: t.Sequence[T] = field(default_factory=tuple)
     _item_type: t.Type[Item] = field(init=False)
 
     @classmethod
@@ -324,7 +347,11 @@ class Items(Collection, t.Generic[T]):
 
     @classmethod
     def from_list(
-        cls: t.Type[ItemsType], list_: t.Sequence[t.Dict[object, object]], /,
+        cls: t.Type[ItemsType],
+        list_: t.Sequence[t.Dict[object, object]],
+        /,
+        *,
+        unflatten: bool = False,
     ) -> ItemsType:
         """Initialize items from given list of dictiionaries.
 
@@ -345,15 +372,18 @@ class Items(Collection, t.Generic[T]):
             raise NotImplementedError()
 
         try:
-            return cls.from_items(map(cls._item_type.from_dict, list_))
+            return cls.from_items(
+                cls._item_type.from_dict(x, unflatten=unflatten) for x in list_
+            )
         except Exception:
             raise ValueError(f"invalid input data for {cls.__name__}")
 
-    def to_list(self) -> t.List[t.Dict[str, object]]:
+    def to_list(self, flatten: bool = False) -> t.List[t.Dict[str, object]]:
         """Represent the items as a list of dictiionaries.
 
         This is used for dumping an instance of this object as JSON data.
 
+        :param bool flatten: If True, dicts won't be nested.
         :rtype: list
 
         :example:
@@ -363,18 +393,82 @@ class Items(Collection, t.Generic[T]):
             Hosts.from_items(Host("1.2.3.4")).to_list()
         """
 
-        return [i.to_dict() for i in self._all if isinstance(i, Item)]
+        return [i.to_dict(flatten=flatten) for i in self._all if isinstance(i, Item)]
 
     @classmethod
     def from_json(
-        cls: t.Type[ItemsType], json: str, *args: t.Any, **kwargs: t.Any
+        cls: t.Type[ItemsType],
+        json: str,
+        *args: t.Any,
+        unflatten: bool = False,
+        **kwargs: t.Any,
     ) -> ItemsType:
 
-        return cls.from_list(loadjson(json))
+        return cls.from_list(loadjson(json), unflatten=unflatten)
 
-    def to_json(self, *args: t.Any, **kwargs: t.Any) -> str:
+    def to_json(self, *args: t.Any, flatten: bool = False, **kwargs: t.Any) -> str:
 
-        return dumpjson(self.to_list(), *args, **kwargs)
+        return dumpjson(self.to_list(flatten=flatten), *args, **kwargs)
+
+    @classmethod
+    def from_file(cls: t.Type[ItemsType], filepath: str, /,) -> ItemsType:
+        """Initialize items by reading data from a file.
+
+        :param filepath str: The path for the file to read from.
+        :rtype: viper.collections.Items
+        :example:
+
+        .. code-block:: python
+
+            Hosts.from_file("/path/to/file/hosts.json")
+
+            Hosts.from_file("/path/to/file/hosts.csv")
+
+            Hosts.from_file("/path/to/file/hosts.yml")
+        """
+        if "." not in filepath:
+            raise ValueError(f"{filepath}: file extension is missing")
+
+        ext = filepath[::-1].split(".", 1)[0][::-1].lower()
+        extensions = {s.name for s in Serializers}
+        if ext not in extensions:
+            raise ValueError(
+                f"{filepath}: {ext}: extension is not supported, use one of {extensions}"
+            )
+
+        serializer = Serializers[ext].value
+        with open(filepath) as f:
+            return cls.from_list(serializer.load(f), unflatten=(ext == "csv"))
+
+    def to_file(self: ItemsType, filepath: str, /,) -> ItemsType:
+        """Initialize items by reading data from a file.
+
+        :param filepath str: The path for the file to write.
+        :rtype: viper.collections.Items
+        :example:
+
+        .. code-block:: python
+
+            Hosts.from_items(Host("1.2.3.4")).to_file("/path/to/file/hosts.json")
+
+            Hosts.from_items(Host("1.2.3.4")).to_file("/path/to/file/hosts.csv")
+
+            Hosts.from_items(Host("1.2.3.4")).to_file("/path/to/file/hosts.yml")
+        """
+        if "." not in filepath:
+            raise ValueError(f"{filepath}: file extension is missing")
+
+        ext = filepath[::-1].split(".", 1)[0][::-1].lower()
+        extensions = {s.name for s in Serializers}
+        if ext not in extensions:
+            raise ValueError(
+                f"{filepath}: {ext}: extension is not supported, use one of {extensions}"
+            )
+
+        serializer = Serializers[ext].value
+        with open(filepath, "w") as f:
+            f.write(serializer.dump(self.to_list(flatten=(ext == "csv"))))
+        return self
 
     def __len__(self) -> int:
         return len(self._all)
@@ -444,7 +538,7 @@ class Items(Collection, t.Generic[T]):
             tuple(
                 sorted(
                     self._all,
-                    key=lambda x: [f"{{{p}}}".format(**vars(x)) for p in properties],
+                    key=lambda x: [x.format(f"{{{p}}}") for p in properties],
                     reverse=reverse,
                 )
             )
@@ -480,9 +574,9 @@ class Items(Collection, t.Generic[T]):
 
         .. code-block:: python
 
-            Hosts.from_items(Host("1.2.3.4")).format("{ip} {hostname} {meta[tag]}")
+            Hosts.from_items(Host("1.2.3.4")).format("{ip} {hostname} {meta.tag}")
         """
-        return sep.join(template.format(**x.to_dict()) for x in self._all)
+        return sep.join(x.format(template) for x in self._all)
 
     def where(
         self: ItemsType, key: str, condition: WhereConditions, values: t.Sequence[str]
@@ -498,7 +592,7 @@ class Items(Collection, t.Generic[T]):
         result = []
 
         for obj in self._all:
-            val = f"{{{key}}}".format(**obj.to_dict())
+            val = obj.format(f"{{{key}}}")
 
             if condition is WhereConditions.is_:
                 if val in values:
@@ -557,7 +651,11 @@ class Host(Item):
         return isinstance(value, self.__class__) and self.ip == value.ip
 
     @classmethod
-    def from_dict(cls: t.Type[Host], dict_: t.Dict[object, object], /) -> Host:
+    def from_dict(
+        cls: t.Type[Host], dict_: t.Dict[object, object], /, *, unflatten: bool = False
+    ) -> Host:
+        if unflatten:
+            dict_ = unflatten_dict(dict_)
         ip: str = required(dict_, "ip", str)
         hostname = optional(dict_, "hostname", str)
         domain = optional(dict_, "domain", str)
@@ -576,8 +674,11 @@ class Host(Item):
         )
         return host
 
-    def to_dict(self) -> t.Dict[str, object]:
-        return dict(vars(self), meta=self.meta._asdict())
+    def to_dict(self, *, flatten: bool = False) -> t.Dict[str, object]:
+        dict_ = dict(vars(self), meta=self.meta._asdict())
+        if flatten:
+            return flatten_dict(dict_)
+        return dict_
 
     def fqdn(self) -> str:
         """Get the FQDN from hostname and domain name.
@@ -649,41 +750,8 @@ class Hosts(Items[Host]):
     .. tip:: See :py:mod:`viper.demo.hosts`
     """
 
-    _all: t.Sequence[Host] = ()
+    _all: t.Sequence[Host] = field(default_factory=tuple)
     _item_type: t.Type[Host] = field(init=False, default=Host)
-
-    @classmethod
-    def from_file(
-        cls: t.Type[Hosts],
-        filepath: str,
-        /,
-        loader: t.Optional[t.Callable[[t.TextIO], Hosts]] = None,
-    ) -> Hosts:
-        """Initialize hosts by reading data from a file.
-
-        :param filepath str: The path for the file to read from.
-        :param callable loader (optional): A custom loader.
-        :rtype: viper.collections.Hosts
-        :example:
-
-        .. code-block:: python
-
-            Host("1.2.3.4").from_file("/path/to/file/hosts.json", loader=viper.demo.loader.json)
-
-        .. tip:: See :py:func:`viper.demo.loaders.json`
-        """
-
-        if loader is None:
-
-            def _loader(f: t.TextIO) -> Hosts:
-                return cls.from_items(
-                    Host(ip.strip()) for ip in f.read().strip().split()
-                )
-
-            loader = _loader
-
-        with open(filepath) as f:
-            return loader(f)
 
     def task(self, task: Task, *args: str) -> Runners:
         """Assigns a task to be run on each host in the group.
@@ -762,7 +830,11 @@ class Task(Item):
     meta: t.Any = field(default_factory=meta)
 
     @classmethod
-    def from_dict(cls: t.Type[Task], dict_: t.Dict[object, object], /) -> Task:
+    def from_dict(
+        cls: t.Type[Task], dict_: t.Dict[object, object], /, *, unflatten: bool = False
+    ) -> Task:
+        if unflatten:
+            dict_ = unflatten_dict(dict_)
 
         name: str = required(dict_, "name", str)
 
@@ -820,14 +892,14 @@ class Task(Item):
         )
         return hosts
 
-    def to_dict(self) -> t.Dict[str, object]:
+    def to_dict(self, *, flatten: bool = False) -> t.Dict[str, object]:
         cf = self.command_factory
         outp = self.stdout_processor
         errp = self.stderr_processor
         pre = self.pre_run
         post = self.post_run
 
-        return dict(
+        dict_ = dict(
             vars(self),
             command_factory=f"{cf.__module__}.{cf.__qualname__}",
             stdout_processor=f"{outp.__module__}.{outp.__qualname__}" if outp else None,
@@ -836,6 +908,9 @@ class Task(Item):
             post_run=f"{post.__module__}.{post.__qualname__}" if post else None,
             meta=self.meta._asdict(),
         )
+        if flatten:
+            return flatten_dict(dict_)
+        return dict_
 
     def results(self) -> Results:
         """Get the past results of this task.
@@ -859,7 +934,16 @@ class Runner(Item):
     args: t.Tuple[str, ...] = ()
 
     @classmethod
-    def from_dict(cls: t.Type[Runner], dict_: t.Dict[object, object], /) -> Runner:
+    def from_dict(
+        cls: t.Type[Runner],
+        dict_: t.Dict[object, object],
+        /,
+        *,
+        unflatten: bool = False,
+    ) -> Runner:
+        if unflatten:
+            dict_ = unflatten_dict(dict_)
+
         host: Host = required(
             dict_,
             "host",
@@ -881,13 +965,16 @@ class Runner(Item):
         )
         return cls(host=host, task=task, args=args)
 
-    def to_dict(self) -> t.Dict[str, t.Any]:
-        return dict(
+    def to_dict(self, *, flatten: bool = False) -> t.Dict[str, t.Any]:
+        dict_ = dict(
             vars(self),
             task=self.task.to_dict(),
             host=self.host.to_dict(),
             args=list(self.args),
         )
+        if flatten:
+            return flatten_dict(dict_)
+        return dict_
 
     def run(self, retry: int = 0, trigger_time: t.Optional[float] = None) -> Result:
         """Run the task on the host.
@@ -962,7 +1049,7 @@ class Runner(Item):
 
 @dataclass(frozen=True)
 class Runners(Items[Runner]):
-    _all: t.Sequence[Runner] = ()
+    _all: t.Sequence[Runner] = field(default_factory=tuple)
     _item_type: t.Type[Runner] = field(init=False, default=Runner)
 
     def run(self, max_workers: int = Config.max_workers.value) -> Results:
@@ -1064,7 +1151,16 @@ class Result(Item):
         )
 
     @classmethod
-    def from_dict(cls: t.Type[Result], dict_: t.Dict[object, object], /) -> Result:
+    def from_dict(
+        cls: t.Type[Result],
+        dict_: t.Dict[object, object],
+        /,
+        *,
+        unflatten: bool = False,
+    ) -> Result:
+        if unflatten:
+            dict_ = unflatten_dict(dict_)
+
         return cls(
             trigger_time=required(dict_, "trigger_time", float),
             task=required(
@@ -1093,13 +1189,16 @@ class Result(Item):
             retry=required(dict_, "retry", int),
         )
 
-    def to_dict(self) -> t.Dict[str, t.Any]:
-        return dict(
+    def to_dict(self, *, flatten: bool = False) -> t.Dict[str, t.Any]:
+        dict_ = dict(
             vars(self),
             task=self.task.to_dict(),
             host=self.host.to_dict(),
             args=list(self.args),
         )
+        if flatten:
+            return flatten_dict(dict_)
+        return dict_
 
     def ok(self) -> bool:
         """Returns True the result is success.
@@ -1168,7 +1267,7 @@ class Result(Item):
 class Results(Items[Result]):
     """A group of :py:class:`viper.collections.Results`."""
 
-    _all: t.Sequence[Result] = ()
+    _all: t.Sequence[Result] = field(default_factory=tuple)
     _item_type: t.Type[Result] = field(init=False, default=Result)
 
     @classmethod

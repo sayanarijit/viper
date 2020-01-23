@@ -2,6 +2,7 @@ from tests.const import TEST_DATA_DIR
 from unittest import mock
 from viper import Host
 from viper import Hosts
+from viper import meta
 from viper import Results
 from viper import Runner
 from viper import WhereConditions
@@ -57,20 +58,20 @@ def test_hosts_from_csv_file():
     CSV_FILE = f"{TEST_DATA_DIR}/hosts.csv"
 
     with open(CSV_FILE) as f:
-        hosts = Hosts.from_items(Host(ip.strip()) for ip in f.read().strip().split())
+        hosts = Hosts.from_items(
+            Host(ip.strip()) for ip in f.read().strip().split()[1:]
+        )
 
     assert (
         hosts.sort()
         == Hosts.from_file(CSV_FILE).sort()
-        == Hosts((Host("1.1.1.1"), Host("1.2.3.4"), Host("2.2.2.2"))).sort()
+        == Hosts.from_items(Host("1.1.1.1"), Host("1.2.3.4"), Host("2.2.2.2")).sort()
     )
 
 
 def test_hosts_from_json_file():
 
-    assert Hosts.from_file(CSV_FILE) == Hosts.from_file(
-        JSON_FILE, lambda f: Hosts.from_json(f.read())
-    )
+    assert Hosts.from_file(CSV_FILE) == Hosts.from_file(JSON_FILE)
 
 
 def test_hosts_from_func():
@@ -79,9 +80,13 @@ def test_hosts_from_func():
 
 
 def test_hosts_format():
-    hosts = Hosts.from_items(Host("1.1.1.1"), Host("2.2.2.2")).sort()
+    hosts = Hosts.from_items(
+        Host("1.1.1.1", meta=meta(foo=1)), Host("2.2.2.2", meta=meta(foo=2))
+    ).sort()
     assert hosts.format("<{ip}>") == "<1.1.1.1>\n<2.2.2.2>"
     assert hosts.format("<{ip}>", sep=" ") == "<1.1.1.1> <2.2.2.2>"
+    assert hosts.format("<{meta.foo}>", sep=" ") == "<1> <2>"
+    assert hosts.format("<{meta[foo]}>", sep=" ") == "<1> <2>"
 
 
 def test_hosts_range():
