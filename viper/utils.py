@@ -81,13 +81,16 @@ def unflatten_dict(d: t.Dict[object, object]) -> t.Dict[object, object]:
             raise ValueError(f"{k}: expected {str}, but got {type(k)}")
 
         if ":" in k:
-            first, rest = k.split(":", 1)
-            if first not in dict_:
-                dict_[first] = {}
-            subdict = dict_[first]
-            if not isinstance(subdict, dict):
-                raise ValueError()
-            subdict.update(unflatten_dict({rest: v}))
+            _dict: t.Union[object, t.Dict[object, object]] = dict_
+            fields = k.split(":")
+            count = len(fields)
+            for i in range(count):
+                field = fields[i]
+                if not isinstance(_dict, dict):
+                    continue
+                if field not in _dict:
+                    _dict[field] = v if i == (count - 1) else {}
+                _dict = _dict[field]
         else:
             dict_[k] = v
     return dict_

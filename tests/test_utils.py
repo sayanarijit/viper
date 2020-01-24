@@ -43,11 +43,16 @@ def test_required():
 
 
 def test_flatten_dict():
-    assert flatten_dict({"a": 1, "b": {"c": 2, "d": 3}}) == {"a": 1, "b:c": 2, "b:d": 3}
+    assert flatten_dict({"a": 1, "b": {"c": 2, "d": {"e": 3, "f": 4}}}) == {
+        "a": 1,
+        "b:c": 2,
+        "b:d:e": 3,
+        "b:d:f": 4,
+    }
 
 
 def test_unflatten_dict():
-    assert unflatten_dict({"a": 1, "b:c": 2, "b:d": 3}) == {
+    assert unflatten_dict({"a": 1, "b:c": 2, "b:d:e": 3, "b:d:f": 4}) == {
         "a": 1,
-        "b": {"c": 2, "d": 3},
+        "b": {"c": 2, "d": {"e": 3, "f": 4}},
     }
