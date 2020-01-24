@@ -1,33 +1,7 @@
-from viper.cli import __doc__
 from viper.cli import func
 
 import pytest
 import subprocess
-
-
-def test_all_cli_examples():
-    lines = [
-        line.strip()
-        for line in __doc__.splitlines()
-        if line.startswith("   ") and not line.strip().startswith("#")
-    ]
-
-    commands = []
-    buffr = []
-    for line in lines:
-        if line.endswith("\\"):
-            buffr.append(line)
-            continue
-
-        if buffr:
-            commands.append("\n".join(buffr + [line]))
-            del buffr[:]
-            continue
-        commands.append(line)
-
-    for command in commands:
-        print(command)
-        assert subprocess.run(["bash", "-c", command]).returncode == 0
 
 
 def test_load_func_errors():

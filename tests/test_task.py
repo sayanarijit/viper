@@ -74,11 +74,6 @@ def test_task_from_json():
 
     assert "value is required" in str(e.__dict__)
 
-    with pytest.raises(ValueError) as e:
-        Task.from_json('{"command_factory": "viper.demo.commands.ping_command"}')
-
-    assert "value is required" in str(e.__dict__)
-
 
 def test_runner_to_from_json():
     runner = Runner(

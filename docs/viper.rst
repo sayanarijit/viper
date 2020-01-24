@@ -1,13 +1,6 @@
 viper package
 =============
 
-Subpackages
------------
-
-.. toctree::
-
-   viper.demo
-
 Submodules
 ----------
 

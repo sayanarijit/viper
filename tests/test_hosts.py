@@ -8,7 +8,6 @@ from viper import Runner
 from viper import WhereConditions
 from viper.collections import Item
 from viper.db import ViperDB
-from viper.demo.hosts import group1
 
 import json
 import pytest
@@ -72,11 +71,6 @@ def test_hosts_from_csv_file():
 def test_hosts_from_json_file():
 
     assert Hosts.from_file(CSV_FILE) == Hosts.from_file(JSON_FILE)
-
-
-def test_hosts_from_func():
-
-    assert Hosts.from_func("viper.demo.hosts.group1") == group1()
 
 
 def test_hosts_format():

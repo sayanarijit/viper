@@ -82,15 +82,14 @@ def meta(**mapping: JSONValueType) -> t.Any:
         # 'aws'
         host.meta['provider']
         # 'aws'
-        host['meta']['provider]
+        host['meta']['provider']
         # 'aws'
     """
     BaseMeta = namedtuple("Meta", mapping.keys())  # type: ignore
 
     class Meta(BaseMeta):
-        """Meta data of an item.
-
-        Supports dict-like indexing.
+        """Meta data of an item using namedtuple
+        customized to supports dict-like indexing.
         """
 
         def __str__(self) -> str:
@@ -126,8 +125,6 @@ class Collection:
         :param str json: The JSON data to parse.
         :param `*args` and `**kwargs`: These will be passed to `json.laods`.
 
-        :rtype: viper.collections.Collection
-
         :example:
 
         .. code-block:: python
@@ -141,9 +138,7 @@ class Collection:
     ) -> str:  # pragma: no cover
         """Represent the collection as JSON data.
 
-        :param object `*args` and `**kwargs`: These will be passed to `json.laods`.
-
-        :rtype: str
+        :param object `*args` and `**kwargs`: These will be passed to ``json.laods``.
 
         :example:
 
@@ -160,15 +155,11 @@ class Collection:
         :param str funcpath: The path to a Python function that returns an
             instance of this class.
 
-        :rtype: Collection
-
         :example:
 
         .. code-block:: python
 
-            Task.from_func(ping)
-
-        .. tip:: See :py:class:`viper.demo.tasks.ping`
+            Task.from_func("task.ping")
         """
 
         func: object = locate(funcpath)
@@ -198,8 +189,6 @@ class Collection:
         .. code-block:: python
 
             Hosts.from_items(Host("1.2.3.4")).pipe(hosts2csv)
-
-        .. tip:: See :py:func:`viper.demo.handlers.hosts2csv`
         """
         if not callable(handler):
             raise ValueError(f"{handler}: expected a callable but got {type(handler)}")
@@ -240,8 +229,6 @@ class Item(Collection):
         """Initialize item from the given dict.
 
         :param dict dict_: The dictionary containing the properties for this object.
-
-        :rtype: viper.collections.Item
 
         :example:
 
@@ -712,8 +699,6 @@ class Host(Item):
         .. code-block:: python
 
             Host("1.2.3.4").task(ping)
-
-        .. tip:: See :py:class:`viper.demo.tasks.ping`
         """
 
         return Runner(task=task, host=self, args=args)
@@ -732,8 +717,6 @@ class Host(Item):
         .. code-block:: python
 
             Host("1.2.3.4").task_task(ping)
-
-        .. tip:: See :py:class:`viper.demo.tasks.ping`
         """
 
         return self.task(task, *args).run()
@@ -745,10 +728,7 @@ class Host(Item):
 
 @dataclass(frozen=True)
 class Hosts(Items[Host]):
-    """A group of :py:class:`viper.collections.Host` objects.
-
-    .. tip:: See :py:mod:`viper.demo.hosts`
-    """
+    """A group of :py:class:`viper.collections.Host` objects."""
 
     _all: t.Sequence[Host] = field(default_factory=tuple)
     _item_type: t.Type[Host] = field(init=False, default=Host)
@@ -766,8 +746,6 @@ class Hosts(Items[Host]):
         .. code-block:: python
 
             Hosts.from_items(Host("1.2.3.4")).task(ping)
-
-        .. tip:: See :py:class:`viper.demo.tasks.ping`
         """
 
         return Runners.from_items(
@@ -792,8 +770,6 @@ class Hosts(Items[Host]):
         .. code-block:: python
 
             Hosts.from_items(Host("1.2.3.4")).task_task(ping)
-
-        .. tip:: See :py:class:`viper.demo.tasks.ping`
         """
         return self.task(task, *args).run(max_workers=max_workers)
 
@@ -815,8 +791,6 @@ class Task(Item):
 
     A task must contain name and a **named function** to generate the
     command.
-
-    .. tip:: See :py:mod:`viper.demo.tasks`
     """
 
     name: str
