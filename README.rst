@@ -133,6 +133,8 @@ See the stdout of the final results from DB
             | viper results:format "{host.hostname}: {stdout}"
 
 
+Export the results to a csv file
+
 .. code-block:: bash
 
     viper results --final \
