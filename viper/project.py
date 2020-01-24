@@ -12,9 +12,6 @@ prefixed with ``@`` so that they are easily recognizable.
 After defining this in ``viperfile.py`` we can use commands like ``viper @myproj:allhosts``
 (example) to get the list of hosts which can be piped to other commands that recieves
 a list of hosts from `stdin`.
-
-
-.. tip:: See :py:mod:`viper.demo.viperfile` for the full project example.
 """
 
 
@@ -53,8 +50,6 @@ class Project:
 
     When we define a project, we basically define a namespace (a prefix)
     for the commands.
-
-    .. tip:: See :py:mod:`viper.demo.viperfile`
     """
 
     prefix: str
@@ -80,8 +75,6 @@ class Project:
         """Use this decorator to define host groups
 
         :param list args (optional): Arguments to be parsed by py:class:`argparse.ArgumentParser`
-
-        .. tip:: See :py:func:`viper.demo.viperfile.allhosts`.
         """
 
         def wrapper(func: HostsFuncType) -> HostsFuncType:
@@ -118,8 +111,6 @@ class Project:
         :param type fromtype: The type of object this handler is expecting.
         :param type totype: The type of object this handler returns.
         :param list args (optional): List of arguments for :py:class:`argparse.ArgumentParser`.
-
-        .. tip:: See :py:func:`viper.demo.viperfile.results2csv`.
         """
 
         if not issubclass(fromtype, ViperCollection):
@@ -169,8 +160,6 @@ class Project:
         """Use this decorator to define a job.
 
         :param list args (optional): List of arguments for :py:class:`argparse.ArgumentParser`.
-
-        .. tip:: See :py:func:`viper.demo.viperfile.remote_exec`.
         """
 
         def wrapper(func: JobFuncType) -> JobFuncType:
@@ -209,8 +198,6 @@ class Project:
         """Use this decorator to define an action.
 
         :param list args (optional): List of arguments for :py:class:`argparse.ArgumentParser`.
-
-        .. tip:: See :py:func:`viper.demo.viperfile.get_triggers`.
         """
 
         def wrapper(func: ActionFuncType[T]) -> ActionFuncType[T]:

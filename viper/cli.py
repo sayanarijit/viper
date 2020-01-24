@@ -1,205 +1,32 @@
 """Viper Command-line Interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Demos and examples are probably the best way to explain viper CLI.
+The command-line interface strictly follows the Python interface.
 
-Let's get started.
-
-Enable viper auto completion
-----------------------------
+Examples
+^^^^^^^^
 
 .. code-block:: bash
 
-    # Assuming you are using bash
-    eval "$(viper autocomplete bash)"
-
-
-Initialize current workspace (creates a `viperdb.sqlite3` file)
----------------------------------------------------------------
-
-.. code-block:: bash
-
-    viper init -f
-
-
-Load hosts from file
---------------------
-
-.. code-block:: bash
-
-    viper hosts:from-file tests/data/hosts.csv --indent 4
-
-    # or with a custom loader
-
-    viper hosts:from-file tests/data/hosts.json --indent 4
-
-
-Load hosts from a Python function
----------------------------------
-
-.. code-block:: bash
-
-    viper hosts viper.demo.hosts.group1 --indent 4
-
-
-Count the number of hosts
--------------------------
-
-.. code-block:: bash
-
-    viper hosts viper.demo.hosts.group1 \\
-            | viper hosts:count
-
-
-Sort the hosts by custom logic
-------------------------------
-
-.. code-block:: bash
-
-    viper hosts viper.demo.hosts.group1 \\
-            | viper hosts:sort --key viper.demo.sort.by_ip -i 4
-
-
-Pipe the hosts to a custom handler that formats the hosts to CSV
-----------------------------------------------------------------
-
-.. code-block:: bash
-
-    viper hosts viper.demo.hosts.group1 \\
-            | viper hosts:pipe viper.demo.handlers.hosts_to_csv
-
-
-Let's save the hosts
---------------------
-
-.. code-block:: bash
-
-    viper hosts viper.demo.hosts.group1 > /tmp/hosts.json
-
-
-Filter hosts
-------------
-
-.. code-block:: bash
-
-    cat /tmp/hosts.json \\
-            | viper hosts:filter viper.demo.filters.ip_is 8.8.8.8 --indent 4
-
-
-Assign tasks to the given hosts
--------------------------------
-
-.. code-block:: bash
-
-    cat /tmp/hosts.json \\
-            | viper hosts:task viper.demo.tasks.ping --indent 4
-
-
-Run the assigned tasks
-----------------------
-
-.. code-block:: bash
-
-    cat /tmp/hosts.json \\
-            | viper hosts:task viper.demo.tasks.ping | viper runners:run --indent 4
-
-    # or use a shortcut
-
-    cat /tmp/hosts.json \\
-            | viper hosts:run-task viper.demo.tasks.ping --indent 4
-
-
-Run tasks in parallel using multiple workers
---------------------------------------------
-
-.. code-block:: bash
-
-    cat /tmp/hosts.json \\
-            | viper hosts:run-task viper.demo.tasks.ping --max-workers 50 --indent 4
-
-
-Get the past results from DB
-----------------------------
-
-.. code-block:: bash
-
-    viper results
-
-
-Get only the final results (ignoring the retries)
--------------------------------------------------
-
-.. code-block:: bash
-
-    viper results | viper results:final
-
-
-Let's save the result
----------------------
-
-.. code-block:: bash
-
-    viper task viper.demo.tasks.ping \\
-            | viper task:results > /tmp/results.json
-
-
-Now filter the results by their status
---------------------------------------
-
-Use the in-built ``where`` query
-
-.. code-block:: bash
-
-    # success
-    cat /tmp/results.json \\
-            | viper results:where returncode IS 0 -i 4
-
-    # failed
-    cat /tmp/results.json \\
-            | viper results:where returncode IS_NOT 0 -i 4
-
-Or use a custom filter
-
-.. code-block:: bash
-
-    # success
-    cat /tmp/results.json \\
-            | viper results:filter viper.demo.filters.result_ok -i 4
-
-    # failed
-    cat /tmp/results.json \\
-            | viper results:filter viper.demo.filters.result_errored -i 4
-
-
-Pipe the results to a custom handler
-------------------------------------
-
-.. code-block:: bash
-
-    # print the status to terminal
-    cat /tmp/results.json \\
-            | viper results:pipe viper.demo.handlers.print_status
-
-    # export the results to a csv file
-    cat /tmp/results.json \\
-            | viper results:pipe viper.demo.handlers.export_csv /tmp/results.csv
-
-
-Let's do that again in one go
------------------------------
-
-.. code-block:: bash
-
-    viper hosts viper.demo.hosts.group1 \\
-            | viper hosts:run-task viper.demo.tasks.ping \\
-            | viper results:pipe viper.demo.handlers.export_csv /tmp/results.csv
-
-
-Get the unique trigger times from history (custom defined action)
------------------------------------------------------------------
-
-.. code-block:: bash
-
-    viper lets viper.demo.actions.get_triggers
+    viper hosts:from-file("hosts.csv") \\
+            | viper hosts:task task.ping \\
+            | viper runners:run --max-workers 50 \\
+            | viper results:final \\
+            | viper results:to-file results.csv
+
+The above CLI example is equivalent to the following Python example:
+
+.. code-block:: python
+
+    from viper import Hosts
+    import task
+
+    (
+        Hosts.from_file("hosts.csv")
+        .task(task.ping())
+        .run(max_workers=50)
+        .final()
+        .to_file("results.csv")
+    )
 """
 
 from argparse import ArgumentParser

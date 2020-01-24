@@ -19,11 +19,6 @@ def test_from_func():
 
     assert "could not resolve" in str(e.__dict__)
 
-    with pytest.raises(ValueError) as e:
-        Host.from_func("viper.demo.tasks.ping")
-
-    assert "does not produce a valid" in str(e.__dict__)
-
 
 def test_host_to_json():
     assert (
@@ -100,16 +95,6 @@ def test_task(Task):
 
     assert isinstance(runner, Runner)
     assert runner.task == task
-
-
-def test_run_task():
-
-    from viper.db import ViperDB
-    from viper.demo.tasks import ping
-
-    ViperDB.init(ViperDB.url, force=True)
-
-    assert Host("8.8.8.8").run_task(ping()).returncode == 0
 
 
 @mock.patch("viper.collections.Results")
