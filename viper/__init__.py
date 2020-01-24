@@ -169,7 +169,7 @@ Export the results to a csv file
             | viper results:to-file results.csv --indent 4
 
 
-Define a job using the Python API
+Define a job using the Python API (CLI and Python API are almost similar)
 
 .. code-block:: bash
 
@@ -184,8 +184,6 @@ Define a job using the Python API
         return (
             hosts.task(ping())
             .run(max_workers=5)
-            .where("returncode", WhereConditions.is_not, ["0"])
-            .re_run()
             .final()
             .to_file("results.csv")
         )
