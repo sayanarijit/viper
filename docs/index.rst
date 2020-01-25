@@ -7,6 +7,9 @@
 
 .. include:: description.rst
 
+The User Guide
+==============
+
 .. toctree::
    :maxdepth: 2
 

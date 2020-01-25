@@ -1,6 +1,6 @@
 Further Readings
 ~~~~~~~~~~~~~~~~
-**API Docs with Examples ☞** https://viper-infrastructure-commander.readthedocs.io
+**API Docs with Examples ☞** https://viper-infra-commander.netlify.com
 
 
 Contributing To Viper

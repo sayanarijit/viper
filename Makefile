@@ -37,8 +37,11 @@ docs:
 .PHONY: readme
 readme:
 	@cat docs/logos.rst | tee README.rst
+	@echo | tee -a README.rst
 	@$(PRINT_DECRRIPTION) | tee -a README.rst
+	@echo | tee -a README.rst
 	@$(PRINT_GETTING_STARTED_DOCS) | tee -a README.rst
+	@echo | tee -a README.rst
 	@cat docs/footnotes.rst | tee -a README.rst
 
 

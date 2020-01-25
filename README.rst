@@ -24,7 +24,9 @@
 .. image:: https://readthedocs.org/projects/viper-infrastructure-commander/badge/?version=latest
     :target: https://viper-infrastructure-commander.readthedocs.io
     :alt:
+
 Viper provides a simple API (Python and CLI) to easily manage large infrastructures.
+
 
 
 Getting Started
@@ -252,9 +254,10 @@ Run the job:
             | viper @foo:remote_exec "uname -a" --workers 5 \
             | viper results:to-file results.csv \
             | viper results:format "{task.name} [{host.hostname}]: {returncode}: {stdout}"
+
 Further Readings
 ~~~~~~~~~~~~~~~~
-**API Docs with Examples ☞** https://viper-infrastructure-commander.readthedocs.io
+**API Docs with Examples ☞** https://viper-infra-commander.netlify.com
 
 
 Contributing To Viper
