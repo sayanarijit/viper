@@ -1,0 +1,1462 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>viper.cli &#8212; Viper Infrastructure Commander  documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+
+
+          <div class="body" role="main">
+
+  <h1>Source code for viper.cli</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;The Viper Command-line Interface</span>
+<span class="sd">~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="sd">The Concept</span>
+<span class="sd">^^^^^^^^^^^</span>
+
+<span class="sd">After we define the tasks, actions, jobs etc. in the workspace,</span>
+<span class="sd">we need a way to execute them. Dropping into a Python shell and</span>
+<span class="sd">using the Python API is one way to do that. However, that might</span>
+<span class="sd">not be the most preferred approach for everyone.</span>
+
+<span class="sd">Viper provides a command-line interface through the ``viper``</span>
+<span class="sd">command to interact with the Python API without dropping into</span>
+<span class="sd">a Python shell.</span>
+
+
+<span class="sd">Similarity Between the Python API and Command-line Interface</span>
+<span class="sd">^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+
+<span class="sd">The CLI interface closely follows the Python API. Each of the</span>
+<span class="sd">subcommands with a colon (``:``) represents a method of a class or</span>
+<span class="sd">object. When we run ``viper --help``, we can see the signature of</span>
+<span class="sd">the methods/subcommands.</span>
+
+<span class="sd">For example, the subcommand ``viper hosts:from-file`` represents the</span>
+<span class="sd">class method :py:meth:`viper.Hosts.from_file`,</span>
+
+<span class="sd">In the help menu the signature of this subcommand is defined as</span>
+<span class="sd">``[Hosts]`` which means that it returns a text (JSON)</span>
+<span class="sd">representation of a :py:class:`~viper.Hosts`, object which can be</span>
+<span class="sd">passed (piped) to another subcommand that expects the same via</span>
+<span class="sd">standard input.</span>
+
+<span class="sd">On the other hand, the ``results:order-by`` has the signature</span>
+<span class="sd">``[Results -&gt; Results]``. The subcommand represents the method</span>
+<span class="sd">:py:meth:`viper.Results.order_by` and the signature</span>
+<span class="sd">``[Results -&gt; Results]`` means that the subcommand expects the text</span>
+<span class="sd">(JSON) representation of a</span>
+<span class="sd">:py:class:`~viper.Results` object.</span>
+
+
+<span class="sd">Example: Output Piping as Method Chaining</span>
+<span class="sd">^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+
+<span class="sd">.. code-block:: bash</span>
+
+<span class="sd">    viper hosts:from-file(&quot;hosts.csv&quot;) \\</span>
+<span class="sd">            | viper hosts:task task.ping \\</span>
+<span class="sd">            | viper runners:run --max-workers 50 \\</span>
+<span class="sd">            | viper results:final \\</span>
+<span class="sd">            | viper results:order-by host.hostname host.ip \\</span>
+<span class="sd">            | viper results:to-file results.csv \\</span>
+<span class="sd">            | viper results:format &quot;{host.hostname}: {stdout}&quot;</span>
+
+<span class="sd">In the above example, following things are happening:</span>
+
+<span class="sd">- The ``hosts:from-file`` subcommand with signature</span>
+<span class="sd">  ``[Hosts]`` returns the text representation of a :py:class:`~viper.Hosts` object.</span>
+
+<span class="sd">- ``hosts:task`` reads the output of ``hosts:from-file`` from standard input</span>
+<span class="sd">  as it has the signature of ``[Hosts -&gt; Runners]`` and returns</span>
+<span class="sd">  :py:class:`~viper.Runners`.</span>
+
+<span class="sd">- Then the ``runners:run`` subcommand with signature ``[Runners -&gt; Results]``</span>
+<span class="sd">  reads the output of ``hosts:task`` from standard input and returns</span>
+<span class="sd">  :py:class:`~viper.Results`.</span>
+
+<span class="sd">- Finally ``results:format`` with signature ``[Results -&gt; str]`` turns the</span>
+<span class="sd">  :py:class:`~viper.Results` into a string which cannot be passed (piped) to any</span>
+<span class="sd">  further subcommand.</span>
+
+
+<span class="sd">The data flow diagram:</span>
+
+<span class="sd">    ``hosts:from-file`` -&gt; :py:class:`~viper.Hosts` | ``hosts:task`` -&gt; :py:class:`~viper.Runners`</span>
+<span class="sd">    | ``runners:run`` -&gt; :py:class:`~viper.Results` | ``results:final`` -&gt; :py:class:`~viper.Results`</span>
+<span class="sd">    | ``results:order-by`` -&gt; :py:class:`~viper.Results` | ``results:to-file`` -&gt;</span>
+<span class="sd">    :py:class:`~viper.Results` | ``results:format`` -&gt; `str`</span>
+
+<span class="sd">The above CLI example is equivalent to the following Python example:</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    from viper import Hosts</span>
+<span class="sd">    import task</span>
+
+<span class="sd">    print(</span>
+<span class="sd">        Hosts.from_file(&quot;hosts.csv&quot;)</span>
+<span class="sd">        .task(task.ping())</span>
+<span class="sd">        .run(max_workers=50)</span>
+<span class="sd">        .final()</span>
+<span class="sd">        .order_by(&quot;host.hostname&quot;, &quot;host.ip&quot;)</span>
+<span class="sd">        .to_file(&quot;results.csv&quot;)</span>
+<span class="sd">        .format(&quot;{host.hostname}: {stdout}&quot;)</span>
+<span class="sd">    )</span>
+
+<span class="sd">.. tip:: Refer to :doc:`getting_started` to see how ``task.ping`` and ``hosts.csv`` are written.</span>
+
+
+<span class="sd">Defining Actions</span>
+<span class="sd">^^^^^^^^^^^^^^^^</span>
+
+<span class="sd">Actions are simple Python functions that can be invoked using the ``viper lets`` subcommand.</span>
+
+<span class="sd">Example:</span>
+
+<span class="sd">Define an action in ``action.py``:</span>
+
+<span class="sd">.. code-block:: bash</span>
+
+<span class="sd">    cat &gt; action.py &lt;&lt; EOF</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    def add_them(a, b):</span>
+<span class="sd">        return int(a) + int(b)</span>
+
+<span class="sd">.. code-block:: bash</span>
+
+<span class="sd">    EOF</span>
+
+<span class="sd">Now invoke the action:</span>
+
+<span class="sd">.. code-block:: bash</span>
+
+<span class="sd">    viper lets action.add_them 5 10</span>
+
+<span class="sd">Output: ::</span>
+
+<span class="sd">    15</span>
+
+
+<span class="sd">Defining Viper Objects: Hosts, Task</span>
+<span class="sd">^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+
+<span class="sd">Similar to actions, we can also define functions that return an instance of</span>
+<span class="sd">:py:class:`~viper.Task` or :py:class:`~viper.Hosts`. The ``*:from-func``</span>
+<span class="sd">subcommands will invoke the function to get the object it returns.</span>
+
+<span class="sd">Example: Define a host group in ``hosts.py``</span>
+
+<span class="sd">.. code-block:: bash</span>
+
+<span class="sd">    cat &gt; hosts.py &lt;&lt; EOF</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    from viper import Hosts, Host</span>
+
+<span class="sd">    def group1():</span>
+<span class="sd">        return Hosts.from_items(</span>
+<span class="sd">            Host(&quot;192.168.0.11&quot;, hostname=&quot;host11&quot;),</span>
+<span class="sd">            Host(&quot;192.168.0.12&quot;, hostname=&quot;host12&quot;),</span>
+<span class="sd">            Host(&quot;192.168.0.13&quot;, hostname=&quot;host13&quot;),</span>
+<span class="sd">            Host(&quot;192.168.0.14&quot;, hostname=&quot;host14&quot;),</span>
+<span class="sd">            Host(&quot;192.168.0.15&quot;, hostname=&quot;host15&quot;),</span>
+<span class="sd">        )</span>
+
+<span class="sd">.. code-block:: bash</span>
+
+<span class="sd">    EOF</span>
+
+<span class="sd">Get the hosts count in terminal:</span>
+
+<span class="sd">.. code-block:: bash</span>
+
+<span class="sd">    viper hosts hosts.group1 | viper hosts:count</span>
+
+<span class="sd">Output: ::</span>
+
+<span class="sd">    5</span>
+
+
+<span class="sd">.. note::</span>
+
+<span class="sd">    ``viper hosts`` is an alias of ``viper hosts:from-func``.</span>
+<span class="sd">    Similarly, ``viper task`` is an alias of ``viper task:from-func``.</span>
+
+<span class="sd">    However, ``viper results`` is an alias of ``viper results:from-history``</span>
+<span class="sd">    as there&#39;s no reason to write results ourselves. It should come from</span>
+<span class="sd">    the database.</span>
+
+<span class="sd">    So there&#39;s no ``results:from-func``, neither ``runners:from-func`` and so on.</span>
+
+
+<span class="sd">.. tip::</span>
+
+<span class="sd">    Refer to :doc:`getting_started` to find the example of task and job definitions.</span>
+
+
+<span class="sd">Defining Utilities: Handlers, Filters, Sort Keys</span>
+<span class="sd">^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+
+<span class="sd">Defining handlers, filters and sort keys are similar to</span>
+<span class="sd">defining actions but the first argument of the defined function</span>
+<span class="sd">is reserved for an instance of viper data type which</span>
+<span class="sd">it receives from the standard input.</span>
+
+<span class="sd">Example:</span>
+
+<span class="sd">Define a general handler in ``handler.py`` that operates on</span>
+<span class="sd">all :py:class:`~viper.collections.Items` instances:</span>
+
+<span class="sd">.. code-block:: bash</span>
+
+<span class="sd">    cat &gt; handler.py &lt;&lt; EOF</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    import sys</span>
+
+<span class="sd">    def log_count(items, arg1):</span>
+<span class="sd">        print(f&quot;There are {items.count()} {arg1}.&quot;, file=sys.stderr)</span>
+<span class="sd">        return items</span>
+
+<span class="sd">.. code-block:: bash</span>
+
+<span class="sd">    EOF</span>
+
+<span class="sd">Use the handler:</span>
+
+<span class="sd">.. code-block:: bash</span>
+
+<span class="sd">    viper hosts hosts.group1 \\</span>
+<span class="sd">            | viper hosts:pipe handler.log_count hosts \\</span>
+<span class="sd">            | viper hosts:count</span>
+
+<span class="sd">Output: ::</span>
+
+<span class="sd">    There are 5 hosts.</span>
+<span class="sd">    5</span>
+
+
+<span class="sd">.. note:: Here ``arg1`` recieves the second argument passed to ``hosts:pipe``.</span>
+
+
+<span class="sd">Similarly filters and sort keys can be defined using functions having</span>
+<span class="sd">the first argument reserved for the object it will operate on, and the</span>
+<span class="sd">subsequent arguments for the variables that will be passed while invoking</span>
+<span class="sd">the ``*:filter`` and ``*:sort`` subcommands.</span>
+
+<span class="sd">However, we hardly will need to really define filters and sort keys like this</span>
+<span class="sd">as most of the requirements of sorting and filtering should be satisfied with</span>
+<span class="sd">the ``*:order-by`` and ``*:where`` subcommands respectively.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
+<span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">Namespace</span>
+<span class="kn">from</span> <span class="nn">pydoc</span> <span class="kn">import</span> <span class="n">locate</span>
+<span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span> <span class="n">FunctionType</span>
+<span class="kn">from</span> <span class="nn">viper</span> <span class="kn">import</span> <span class="n">__version__</span>
+<span class="kn">from</span> <span class="nn">viper</span> <span class="kn">import</span> <span class="n">Hosts</span>
+<span class="kn">from</span> <span class="nn">viper</span> <span class="kn">import</span> <span class="n">Results</span>
+<span class="kn">from</span> <span class="nn">viper</span> <span class="kn">import</span> <span class="n">Runners</span>
+<span class="kn">from</span> <span class="nn">viper</span> <span class="kn">import</span> <span class="n">Task</span>
+<span class="kn">from</span> <span class="nn">viper.cli_base</span> <span class="kn">import</span> <span class="n">SubCommand</span>
+<span class="kn">from</span> <span class="nn">viper.collections</span> <span class="kn">import</span> <span class="n">Collection</span> <span class="k">as</span> <span class="n">ViperCollection</span>
+<span class="kn">from</span> <span class="nn">viper.collections</span> <span class="kn">import</span> <span class="n">WhereConditions</span>
+<span class="kn">from</span> <span class="nn">viper.const</span> <span class="kn">import</span> <span class="n">Config</span>
+<span class="kn">from</span> <span class="nn">viper.db</span> <span class="kn">import</span> <span class="n">ViperDB</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sqlite3</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;func&quot;</span><span class="p">,</span> <span class="s2">&quot;run&quot;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="func"><a class="viewcode-back" href="../../viper.html#viper.cli.func">[docs]</a><span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">objpath</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FunctionType</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Resolved Python function from given string.&quot;&quot;&quot;</span>
+
+    <span class="n">funcobj</span> <span class="o">=</span> <span class="n">locate</span><span class="p">(</span><span class="n">objpath</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">func</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;could not resolve {repr(objpath)}.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">funcobj</span><span class="p">,</span> <span class="n">FunctionType</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;{repr(objpath)} is not a valid function.&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">funcobj</span></div>
+
+
+<span class="k">class</span> <span class="nc">AutocompleteCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;generate the auto completion script&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;autocomplete&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;shell&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;the target shell&quot;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;bash&quot;</span><span class="p">,</span> <span class="s2">&quot;tcsh&quot;</span><span class="p">,</span> <span class="s2">&quot;zsh&quot;</span><span class="p">,</span> <span class="s2">&quot;fish&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">subprocess</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">argcomplete</span>  <span class="c1"># noqa F401</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s1">&#39;&quot;argcomplete&quot; is missing! run `pip install -U &quot;viper-infra-commander[autocomplete]&quot;`&#39;</span>
+            <span class="p">)</span>
+
+        <span class="n">_shell</span> <span class="o">=</span> <span class="s2">&quot;bash&quot;</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">shell</span> <span class="o">==</span> <span class="s2">&quot;zsh&quot;</span> <span class="k">else</span> <span class="n">args</span><span class="o">.</span><span class="n">shell</span>
+        <span class="n">script</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="p">[</span><span class="s2">&quot;register-python-argcomplete&quot;</span><span class="p">,</span> <span class="s2">&quot;viper&quot;</span><span class="p">,</span> <span class="s2">&quot;-s&quot;</span><span class="p">,</span> <span class="n">_shell</span><span class="p">],</span>
+            <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+            <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;latin1&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">shell</span> <span class="o">==</span> <span class="s2">&quot;zsh&quot;</span><span class="p">:</span>
+            <span class="n">script</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;autoload bashcompinit</span><span class="se">\n</span><span class="s2">bashcompinit</span><span class="se">\n</span><span class="si">{script}</span><span class="s2">&quot;</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">script</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">InitCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;initialize the current workspace&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;init&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;-f&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;--force&quot;</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;remove or overwrite existing data&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ViperDB</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">ViperDB</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">force</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">OperationalError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;database already exists!&quot;</span>
+                <span class="s2">&quot; use &#39;-f&#39;/&#39;--force&#39; to force re-create the database.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">LetsCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;perform any defined action&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;lets&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;action&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">func</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;action definition location&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;args&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;optional arguments for the action&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">action</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">res</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">res</span><span class="p">))</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="k">else</span> <span class="n">res</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">RunJobCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts -&gt; Results] run a job on the given hosts&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;run-job&quot;</span>
+    <span class="n">aliases</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;run&quot;</span><span class="p">,)</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;job&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">func</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;job definition location&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;args&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;arguments to be passed to the job&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">job</span><span class="p">(</span><span class="n">Hosts</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">()),</span> <span class="o">*</span><span class="n">args</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">Results</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;a job must return </span><span class="si">{Results}</span><span class="s2"> object but got {type(results)}&quot;</span>
+            <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">TaskFromFuncCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Task] get the task from a Python function location&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;task:from-func&quot;</span>
+    <span class="n">aliases</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;task&quot;</span><span class="p">,)</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;func&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">Task</span><span class="o">.</span><span class="n">from_func</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;load task from a Python function&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">TaskResultsCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Task -&gt; Results] get the past results of given task&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;task:results&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Task</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">results</span><span class="p">()</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">TaskFormatCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Task -&gt; str] format the data using the given template&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;task:format&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;template&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;use Python&#39;s string format syntax&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Task</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">template</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">HostsFromFuncCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts] get a group of hosts from a Python function location&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hosts:from-func&quot;</span>
+    <span class="n">aliases</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;hosts&quot;</span><span class="p">,)</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;func&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">Hosts</span><span class="o">.</span><span class="n">from_func</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;load hosts from a Python function&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">HostsFromFileCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts] get a group of hosts from a file&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hosts:from-file&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;filepath&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Hosts</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">HostsToFileCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts -&gt; Hosts] export the group of hosts to a file&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hosts:to-file&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;filepath&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Hosts</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">HostsTaskCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts -&gt; Runners] assign a task to each host&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hosts:task&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;task&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">Task</span><span class="o">.</span><span class="n">from_func</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;load task from Python function&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;args&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;arguments to be passed to the command factory&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Hosts</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">task</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">HostsRunTaskCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts -&gt; Results] assign a task to each host and run&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hosts:run-task&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;task&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">Task</span><span class="o">.</span><span class="n">from_func</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;load task from a Python function&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;args&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;arguments to be passed to the command factory&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max-workers&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">max_workers</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Hosts</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">run_task</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">task</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">max_workers</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">HostsFilterCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts -&gt; Hosts] filter hosts by a given function&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hosts:filter&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;filter&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">func</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;args&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;arguments to be passed to the filter&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Hosts</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">filter</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">HostsCountCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts -&gt; int] count the number of hosts&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hosts:count&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Hosts</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">count</span><span class="p">())</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">HostsOrderByCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts -&gt; Hosts] sort the hosts by the given properties&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hosts:order-by&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;properties&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;items will be sorted in order&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--reverse&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;reverse the order after sort&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Hosts</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="o">.</span><span class="n">properties</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">reverse</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">HostsSortCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts -&gt; Hosts] sort the hosts by the given function&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hosts:sort&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--key&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">func</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;the sorting function&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--reverse&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;reverse the order after sort&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Hosts</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">reverse</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">HostsPipeCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts -&gt; ?] pipe the hosts to the given handler&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hosts:pipe&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;handler&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">func</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;args&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;arguments to be passed to the filter&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">obj</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="n">Hosts</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">handler</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ViperCollection</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">HostsFormatCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts -&gt; str] format the data using the given template&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hosts:format&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;template&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;use Python&#39;s string format syntax&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;-s&quot;</span><span class="p">,</span> <span class="s2">&quot;--sep&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;separator used to join the strings&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Hosts</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">template</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">sep</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">HostsWhereCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts -&gt; Hosts] select hosts matching the given query&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hosts:where&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;key&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;property name/path of each item&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;condition&quot;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="n">o</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">WhereConditions</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;values&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Hosts</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">WhereConditions</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">condition</span><span class="p">),</span> <span class="n">args</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">HostsHeadCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts -&gt; Hosts] get the first &#39;n&#39; hosts&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hosts:head&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-n&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;number of hosts&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Hosts</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">HostsTailCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts -&gt; Hosts] get the last &#39;n&#39; hosts&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hosts:tail&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-n&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;number of hosts&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Hosts</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">tail</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">HostsResultsCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Hosts -&gt; Results] get the past results of the hosts&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hosts:results&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Hosts</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">results</span><span class="p">()</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">RunnersFromFileCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Runners] get a group of runners from a file&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;runners:from-file&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;filepath&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Runners</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">RunnersToFileCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Runners -&gt; Runners] export the group of runners to a file&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;runners:to-file&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;filepath&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Runners</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">filepath</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">RunnersFilterCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Runners -&gt; Runners] filter runners by a given function&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;runners:filter&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;filter&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">func</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;args&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;arguments to be passed to the filter&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Runners</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">filter</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">RunnersCountCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Runners -&gt; int] count the number of runners&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;runners:count&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Runners</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">count</span><span class="p">())</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">RunnersOrderByCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Runners -&gt; Runners] sort the runners by the given properties&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;runners:order-by&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;properties&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;items will be sorted in order&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--reverse&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;reverse the order after sort&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Runners</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="o">.</span><span class="n">properties</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">reverse</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">RunnersSortCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Runners -&gt; Runners] sort the runners by the given funtion&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;runners:sort&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--key&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">func</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--reverse&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;reverse the order after sort&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Runners</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">reverse</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">RunnersPipeCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Runners -&gt; ?] pipe the runners to the given handler&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;runners:pipe&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;handler&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">func</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;args&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;arguments to be passed to the filter&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">obj</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="n">Runners</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">handler</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ViperCollection</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">RunnersFormatCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Runners -&gt; str] format the data using the given template&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;runners:format&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;template&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;use Python&#39;s string format syntax&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;-s&quot;</span><span class="p">,</span> <span class="s2">&quot;--sep&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;separator used to join the strings&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Runners</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">template</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">sep</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">RunnersWhereCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Runners -&gt; Runners] select runners matching the given query&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;runners:where&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;key&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;property name/path of each item&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;condition&quot;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="n">o</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">WhereConditions</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;values&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Runners</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">WhereConditions</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">condition</span><span class="p">),</span> <span class="n">args</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">RunnersHeadCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Runners -&gt; Runners] get the first &#39;n&#39; runners&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;runners:head&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-n&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;number of hosts&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Runners</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">RunnersTailCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Runners -&gt; Runners] get the last &#39;n&#39; runners&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;runners:tail&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-n&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;number of hosts&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Runners</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">tail</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">RunnersRunCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Runners -&gt; Results] run the assigned tasks&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;runners:run&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max-workers&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">max_workers</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Runners</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">max_workers</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">RunnersHostsCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Runners -&gt; Hosts] get the hosts from the runners&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;runners:hosts&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Runners</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">hosts</span><span class="p">()</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsFromHistoryCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results] get the past results from database&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:from-history&quot;</span>
+    <span class="n">aliases</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;results&quot;</span><span class="p">,)</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--final&quot;</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;get the final results only (shortcut to `viper results | viper results:final`)&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Results</span><span class="o">.</span><span class="n">from_history</span><span class="p">(</span><span class="n">final</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">final</span><span class="p">)</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsFromFileCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results] get a group of results from a file&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:from-file&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;filepath&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Results</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsToFileCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results -&gt; Results] export the group of results to a file&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:to-file&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;filepath&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Results</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">filepath</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsFilterCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results -&gt; Results] filter results by a given handler&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:filter&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;filter&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">func</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;args&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;arguments to be passed to the filter&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Results</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">filter</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsCountCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results -&gt; int] count the number of results&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:count&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Results</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">count</span><span class="p">())</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsOrderByCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results -&gt; Results] sort the results by the given properties&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:order-by&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;properties&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;items will be sorted in order&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--reverse&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;reverse the order after sort&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Results</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="o">.</span><span class="n">properties</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">reverse</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsSortCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results -&gt; Results] sort the results by the given function&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:sort&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--key&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">func</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--reverse&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;reverse the order after sort&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Results</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">reverse</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsPipeCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results -&gt; ?] pipe the results to the given handler&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:pipe&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;handler&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">func</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;args&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;arguments to be passed to the filter&quot;</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">obj</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="n">Results</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">handler</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ViperCollection</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsFormatCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results -&gt; str] format the data using the given template&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:format&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;template&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;use Python&#39;s string format syntax&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;-s&quot;</span><span class="p">,</span> <span class="s2">&quot;--sep&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;separator used to join the strings&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Results</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">template</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">sep</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsWhereCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results -&gt; Results] select results matching the given query&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:where&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;key&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;property name of each item&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;condition&quot;</span><span class="p">,</span>
+            <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="n">o</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">WhereConditions</span><span class="p">],</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;condition to apply&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;values&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;values for the key&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Results</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">WhereConditions</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">condition</span><span class="p">),</span> <span class="n">args</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsHeadCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results -&gt; Results] get the first &#39;n&#39; results&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:head&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-n&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;number of hosts&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Results</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsTailCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results -&gt; Results] get the last &#39;n&#39; results&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:tail&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-n&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;number of hosts&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Results</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">tail</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsHostsCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results -&gt; Hosts] get the hosts from the results&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:hosts&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Results</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">hosts</span><span class="p">()</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsRunnersCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results -&gt; Runners] recreate the runners from the results&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:runners&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Results</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">runners</span><span class="p">()</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsReRunCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results -&gt; Results] recreate the runners from the results and run again&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:re-run&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max-workers&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">Config</span><span class="o">.</span><span class="n">max_workers</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">Results</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">runners</span><span class="p">()</span>
+            <span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">max_workers</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsByTaskCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Task -&gt; Results] get the past results of given task&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:by-task&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Results</span><span class="o">.</span><span class="n">by_task</span><span class="p">(</span><span class="n">Task</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">()))</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ResultsFinal</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;[Results -&gt; Results] get the final results only (ignoring the previous retries)&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;results:final&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Results</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">final</span><span class="p">()</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<div class="viewcode-block" id="run"><a class="viewcode-back" href="../../viper.html#viper.cli.run">[docs]</a><span class="k">def</span> <span class="nf">run</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="s2">&quot;viper&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Viper Infrastructure Commander </span><span class="si">{__version__}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--version&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">__version__</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--debug&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;show traceback information when an exception is raised&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">subparsers</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_subparsers</span><span class="p">()</span>
+
+    <span class="c1"># Autocomplete command</span>
+    <span class="n">AutocompleteCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+
+    <span class="c1"># Init command</span>
+    <span class="n">InitCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+
+    <span class="c1"># Init command</span>
+    <span class="n">LetsCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+
+    <span class="c1"># Job run command</span>
+    <span class="n">RunJobCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+
+    <span class="c1"># Task commands</span>
+    <span class="n">TaskFromFuncCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">TaskResultsCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">TaskFormatCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+
+    <span class="c1"># Hosts commands</span>
+    <span class="n">HostsFromFuncCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+
+    <span class="n">HostsFromFileCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">HostsToFileCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">HostsWhereCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">HostsFilterCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">HostsOrderByCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">HostsSortCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">HostsCountCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">HostsPipeCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">HostsFormatCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">HostsHeadCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">HostsTailCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+
+    <span class="n">HostsTaskCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">HostsRunTaskCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">HostsResultsCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+
+    <span class="c1"># Task runners commands</span>
+    <span class="n">RunnersFromFileCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">RunnersToFileCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">RunnersWhereCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">RunnersFilterCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">RunnersOrderByCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">RunnersSortCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">RunnersCountCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">RunnersPipeCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">RunnersFormatCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">RunnersHeadCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">RunnersTailCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+
+    <span class="n">RunnersRunCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">RunnersHostsCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+
+    <span class="c1"># Task results commands</span>
+    <span class="n">ResultsFromHistoryCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+
+    <span class="n">ResultsFromFileCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">ResultsToFileCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">ResultsWhereCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">ResultsFilterCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">ResultsOrderByCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">ResultsSortCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">ResultsCountCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">ResultsPipeCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">ResultsFormatCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">ResultsHeadCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">ResultsTailCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+
+    <span class="n">ResultsFinal</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">ResultsHostsCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">ResultsRunnersCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">ResultsReRunCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+    <span class="n">ResultsByTaskCommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+
+    <span class="c1"># Add the modules path</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">Config</span><span class="o">.</span><span class="n">modules_path</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+
+    <span class="c1"># Import project specific commands</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;viperfile.py&quot;</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">viper</span> <span class="kn">import</span> <span class="n">project</span>
+
+        <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">))</span>
+        <span class="kn">import</span> <span class="nn">viperfile</span>
+
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">viperfile</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">project</span><span class="o">.</span><span class="n">Project</span><span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="k">for</span> <span class="n">subcommand</span> <span class="ow">in</span> <span class="n">v</span><span class="o">.</span><span class="n">all_commands</span><span class="p">():</span>
+                <span class="n">subcommand</span><span class="o">.</span><span class="n">attach_to</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Add support for auto completion</span>
+        <span class="kn">import</span> <span class="nn">argcomplete</span>
+
+        <span class="n">argcomplete</span><span class="o">.</span><span class="n">autocomplete</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;_handler&quot;</span><span class="p">):</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">print_usage</span><span class="p">()</span>
+        <span class="k">return</span> <span class="mi">1</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">_handler</span><span class="p">(</span><span class="n">args</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;error: </span><span class="si">{e}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">(),</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">1</span></div>
+</pre></div>
+
+          </div>
+
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">Viper Infrastructure Commander</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=sayanarijit&repo=viper&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../python_api.html">The Viper Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html">The Viper Command-line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../extending_cli.html">Extending the Command-line Interface (using <code class="docutils literal notranslate"><span class="pre">viperfile.py</span></code>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../footnotes.html">Further Readings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../footnotes.html#contributing-to-viper">Contributing To Viper</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Arijit Basu.
+
+    </div>
+
+
+    <a href="https://github.com/sayanarijit/viper" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+
+
+
+  </body>
+</html>

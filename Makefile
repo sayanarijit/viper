@@ -1,3 +1,9 @@
+PRINT_DECRRIPTION := python -c "import viper; print(viper.__description__)"
+PRINT_GETTING_STARTED_DOCS := python -c "import viper; print('\n'.join(viper.__doc__.splitlines()[11:]))"
+PRINT_PYTHON_API_DOCS := python -c "from viper import collections; print(collections.__doc__)"
+PRINT_CLI_DOCS := python -c "from viper import cli; print(cli.__doc__)"
+PRINT_EXTENDING_CLI_DOCS := python -c "from viper import project; print(project.__doc__)"
+
 .PHONY: install
 install:
 	pip install -r dev-requirements.txt
@@ -19,14 +25,22 @@ checks:
 
 .PHONY: docs
 docs:
+	@$(PRINT_DECRRIPTION) | tee docs/description.rst
+	@$(PRINT_GETTING_STARTED_DOCS) | tee docs/getting_started.rst
+	@$(PRINT_PYTHON_API_DOCS) | tee docs/python_api.rst
+	@$(PRINT_CLI_DOCS) | tee docs/cli.rst
+	@$(PRINT_EXTENDING_CLI_DOCS) | tee docs/extending_cli.rst
 	$(MAKE) readme
-	python -c "import viper; print(viper.__doc__)" | tee docs/intro.rst
 	$(MAKE) apidocs
 
 
 .PHONY: readme
 readme:
-	@python -c "import viper; print(viper.__doc__)" | tee README.rst
+	@cat docs/logos.rst | tee README.rst
+	@$(PRINT_DECRRIPTION) | tee -a README.rst
+	@$(PRINT_GETTING_STARTED_DOCS) | tee -a README.rst
+	@cat docs/footnotes.rst | tee -a README.rst
+
 
 .PHONY: types
 types:
