@@ -1,0 +1,194 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Extending the Command-line Interface (using viperfile.py) &#8212; Viper Infrastructure Commander  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Further Readings" href="footnotes.html" />
+    <link rel="prev" title="The Viper Command-line Interface" href="cli.html" />
+
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+
+
+          <div class="body" role="main">
+
+  <div class="section" id="extending-the-command-line-interface-using-viperfile-py">
+<h1>Extending the Command-line Interface (using <code class="docutils literal notranslate"><span class="pre">viperfile.py</span></code>)<a class="headerlink" href="#extending-the-command-line-interface-using-viperfile-py" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="why-and-how">
+<h2>Why and How<a class="headerlink" href="#why-and-how" title="Permalink to this headline">¶</a></h2>
+<p>The viper CLI can be easily extended to include your own custom subcommands using
+the <code class="xref py py-mod docutils literal notranslate"><span class="pre">viper.projects</span></code> module.</p>
+<p>To do this, you have to create a file named <code class="docutils literal notranslate"><span class="pre">viperfile.py</span></code> in the root
+of your workspace. This file will contain the definition(s) of one of multiple
+projects. A project works like a namespace for all the custom subcommands under it.</p>
+</div>
+<div class="section" id="example-defining-a-project">
+<h2>Example: Defining a Project<a class="headerlink" href="#example-defining-a-project" title="Permalink to this headline">¶</a></h2>
+<p>This is how a project can be defined in <code class="docutils literal notranslate"><span class="pre">viperfile.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">viper.project</span> <span class="kn">import</span> <span class="n">Project</span><span class="p">,</span> <span class="n">arg</span>
+
+<span class="n">foo</span> <span class="o">=</span> <span class="n">Project</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <a class="reference internal" href="viper.html#viper.project.arg" title="viper.project.arg"><code class="xref py py-func docutils literal notranslate"><span class="pre">viper.project.arg()</span></code></a> function helps defining the command-line
+arguments a.k.a options or switches that the subcommand expects.</p>
+<p>Let’s define a subcommand <code class="docutils literal notranslate"><span class="pre">&#64;foo:group1</span></code> that expects optional arguments
+<code class="docutils literal notranslate"><span class="pre">--login_name</span></code> and <code class="docutils literal notranslate"><span class="pre">--identity_file</span></code> with some default values
+and returns the text representation of a <a class="reference internal" href="viper.html#viper.Hosts" title="viper.Hosts"><code class="xref py py-class docutils literal notranslate"><span class="pre">viper.Hosts</span></code></a> object.</p>
+</div>
+<div class="section" id="example-defining-a-subcommand-for-host-group">
+<h2>Example: Defining a subcommand for host group<a class="headerlink" href="#example-defining-a-subcommand-for-host-group" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">viper</span> <span class="kn">import</span> <span class="n">Host</span><span class="p">,</span> <span class="n">Hosts</span><span class="p">,</span> <span class="n">meta</span>
+
+<span class="nd">@foo</span><span class="o">.</span><span class="n">hostgroup</span><span class="p">(</span>
+    <span class="n">args</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">arg</span><span class="p">(</span><span class="s2">&quot;-l&quot;</span><span class="p">,</span> <span class="s2">&quot;--login_name&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;root&quot;</span><span class="p">),</span>
+        <span class="n">arg</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--identity_file&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;/root/.ssh/id_rsa.pub&quot;</span><span class="p">),</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+<span class="k">def</span> <span class="nf">group1</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">Hosts</span><span class="o">.</span><span class="n">from_items</span><span class="p">(</span>
+        <span class="n">Host</span><span class="p">(</span>
+            <span class="n">ip</span><span class="o">=</span><span class="s2">&quot;192.168.0.11&quot;</span><span class="p">,</span>
+            <span class="n">hostname</span><span class="o">=</span><span class="s2">&quot;host11&quot;</span>
+            <span class="n">login_name</span><span class="o">=</span><span class="s2">&quot;root&quot;</span><span class="p">,</span>
+            <span class="n">identity_file</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">identity_file</span><span class="p">,</span>
+            <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">(</span><span class="n">provider</span><span class="o">=</span><span class="s2">&quot;aws&quot;</span><span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">Host</span><span class="p">(</span>
+            <span class="n">ip</span><span class="o">=</span><span class="s2">&quot;192.168.0.12&quot;</span><span class="p">,</span>
+            <span class="n">hostname</span><span class="o">=</span><span class="s2">&quot;host12&quot;</span><span class="p">,</span>
+            <span class="n">login_name</span><span class="o">=</span><span class="s2">&quot;root&quot;</span><span class="p">,</span>
+            <span class="n">identity_file</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">identity_file</span><span class="p">,</span>
+            <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">(</span><span class="n">provider</span><span class="o">=</span><span class="s2">&quot;aws&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>Now running <code class="docutils literal notranslate"><span class="pre">viper</span> <span class="pre">-h</span></code> in that workspace will show us <code class="docutils literal notranslate"><span class="pre">&#64;foo:group1</span>&#160; <span class="pre">[Hosts]</span></code>,
+and running <code class="docutils literal notranslate"><span class="pre">viper</span> <span class="pre">&#64;foo:group1</span> <span class="pre">--help</span></code> will list the arguments it’s expecting
+and their default values.</p>
+<p>The subcommand can now be executed as below:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use the default values</span>
+viper @foo:group1
+
+<span class="c1"># Specify the login name and identity file</span>
+viper @foo:group1 -l user1 -i ~user1/.ssh/id_rsa.pub
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All the custom subcommands are prefixed with <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> to separate them from the
+core viper subcommands. And the string following <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> acts like a namespace
+that separates the subcommands belonging from different projects in the same
+viperfile.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Viper Infrastructure Commander</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=sayanarijit&repo=viper&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python_api.html">The Viper Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">The Viper Command-line Interface</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Extending the Command-line Interface (using <code class="docutils literal notranslate"><span class="pre">viperfile.py</span></code>)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#why-and-how">Why and How</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-defining-a-project">Example: Defining a Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-defining-a-subcommand-for-host-group">Example: Defining a subcommand for host group</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="footnotes.html">Further Readings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="footnotes.html#contributing-to-viper">Contributing To Viper</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="cli.html" title="previous chapter">The Viper Command-line Interface</a></li>
+      <li>Next: <a href="footnotes.html" title="next chapter">Further Readings</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Arijit Basu.
+
+      |
+      <a href="_sources/extending_cli.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+
+    <a href="https://github.com/sayanarijit/viper" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+
+
+
+  </body>
+</html>

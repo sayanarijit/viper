@@ -1,0 +1,428 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>viper.project &#8212; Viper Infrastructure Commander  documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+
+
+          <div class="body" role="main">
+
+  <h1>Source code for viper.project</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Extending the Command-line Interface (using ``viperfile.py``)</span>
+<span class="sd">~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="sd">Why and How</span>
+<span class="sd">^^^^^^^^^^^</span>
+
+<span class="sd">The viper CLI can be easily extended to include your own custom subcommands using</span>
+<span class="sd">the :py:mod:`viper.projects` module.</span>
+
+<span class="sd">To do this, you have to create a file named ``viperfile.py`` in the root</span>
+<span class="sd">of your workspace. This file will contain the definition(s) of one of multiple</span>
+<span class="sd">projects. A project works like a namespace for all the custom subcommands under it.</span>
+
+
+<span class="sd">Example: Defining a Project</span>
+<span class="sd">^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+
+<span class="sd">This is how a project can be defined in ``viperfile.py``:</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    from viper.project import Project, arg</span>
+
+<span class="sd">    foo = Project(&quot;foo&quot;)</span>
+
+
+<span class="sd">The :py:func:`viper.project.arg` function helps defining the command-line</span>
+<span class="sd">arguments a.k.a options or switches that the subcommand expects.</span>
+
+<span class="sd">Let&#39;s define a subcommand ``@foo:group1`` that expects optional arguments</span>
+<span class="sd">``--login_name`` and ``--identity_file`` with some default values</span>
+<span class="sd">and returns the text representation of a :py:class:`viper.Hosts` object.</span>
+
+
+<span class="sd">Example: Defining a subcommand for host group</span>
+<span class="sd">^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    from viper import Host, Hosts, meta</span>
+
+<span class="sd">    @foo.hostgroup(</span>
+<span class="sd">        args=[</span>
+<span class="sd">            arg(&quot;-l&quot;, &quot;--login_name&quot;, default=&quot;root&quot;),</span>
+<span class="sd">            arg(&quot;-i&quot;, &quot;--identity_file&quot;, default=&quot;/root/.ssh/id_rsa.pub&quot;),</span>
+<span class="sd">        ]</span>
+<span class="sd">    )</span>
+<span class="sd">    def group1(args):</span>
+<span class="sd">        return Hosts.from_items(</span>
+<span class="sd">            Host(</span>
+<span class="sd">                ip=&quot;192.168.0.11&quot;,</span>
+<span class="sd">                hostname=&quot;host11&quot;</span>
+<span class="sd">                login_name=&quot;root&quot;,</span>
+<span class="sd">                identity_file=args.identity_file,</span>
+<span class="sd">                meta=meta(provider=&quot;aws&quot;),</span>
+<span class="sd">            ),</span>
+<span class="sd">            Host(</span>
+<span class="sd">                ip=&quot;192.168.0.12&quot;,</span>
+<span class="sd">                hostname=&quot;host12&quot;,</span>
+<span class="sd">                login_name=&quot;root&quot;,</span>
+<span class="sd">                identity_file=args.identity_file,</span>
+<span class="sd">                meta=meta(provider=&quot;aws&quot;),</span>
+<span class="sd">            )</span>
+<span class="sd">        )</span>
+
+<span class="sd">Now running ``viper -h`` in that workspace will show us ``@foo:group1  [Hosts]``,</span>
+<span class="sd">and running ``viper @foo:group1 --help`` will list the arguments it&#39;s expecting</span>
+<span class="sd">and their default values.</span>
+
+<span class="sd">The subcommand can now be executed as below:</span>
+
+<span class="sd">.. code-block:: bash</span>
+
+<span class="sd">    # Use the default values</span>
+<span class="sd">    viper @foo:group1</span>
+
+<span class="sd">    # Specify the login name and identity file</span>
+<span class="sd">    viper @foo:group1 -l user1 -i ~user1/.ssh/id_rsa.pub</span>
+
+
+<span class="sd">.. note::</span>
+
+<span class="sd">    All the custom subcommands are prefixed with ``@`` to separate them from the</span>
+<span class="sd">    core viper subcommands. And the string following ``@`` acts like a namespace</span>
+<span class="sd">    that separates the subcommands belonging from different projects in the same</span>
+<span class="sd">    viperfile.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
+<span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">Namespace</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">viper.cli_base</span> <span class="kn">import</span> <span class="n">SubCommand</span>
+<span class="kn">from</span> <span class="nn">viper.collections</span> <span class="kn">import</span> <span class="n">Collection</span> <span class="k">as</span> <span class="n">ViperCollection</span>
+<span class="kn">from</span> <span class="nn">viper.collections</span> <span class="kn">import</span> <span class="n">Hosts</span>
+<span class="kn">from</span> <span class="nn">viper.collections</span> <span class="kn">import</span> <span class="n">Results</span>
+
+<span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
+
+<span class="n">T</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">)</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;C&quot;</span><span class="p">)</span>
+<span class="n">ArgType</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]</span>
+<span class="n">HostsFuncType</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Namespace</span><span class="p">],</span> <span class="n">Hosts</span><span class="p">]</span>
+<span class="n">HandlerFuncType</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">,</span> <span class="n">Namespace</span><span class="p">],</span> <span class="n">C</span><span class="p">]</span>
+<span class="n">JobFuncType</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Hosts</span><span class="p">,</span> <span class="n">Namespace</span><span class="p">],</span> <span class="n">Results</span><span class="p">]</span>
+<span class="n">ActionFuncType</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Namespace</span><span class="p">],</span> <span class="n">T</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="arg"><a class="viewcode-back" href="../../viper.html#viper.project.arg">[docs]</a><span class="k">def</span> <span class="nf">arg</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ArgType</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Argumenst to be passed to argparse&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span></div>
+
+
+<div class="viewcode-block" id="Project"><a class="viewcode-back" href="../../viper.html#viper.project.Project">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Project</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;A project (namespace) for the viper sub commands</span>
+
+<span class="sd">    :param str prefix: Prefix for the related sub commands.</span>
+
+<span class="sd">    When we define a project, we basically define a namespace (a prefix)</span>
+<span class="sd">    for the commands.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">action_commands</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="n">SubCommand</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[])</span>
+    <span class="n">hostgroup_commands</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="n">SubCommand</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[])</span>
+    <span class="n">filter_commands</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="n">SubCommand</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[])</span>
+    <span class="n">handler_commands</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="n">SubCommand</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[])</span>
+    <span class="n">job_commands</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="n">SubCommand</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[])</span>
+
+<div class="viewcode-block" id="Project.all_commands"><a class="viewcode-back" href="../../viper.html#viper.project.Project.all_commands">[docs]</a>    <span class="k">def</span> <span class="nf">all_commands</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="n">SubCommand</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Return all sub commands&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">action_commands</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">hostgroup_commands</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_commands</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">handler_commands</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">job_commands</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Project.hostgroup"><a class="viewcode-back" href="../../viper.html#viper.project.Project.hostgroup">[docs]</a>    <span class="k">def</span> <span class="nf">hostgroup</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">ArgType</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">HostsFuncType</span><span class="p">],</span> <span class="n">HostsFuncType</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Use this decorator to define host groups</span>
+
+<span class="sd">        :param list args (optional): Arguments to be parsed by py:class:`argparse.ArgumentParser`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">HostsFuncType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HostsFuncType</span><span class="p">:</span>
+
+            <span class="n">doc</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">func</span><span class="o">.</span><span class="vm">__doc__</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+            <span class="k">class</span> <span class="nc">HostGroupCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+                <span class="vm">__doc__</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[Hosts] </span><span class="si">{doc}</span><span class="s2">&quot;</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;@</span><span class="si">{self.prefix}</span><span class="s2">:</span><span class="si">{func.__name__}</span><span class="s2">&quot;</span>
+
+                <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">args</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+                            <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="o">*</span><span class="n">arg</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">**</span><span class="n">arg</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+                <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">func</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+                    <span class="k">return</span> <span class="mi">0</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">hostgroup_commands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">HostGroupCommand</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">func</span>
+
+        <span class="k">return</span> <span class="n">wrapper</span></div>
+
+<div class="viewcode-block" id="Project.handler"><a class="viewcode-back" href="../../viper.html#viper.project.Project.handler">[docs]</a>    <span class="k">def</span> <span class="nf">handler</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">fromtype</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span>
+        <span class="n">totype</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span>
+        <span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">ArgType</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">HandlerFuncType</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">]],</span> <span class="n">HandlerFuncType</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Use this decorator to define handlers</span>
+
+<span class="sd">        :param type fromtype: The type of object this handler is expecting.</span>
+<span class="sd">        :param type totype: The type of object this handler returns.</span>
+<span class="sd">        :param list args (optional): List of arguments for :py:class:`argparse.ArgumentParser`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">fromtype</span><span class="p">,</span> <span class="n">ViperCollection</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{fromtype}</span><span class="s2"> does not have pipe option&quot;</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">HandlerFuncType</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">HandlerFuncType</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">]:</span>
+
+            <span class="n">doc</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">func</span><span class="o">.</span><span class="vm">__doc__</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+            <span class="k">class</span> <span class="nc">HandlerCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+                <span class="vm">__doc__</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{fromtype.__name__}</span><span class="s2"> -&gt; </span><span class="si">{totype.__name__}</span><span class="s2">] </span><span class="si">{doc}</span><span class="s2">&quot;</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;@</span><span class="si">{self.prefix}</span><span class="s2">:</span><span class="si">{func.__name__}</span><span class="s2">&quot;</span>
+
+                <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">args</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+                            <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="o">*</span><span class="n">arg</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">**</span><span class="n">arg</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+                <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">fromtype</span><span class="p">,</span> <span class="n">ViperCollection</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{fromtype}</span><span class="s2">: invalid fromtype&quot;</span><span class="p">)</span>
+
+                    <span class="n">obj</span><span class="p">:</span> <span class="n">C</span> <span class="o">=</span> <span class="n">fromtype</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span><span class="o">.</span><span class="n">pipe</span><span class="p">(</span>
+                        <span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="n">func</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">totype</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;invalid totype, expected </span><span class="si">{totype}</span><span class="s2"> but got {type(obj)}&quot;</span>
+                        <span class="p">)</span>
+
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ViperCollection</span><span class="p">):</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+                    <span class="k">return</span> <span class="mi">0</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">handler_commands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">HandlerCommand</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">func</span>
+
+        <span class="k">return</span> <span class="n">wrapper</span></div>
+
+<div class="viewcode-block" id="Project.job"><a class="viewcode-back" href="../../viper.html#viper.project.Project.job">[docs]</a>    <span class="k">def</span> <span class="nf">job</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">ArgType</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">JobFuncType</span><span class="p">],</span> <span class="n">JobFuncType</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Use this decorator to define a job.</span>
+
+<span class="sd">        :param list args (optional): List of arguments for :py:class:`argparse.ArgumentParser`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">JobFuncType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JobFuncType</span><span class="p">:</span>
+
+            <span class="n">doc</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">func</span><span class="o">.</span><span class="vm">__doc__</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+            <span class="k">class</span> <span class="nc">JobCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+                <span class="vm">__doc__</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[Hosts -&gt; Results] </span><span class="si">{doc}</span><span class="s2">&quot;</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;@</span><span class="si">{self.prefix}</span><span class="s2">:</span><span class="si">{func.__name__}</span><span class="s2">&quot;</span>
+
+                <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">args</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+                            <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="o">*</span><span class="n">arg</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">**</span><span class="n">arg</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--indent&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+                <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+                    <span class="n">results</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">Hosts</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="nb">input</span><span class="p">()),</span> <span class="n">args</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">Results</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;a job must return </span><span class="si">{Results}</span><span class="s2"> object but got {type(results)}&quot;</span>
+                        <span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">indent</span><span class="p">))</span>
+                    <span class="k">return</span> <span class="mi">0</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">job_commands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">JobCommand</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">func</span>
+
+        <span class="k">return</span> <span class="n">wrapper</span></div>
+
+<div class="viewcode-block" id="Project.action"><a class="viewcode-back" href="../../viper.html#viper.project.Project.action">[docs]</a>    <span class="k">def</span> <span class="nf">action</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">ArgType</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">totype</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">type</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">ActionFuncType</span><span class="p">[</span><span class="n">T</span><span class="p">]],</span> <span class="n">ActionFuncType</span><span class="p">[</span><span class="n">T</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Use this decorator to define an action.</span>
+
+<span class="sd">        :param list args (optional): List of arguments for :py:class:`argparse.ArgumentParser`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">ActionFuncType</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">ActionFuncType</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
+
+            <span class="n">doc</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">func</span><span class="o">.</span><span class="vm">__doc__</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+            <span class="k">class</span> <span class="nc">ActionCommand</span><span class="p">(</span><span class="n">SubCommand</span><span class="p">):</span>
+                <span class="vm">__doc__</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{totype.__name__}</span><span class="s2">] </span><span class="si">{doc}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">totype</span> <span class="k">else</span> <span class="n">doc</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;@</span><span class="si">{self.prefix}</span><span class="s2">:</span><span class="si">{func.__name__}</span><span class="s2">&quot;</span>
+
+                <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">args</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+                            <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="o">*</span><span class="n">arg</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">**</span><span class="n">arg</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+                <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+                    <span class="n">res</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">res</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">totype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="k">return</span> <span class="mi">0</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;expected an object of type </span><span class="si">{totype}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">totype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;not expecting any result, but got a result of type {type(res)}&quot;</span>
+                        <span class="p">)</span>
+
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">totype</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;expected result of type </span><span class="si">{totype}</span><span class="s2"> but got result of type {type(res)}&quot;</span>
+                        <span class="p">)</span>
+
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">ViperCollection</span><span class="p">):</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
+                    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">res</span><span class="p">)))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="mi">0</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">action_commands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ActionCommand</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">func</span>
+
+        <span class="k">return</span> <span class="n">wrapper</span></div></div>
+</pre></div>
+
+          </div>
+
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">Viper Infrastructure Commander</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=sayanarijit&repo=viper&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../python_api.html">The Viper Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html">The Viper Command-line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../extending_cli.html">Extending the Command-line Interface (using <code class="docutils literal notranslate"><span class="pre">viperfile.py</span></code>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../footnotes.html">Further Readings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../footnotes.html#contributing-to-viper">Contributing To Viper</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Arijit Basu.
+
+    </div>
+
+
+    <a href="https://github.com/sayanarijit/viper" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+
+
+
+  </body>
+</html>

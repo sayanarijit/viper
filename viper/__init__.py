@@ -1,9 +1,9 @@
 __author__ = "Arijit Basu"
-__description__ = "Viper is a handy tool for easily running infrastructure management tasks and commands."
+__description__ = "Viper provides a simple API (Python and CLI) to easily manage large infrastructures."
 __email__ = "sayanarijit@gmail.com"
 __homepage__ = "https://github.com/sayanarijit/viper"
 __license__ = "MIT"
-__version__ = "v0.28.2"
+__version__ = "v0.28.3"
 
 from viper.collections import Host  # noqa: F401
 from viper.collections import Hosts  # noqa: F401
@@ -26,7 +26,9 @@ __all__ = [
     "Task",
     "WhereConditions",
 ]
-__doc__ = f"""::
+__doc__ = f"""{__description__}
+
+::
 
      ▄   ▄█ █ ▄▄  ▄███▄   █▄▄▄▄   ▄█    ▄   ▄████  █▄▄▄▄ ██     ▄█▄    ████▄ █▀▄▀█ █▀▄▀█ ██      ▄   ██▄   ▄███▄   █▄▄▄▄
       █  ██ █   █ █▀   ▀  █  ▄▀   ██     █  █▀   ▀ █  ▄▀ █ █    █▀ ▀▄  █   █ █ █ █ █ █ █ █ █      █  █  █  █▀   ▀  █  ▄▀
@@ -35,28 +37,6 @@ __doc__ = f"""::
    █  █   ▐  █    ▀███▀     █      ▐ █  █ █  █       █      █   ▀███▀           █     █     █ █  █ █ ███▀  ▀███▀     █
     █▐        ▀            ▀         █   ██   ▀     ▀      █                   ▀     ▀     █  █   ██                ▀
     ▐                                                     ▀                               ▀
-
-
-.. image:: https://img.shields.io/pypi/v/viper-infra-commander.svg
-    :target: https://pypi.org/project/viper-infra-commander
-
-.. image:: https://img.shields.io/pypi/pyversions/viper-infra-commander.svg
-    :target: https://pypi.org/project/viper-infra-commander
-
-.. image:: https://travis-ci.com/sayanarijit/viper.svg?branch=master
-    :target: https://travis-ci.com/sayanarijit/viper
-
-.. image:: https://codecov.io/gh/sayanarijit/viper/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/sayanarijit/viper
-
-.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
-    :target: https://github.com/python/black
-
-.. image:: https://readthedocs.org/projects/viper-infrastructure-commander/badge/?version=latest
-    :target: https://viper-infrastructure-commander.readthedocs.io
-
-
-{__description__}
 
 
 Getting Started
@@ -91,10 +71,10 @@ Initialization
     viper init -f
 
 
-Viper In Action (Basic Mode)
+Viper in Action (Basic Mode)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Define a set of hosts in csv format (json and yml are also supported)
+Define a set of hosts in csv format (json and yml are also supported) in ``hosts.csv``:
 
 .. code-block:: bash
 
@@ -114,7 +94,7 @@ Define a set of hosts in csv format (json and yml are also supported)
     EOF
 
 
-Define a task
+Define a task in ``task.py``:
 
 .. code-block:: bash
 
@@ -152,7 +132,7 @@ Perform the following actions:
             | viper results:re-run --indent 4
 
 
-See the stdout of the final results from DB
+See the stdout of the final results from DB:
 
 .. code-block:: bash
 
@@ -161,7 +141,7 @@ See the stdout of the final results from DB
             | viper results:format "{{host.hostname}}: {{stdout}}"
 
 
-Export the results to a csv file
+Export the results to a csv file:
 
 .. code-block:: bash
 
@@ -169,7 +149,7 @@ Export the results to a csv file
             | viper results:to-file results.csv --indent 4
 
 
-Define a job using the Python API (CLI and Python API are almost similar)
+Define a job using the Python API (CLI and Python API are almost similar):
 
 .. code-block:: bash
 
@@ -193,7 +173,7 @@ Define a job using the Python API (CLI and Python API are almost similar)
     EOF
 
 
-Run the job using CLI
+Run the job using CLI:
 
 .. code-block:: bash
 
@@ -202,10 +182,10 @@ Run the job using CLI
             | viper results:format "{{host.hostname}}: {{stdout}}"
 
 
-Viperfile In Action (Advanced Mode)
+Viperfile in Action (Advanced Mode)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Define a project in viperfile
+Define a project with custom subcommands in viperfile:
 
 .. code-block:: bash
 
@@ -269,14 +249,14 @@ Define a project in viperfile
     EOF
 
 
-See the auto generated custom commands
+See the auto generated custom subcommands:
 
 .. code-block:: bash
 
     viper --help
 
 
-Run the job
+Run the job:
 
 .. code-block:: bash
 
@@ -284,14 +264,4 @@ Run the job
             | viper @foo:remote_exec "uname -a" --workers 5 \\
             | viper results:to-file results.csv \\
             | viper results:format "{{task.name}} [{{host.hostname}}]: {{returncode}}: {{stdout}}"
-
-
-Further Readings
-~~~~~~~~~~~~~~~~
-**API Docs with Examples ☞** https://viper-infrastructure-commander.readthedocs.io
-
-
-Contributing To Viper
-~~~~~~~~~~~~~~~~~~~~~
-**Contribution Guidelines ☞** https://github.com/sayanarijit/viper/blob/master/CONTRIBUTING.md
 """

@@ -1,0 +1,308 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Getting Started &#8212; Viper Infrastructure Commander  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="The Viper Python API" href="python_api.html" />
+    <link rel="prev" title="Indices and tables" href="index.html" />
+
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+
+
+          <div class="body" role="main">
+
+  <div class="section" id="getting-started">
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install -U viper-infra-commander
+
+<span class="c1"># Or install with batteries included</span>
+
+pip install -U <span class="s2">&quot;viper-infra-commander[batteries]&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="initialization">
+<h2>Initialization<a class="headerlink" href="#initialization" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># (Optional) enable tab completion</span>
+<span class="nb">eval</span> <span class="s2">&quot;</span><span class="k">$(</span>viper autocomplete <span class="k">$(</span>basename <span class="nv">$SHELL</span><span class="k">))</span><span class="s2">&quot;</span>
+
+
+<span class="c1"># See the help menu</span>
+viper -h
+
+
+<span class="c1"># Initialize SQLite DB</span>
+viper init -f
+</pre></div>
+</div>
+</div>
+<div class="section" id="viper-in-action-basic-mode">
+<h2>Viper in Action (Basic Mode)<a class="headerlink" href="#viper-in-action-basic-mode" title="Permalink to this headline">¶</a></h2>
+<p>Define a set of hosts in csv format (json and yml are also supported) in <code class="docutils literal notranslate"><span class="pre">hosts.csv</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cat &gt; hosts.csv &lt;&lt; EOF
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ip</span><span class="p">,</span><span class="n">hostname</span><span class="p">,</span><span class="n">login_name</span><span class="p">,</span><span class="n">identity_file</span>
+<span class="mf">192.168</span><span class="o">.</span><span class="mf">0.11</span><span class="p">,</span><span class="n">host11</span><span class="p">,</span><span class="n">root</span><span class="p">,</span><span class="o">/</span><span class="n">root</span><span class="o">/.</span><span class="n">ssh</span><span class="o">/</span><span class="n">id_rsa</span><span class="o">.</span><span class="n">pub</span>
+<span class="mf">192.168</span><span class="o">.</span><span class="mf">0.12</span><span class="p">,</span><span class="n">host12</span><span class="p">,</span><span class="n">root</span><span class="p">,</span><span class="o">/</span><span class="n">root</span><span class="o">/.</span><span class="n">ssh</span><span class="o">/</span><span class="n">id_rsa</span><span class="o">.</span><span class="n">pub</span>
+<span class="mf">192.168</span><span class="o">.</span><span class="mf">0.13</span><span class="p">,</span><span class="n">host13</span><span class="p">,</span><span class="n">root</span><span class="p">,</span><span class="o">/</span><span class="n">root</span><span class="o">/.</span><span class="n">ssh</span><span class="o">/</span><span class="n">id_rsa</span><span class="o">.</span><span class="n">pub</span>
+<span class="mf">192.168</span><span class="o">.</span><span class="mf">0.14</span><span class="p">,</span><span class="n">host14</span><span class="p">,</span><span class="n">root</span><span class="p">,</span><span class="o">/</span><span class="n">root</span><span class="o">/.</span><span class="n">ssh</span><span class="o">/</span><span class="n">id_rsa</span><span class="o">.</span><span class="n">pub</span>
+<span class="mf">192.168</span><span class="o">.</span><span class="mf">0.15</span><span class="p">,</span><span class="n">host15</span><span class="p">,</span><span class="n">root</span><span class="p">,</span><span class="o">/</span><span class="n">root</span><span class="o">/.</span><span class="n">ssh</span><span class="o">/</span><span class="n">id_rsa</span><span class="o">.</span><span class="n">pub</span>
+</pre></div>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>EOF
+</pre></div>
+</div>
+<p>Define a task in <code class="docutils literal notranslate"><span class="pre">task.py</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cat &gt; task.py &lt;&lt; EOF
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">viper</span> <span class="kn">import</span> <span class="n">Task</span>
+
+<span class="k">def</span> <span class="nf">ping_command</span><span class="p">(</span><span class="n">host</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;ping&quot;</span><span class="p">,</span> <span class="s2">&quot;-c&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="n">host</span><span class="o">.</span><span class="n">ip</span>
+
+<span class="k">def</span> <span class="nf">ping</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">Task</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Ping once&quot;</span><span class="p">,</span>
+        <span class="n">command_factory</span><span class="o">=</span><span class="n">ping_command</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>EOF
+</pre></div>
+</div>
+<p>Perform the following actions:</p>
+<ul class="simple">
+<li><p>Run the task on the set of hosts in parallel with 5 workers,</p></li>
+<li><p>filter only the results where the task failed,</p></li>
+<li><p>re-run the task on them,</p></li>
+<li><p>store the results in DB</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>viper hosts:from-file hosts.csv <span class="se">\</span>
+        <span class="p">|</span> viper hosts:run-task task.ping --max-worker <span class="m">5</span> <span class="se">\</span>
+        <span class="p">|</span> viper results:where returncode IS_NOT <span class="m">0</span> <span class="se">\</span>
+        <span class="p">|</span> viper results:re-run --indent <span class="m">4</span>
+</pre></div>
+</div>
+<p>See the stdout of the final results from DB:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>viper results <span class="se">\</span>
+        <span class="p">|</span> viper results:final <span class="se">\</span>
+        <span class="p">|</span> viper results:format <span class="s2">&quot;{host.hostname}: {stdout}&quot;</span>
+</pre></div>
+</div>
+<p>Export the results to a csv file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>viper results --final <span class="se">\</span>
+        <span class="p">|</span> viper results:to-file results.csv --indent <span class="m">4</span>
+</pre></div>
+</div>
+<p>Define a job using the Python API (CLI and Python API are almost similar):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cat &gt; job.py &lt;&lt; EOF
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">viper</span> <span class="kn">import</span> <span class="n">WhereConditions</span>
+<span class="kn">from</span> <span class="nn">task</span> <span class="kn">import</span> <span class="n">ping</span>
+
+<span class="k">def</span> <span class="nf">ping_and_export</span><span class="p">(</span><span class="n">hosts</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">hosts</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">ping</span><span class="p">())</span>
+        <span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">final</span><span class="p">()</span>
+        <span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="s2">&quot;results.csv&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>EOF
+</pre></div>
+</div>
+<p>Run the job using CLI:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>viper hosts:from-file hosts.csv <span class="se">\</span>
+        <span class="p">|</span> viper run job.ping_and_export <span class="se">\</span>
+        <span class="p">|</span> viper results:format <span class="s2">&quot;{host.hostname}: {stdout}&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="viperfile-in-action-advanced-mode">
+<h2>Viperfile in Action (Advanced Mode)<a class="headerlink" href="#viperfile-in-action-advanced-mode" title="Permalink to this headline">¶</a></h2>
+<p>Define a project with custom subcommands in viperfile:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cat &gt; viperfile.py &lt;&lt; EOF
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">viper</span> <span class="kn">import</span> <span class="n">Hosts</span><span class="p">,</span> <span class="n">Task</span>
+<span class="kn">from</span> <span class="nn">viper.project</span> <span class="kn">import</span> <span class="n">Project</span><span class="p">,</span> <span class="n">arg</span>
+
+
+<span class="n">foo</span> <span class="o">=</span> <span class="n">Project</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;foo&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@foo</span><span class="o">.</span><span class="n">hostgroup</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="n">arg</span><span class="p">(</span><span class="s2">&quot;-f&quot;</span><span class="p">,</span> <span class="s2">&quot;--file&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;hosts.csv&quot;</span><span class="p">)])</span>
+<span class="k">def</span> <span class="nf">allhosts</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">Hosts</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">file</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">remote_exec_command</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="s2">&quot;ssh&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;-i&quot;</span><span class="p">,</span>
+        <span class="n">host</span><span class="o">.</span><span class="n">identity_file</span><span class="p">,</span>
+        <span class="s2">&quot;-l&quot;</span><span class="p">,</span>
+        <span class="n">host</span><span class="o">.</span><span class="n">login_name</span><span class="p">,</span>
+        <span class="s2">&quot;-p&quot;</span><span class="p">,</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">host</span><span class="o">.</span><span class="n">port</span><span class="p">),</span>
+        <span class="s2">&quot;-o&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;StrictHostKeyChecking=no&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;-o&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;PubkeyAuthentication=yes&quot;</span><span class="p">,</span>
+        <span class="n">host</span><span class="o">.</span><span class="n">ip</span><span class="p">,</span>
+        <span class="n">command</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="nd">@foo</span><span class="o">.</span><span class="n">job</span><span class="p">(</span>
+    <span class="n">args</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">arg</span><span class="p">(</span><span class="s2">&quot;command&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;command to execute&quot;</span><span class="p">),</span>
+        <span class="n">arg</span><span class="p">(</span><span class="s2">&quot;-w&quot;</span><span class="p">,</span> <span class="s2">&quot;--workers&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+<span class="k">def</span> <span class="nf">remote_exec</span><span class="p">(</span><span class="n">hosts</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">hosts</span><span class="o">.</span><span class="n">task</span><span class="p">(</span>
+            <span class="n">Task</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Remote execute command&quot;</span><span class="p">,</span>
+                <span class="n">command_factory</span><span class="o">=</span><span class="n">remote_exec_command</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">command</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">workers</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">final</span><span class="p">()</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>EOF
+</pre></div>
+</div>
+<p>See the auto generated custom subcommands:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>viper --help
+</pre></div>
+</div>
+<p>Run the job:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>viper @foo:allhosts <span class="se">\</span>
+        <span class="p">|</span> viper @foo:remote_exec <span class="s2">&quot;uname -a&quot;</span> --workers <span class="m">5</span> <span class="se">\</span>
+        <span class="p">|</span> viper results:to-file results.csv <span class="se">\</span>
+        <span class="p">|</span> viper results:format <span class="s2">&quot;{task.name} [{host.hostname}]: {returncode}: {stdout}&quot;</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Viper Infrastructure Commander</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=sayanarijit&repo=viper&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#initialization">Initialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#viper-in-action-basic-mode">Viper in Action (Basic Mode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#viperfile-in-action-advanced-mode">Viperfile in Action (Advanced Mode)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="python_api.html">The Viper Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">The Viper Command-line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extending_cli.html">Extending the Command-line Interface (using <code class="docutils literal notranslate"><span class="pre">viperfile.py</span></code>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="footnotes.html">Further Readings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="footnotes.html#contributing-to-viper">Contributing To Viper</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Indices and tables</a></li>
+      <li>Next: <a href="python_api.html" title="next chapter">The Viper Python API</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Arijit Basu.
+
+      |
+      <a href="_sources/getting_started.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+
+    <a href="https://github.com/sayanarijit/viper" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+
+
+
+  </body>
+</html>

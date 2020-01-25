@@ -1,3 +1,5 @@
+"""A collection of some handy utilities."""
+
 from __future__ import annotations
 
 import typing as t
@@ -57,6 +59,23 @@ def required(
 
 
 def flatten_dict(d: t.Dict[t.Any, t.Any]) -> t.Dict[str, object]:
+    """Flatten a nested dictionary.
+
+    :param dist d: The nested dictionary to flatten.
+    :rtype: dict
+    :example:
+
+    .. code-block:: python
+
+        flatten_dict({"a": 1, "b": {"c": 2, "d": {"e": 3, "f": 4}}})
+        # {
+        #     "a": 1,
+        #     "b:c": 2,
+        #     "b:d:e": 3,
+        #     "b:d:f": 4,
+        # }
+    """
+
     def items() -> t.Iterable[t.Tuple[str, object]]:
         for key, value in d.items():
             if not isinstance(key, str):
@@ -75,6 +94,19 @@ def flatten_dict(d: t.Dict[t.Any, t.Any]) -> t.Dict[str, object]:
 
 
 def unflatten_dict(d: t.Dict[object, object]) -> t.Dict[object, object]:
+    """Convert a flattened dict back to nested dict.
+    :param dict d: The flattened dict to convert.
+    :rtype: dict
+    :example:
+
+    .. code-block:: python
+
+        unflatten_dict({"a": 1, "b:c": 2, "b:d:e": 3, "b:d:f": 4})
+        # {
+        #   "a": 1,
+        #   "b": {"c": 2, "d": {"e": 3, "f": 4}},
+        # }
+    """
     dict_: t.Dict[object, object] = {}
     for k, v in d.items():
         if not isinstance(k, str):

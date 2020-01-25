@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>viper &#8212; Viper Infrastructure Commander  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+
+
+          <div class="body" role="main">
+
+  <div class="section" id="viper">
+<h1>viper<a class="headerlink" href="#viper" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="viper.html">viper package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="viper.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viper.html#module-viper.cli">viper.cli module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="viper.html#the-viper-command-line-interface">The Viper Command-line Interface</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#the-concept">The Concept</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#similarity-between-the-python-api-and-command-line-interface">Similarity Between the Python API and Command-line Interface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#example-output-piping-as-method-chaining">Example: Output Piping as Method Chaining</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#defining-actions">Defining Actions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#defining-viper-objects-hosts-task">Defining Viper Objects: Hosts, Task</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#defining-utilities-handlers-filters-sort-keys">Defining Utilities: Handlers, Filters, Sort Keys</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="viper.html#module-viper.cli_base">viper.cli_base module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viper.html#module-viper.collections">viper.collections module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="viper.html#the-viper-python-api">The Viper Python API</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#id1">The Concept</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#example-method-chaining">Example: Method Chaining</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#unit-vs-container-types">Unit vs Container Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#useful-common-properties-abilities">Useful Common Properties &amp; Abilities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#useful-abilities-common-to-the-unit-types">Useful Abilities Common to the Unit Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#useful-abilities-common-to-the-container-types">Useful Abilities Common to the Container Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#more-on-task-command-factories-output-processors-callbacks-and">More on Task: Command Factories, Output Processors, Callbacks and …</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="viper.html#module-viper.const">viper.const module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viper.html#module-viper.db">viper.db module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viper.html#module-viper.main">viper.main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viper.html#module-viper.project">viper.project module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="viper.html#extending-the-command-line-interface-using-viperfile-py">Extending the Command-line Interface (using <code class="docutils literal notranslate"><span class="pre">viperfile.py</span></code>)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#why-and-how">Why and How</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#example-defining-a-project">Example: Defining a Project</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#example-defining-a-subcommand-for-host-group">Example: Defining a subcommand for host group</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="viper.html#module-viper.serializers">viper.serializers module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="viper.html#viper-object-serializers">Viper Object Serializers</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="viper.html#module-viper.utils">viper.utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viper.html#module-viper">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="viper.html#getting-started">Getting Started</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#installation">Installation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#initialization">Initialization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#viper-in-action-basic-mode">Viper in Action (Basic Mode)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="viper.html#viperfile-in-action-advanced-mode">Viperfile in Action (Advanced Mode)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Viper Infrastructure Commander</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=sayanarijit&repo=viper&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python_api.html">The Viper Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">The Viper Command-line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extending_cli.html">Extending the Command-line Interface (using <code class="docutils literal notranslate"><span class="pre">viperfile.py</span></code>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="footnotes.html">Further Readings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="footnotes.html#contributing-to-viper">Contributing To Viper</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Arijit Basu.
+
+      |
+      <a href="_sources/modules.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+
+    <a href="https://github.com/sayanarijit/viper" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+
+
+
+  </body>
+</html>
