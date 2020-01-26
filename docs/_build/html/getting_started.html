@@ -46,12 +46,9 @@ pip install -U <span class="s2">&quot;viper-infra-commander[batteries]&quot;</sp
 </div>
 <div class="section" id="initialization">
 <h2>Initialization<a class="headerlink" href="#initialization" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># (Optional) enable tab completion</span>
+<p>Viper needs to initialize a SQLite DB in the present working directory (the workspace).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># (Optional) enable tab auto completion</span>
 <span class="nb">eval</span> <span class="s2">&quot;</span><span class="k">$(</span>viper autocomplete <span class="k">$(</span>basename <span class="nv">$SHELL</span><span class="k">))</span><span class="s2">&quot;</span>
-
-
-<span class="c1"># See the help menu</span>
-viper -h
 
 
 <span class="c1"># Initialize SQLite DB</span>
@@ -97,10 +94,10 @@ viper init -f
 </div>
 <p>Perform the following actions:</p>
 <ul class="simple">
-<li><p>Run the task on the set of hosts in parallel with 5 workers,</p></li>
-<li><p>filter only the results where the task failed,</p></li>
-<li><p>re-run the task on them,</p></li>
-<li><p>store the results in DB</p></li>
+<li><p>Run the ping task on the set of hosts in parallel with 5 workers</p></li>
+<li><p>Then filter only the results where the task failed</p></li>
+<li><p>Re-run the task on the filtered set of hosts</p></li>
+<li><p>Store all the results</p></li>
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>viper hosts:from-file hosts.csv <span class="se">\</span>
         <span class="p">|</span> viper hosts:run-task task.ping --max-worker <span class="m">5</span> <span class="se">\</span>
@@ -108,7 +105,8 @@ viper init -f
         <span class="p">|</span> viper results:re-run --indent <span class="m">4</span>
 </pre></div>
 </div>
-<p>See the stdout of the final results from DB:</p>
+<p>The results are stored in the DB as history.
+To see the stdout of the final results from history:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>viper results <span class="se">\</span>
         <span class="p">|</span> viper results:final <span class="se">\</span>
         <span class="p">|</span> viper results:format <span class="s2">&quot;{host.hostname}: {stdout}&quot;</span>
@@ -207,9 +205,10 @@ viper init -f
 </div>
 <p>See the auto generated custom subcommands:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>viper --help
+<span class="c1"># Will show the subcommands: &quot;@foo:allhosts&quot; and &quot;@foo:remote_exec&quot;</span>
 </pre></div>
 </div>
-<p>Run the job:</p>
+<p>Run the job, export the results in a file, and format the output:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>viper @foo:allhosts <span class="se">\</span>
         <span class="p">|</span> viper @foo:remote_exec <span class="s2">&quot;uname -a&quot;</span> --workers <span class="m">5</span> <span class="se">\</span>
         <span class="p">|</span> viper results:to-file results.csv <span class="se">\</span>

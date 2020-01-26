@@ -38,9 +38,9 @@
 <h2>The Concept<a class="headerlink" href="#the-concept" title="Permalink to this headline">¶</a></h2>
 <p>Viper provides a powerful collection of data types such as <a class="reference internal" href="viper.html#viper.Hosts" title="viper.Hosts"><code class="xref py py-class docutils literal notranslate"><span class="pre">Hosts</span></code></a>,
 <a class="reference internal" href="viper.html#viper.Runners" title="viper.Runners"><code class="xref py py-class docutils literal notranslate"><span class="pre">Runners</span></code></a>, <a class="reference internal" href="viper.html#viper.Results" title="viper.Results"><code class="xref py py-class docutils literal notranslate"><span class="pre">Results</span></code></a> etc. and uses <em>method chaining</em>
-to perform different operations. The <code class="xref py py-mod docutils literal notranslate"><span class="pre">viper.collection</span></code> module contains the
+to perform different operations. The <a class="reference internal" href="viper.html#module-viper.collections" title="viper.collections"><code class="xref py py-mod docutils literal notranslate"><span class="pre">viper.collections</span></code></a> module contains the
 collection of such data types. These data types share some common properties as
-all the data types inherit from the <a class="reference internal" href="viper.html#viper.collections.Collection" title="viper.collections.Collection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Collection</span></code></a> class.</p>
+all they inherit from the <a class="reference internal" href="viper.html#viper.collections.Collection" title="viper.collections.Collection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Collection</span></code></a> class.</p>
 </div>
 <div class="section" id="example-method-chaining">
 <h2>Example: Method Chaining<a class="headerlink" href="#example-method-chaining" title="Permalink to this headline">¶</a></h2>
@@ -97,8 +97,8 @@ container types inherit from <a class="reference internal" href="viper.html#vipe
 </div>
 <div class="section" id="useful-common-properties-abilities">
 <h2>Useful Common Properties &amp; Abilities<a class="headerlink" href="#useful-common-properties-abilities" title="Permalink to this headline">¶</a></h2>
-<p>The properties mentioned below are common to both unit and composite type objects.</p>
-<ul class="simple">
+<p>The properties mentioned below are common to both unit and container type objects.</p>
+<ul>
 <li><p><strong>Immutable:</strong> All the datatypes are immutable i.e. they cannot be modified
 once initialized. This is to prevent any unexpected behaviour caused due to
 stateful-ness.</p></li>
@@ -106,9 +106,13 @@ stateful-ness.</p></li>
 texts using the <code class="docutils literal notranslate"><span class="pre">.from_json()</span></code> factory method and can be dumped back to JSON
 using the <code class="docutils literal notranslate"><span class="pre">.to_json()</span></code> method. This enables the objects to use a wide range of
 mediums such as the Unix pipes.</p></li>
-<li><p><strong>.format():</strong> The objects can be converted to a custom formatted
-string using the <code class="docutils literal notranslate"><span class="pre">.format()</span></code> method. Example:
-<code class="docutils literal notranslate"><span class="pre">host.format(&quot;{ip}</span> <span class="pre">{hostname}</span> <span class="pre">{meta.tag}&quot;)</span></code></p></li>
+<li><p><strong>.format():</strong> The objects can be converted to a string with a custof format
+using the <code class="docutils literal notranslate"><span class="pre">.format()</span></code> method.</p>
+<p>Example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>host.format<span class="o">(</span><span class="s2">&quot;{ip} {hostname} {meta.tag}&quot;</span><span class="o">)</span>
+</pre></div>
+</div>
+</li>
 </ul>
 </div>
 <div class="section" id="useful-abilities-common-to-the-unit-types">
@@ -148,7 +152,7 @@ the object. It supports sequences, generators, unit objects or all at once.</p>
 </pre></div>
 </div>
 </li>
-<li><p><strong>.from_file() and to_file():</strong> Container type objects can be initialized from text
+<li><p><strong>.from_file() and .to_file():</strong> Container type objects can be initialized from text
 files and dumped back to text files with certain formats (currently supported <cite>json</cite>,
 <cite>yml</cite> and <cite>csv</cite>) using these methods.</p>
 <p>Example:</p>
@@ -167,10 +171,10 @@ containing first or last n items (n defaults to 10).</p>
 </pre></div>
 </div>
 </li>
-<li><p><strong>.range():</strong> Similar to <code class="docutils literal notranslate"><span class="pre">.head()</span></code> or <code class="docutils literal notranslate"><span class="pre">.tail()</span></code> but enables us to define both the
-limits (similar to Python’s <code class="docutils literal notranslate"><span class="pre">list[i:j]</span></code> indexing).</p>
+<li><p><strong>.range():</strong> Similar to <code class="docutils literal notranslate"><span class="pre">.head()</span></code> or <code class="docutils literal notranslate"><span class="pre">.tail()</span></code> but enables us to define a range
+(like Python’s <code class="docutils literal notranslate"><span class="pre">list[i:j]</span></code> indexing).</p>
 <p>Example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Exclude the last item (similar to list[0:-1])</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Exclude the last item (like like Python&#39;s list[0:-1])</span>
 <span class="n">hosts</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -192,17 +196,17 @@ Inspired by SQL.</p>
 </div>
 </li>
 <li><p><strong>.filter():</strong> Similar to Python’s <code class="docutils literal notranslate"><span class="pre">filter()</span></code> but returns an instance of the same
-container type object containing the filteres items.</p>
+container type object containing the filtered items.</p>
 <p>Example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Filter hosts where hostname starts with &quot;foo&quot;</span>
 <span class="n">hosts</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">host</span><span class="p">:</span> <span class="n">host</span><span class="o">.</span><span class="n">hostname</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">))</span>
 </pre></div>
 </div>
 </li>
-<li><p><strong>.where():</strong> Similar to filter, but expects the and field name, condition
-and value instead of a function. Inspired by SQL.</p>
+<li><p><strong>.where():</strong> Similar to filter, but expects the field name, the condition and the value
+instead of a function. Inspired by SQL.</p>
 <p>Example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Filter hosts where hostname starts with &quot;foo&quot;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Filter hosts where the hostname starts with &quot;foo&quot;</span>
 <span class="n">hosts</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
     <span class="s2">&quot;hostname&quot;</span><span class="p">,</span> <span class="n">WhereConditions</span><span class="o">.</span><span class="n">startswith</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;foo&quot;</span><span class="p">]</span>
 <span class="p">)</span>
@@ -213,10 +217,10 @@ and value instead of a function. Inspired by SQL.</p>
 </div>
 <div class="section" id="more-on-task-command-factories-output-processors-callbacks-and">
 <h2>More on Task: Command Factories, Output Processors, Callbacks and …<a class="headerlink" href="#more-on-task-command-factories-output-processors-callbacks-and" title="Permalink to this headline">¶</a></h2>
-<p>The minimum requirements of defining a <a class="reference internal" href="viper.html#viper.Task" title="viper.Task"><code class="xref py py-class docutils literal notranslate"><span class="pre">Task</span></code></a> requires is to define
-the task name and the command factory. Optionally, we can also define the stdout and
+<p>The minimum requirements of defining a <a class="reference internal" href="viper.html#viper.Task" title="viper.Task"><code class="xref py py-class docutils literal notranslate"><span class="pre">Task</span></code></a> is to pass
+the task name and the command factory. Optionally, we can also pass the stdout and
 stderr processors, and also the pre and post run callbacks.</p>
-<p>The command factory expects a <a class="reference internal" href="viper.html#viper.Host" title="viper.Host"><code class="xref py py-class docutils literal notranslate"><span class="pre">Host</span></code></a> object and return a tuple of
+<p>The command factory expects a <a class="reference internal" href="viper.html#viper.Host" title="viper.Host"><code class="xref py py-class docutils literal notranslate"><span class="pre">Host</span></code></a> object and returns a tuple of
 string.</p>
 <p>Example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">ping_command</span><span class="p">(</span><span class="n">host</span><span class="p">):</span>
@@ -245,7 +249,7 @@ doesn’t return anything either.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Logs are be printed to <cite>stderr</cite> as <cite>stdout</cite> is for the JSON encoded
+<p>Logs are being printed to <cite>stderr</cite> as <cite>stdout</cite> is for the JSON encoded
 <a class="reference internal" href="viper.html#viper.Results" title="viper.Results"><code class="xref py py-class docutils literal notranslate"><span class="pre">Results</span></code></a> object.</p>
 </div>
 <div class="admonition attention">
@@ -289,14 +293,14 @@ executing the generated command.</p>
 <a class="reference internal" href="viper.html#viper.Runner.run" title="viper.Runner.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a> method with the updated retry value if the
 command execution fails. The results generated for these retries will be stored
 in DB and will be available in history. They will have the same <code class="docutils literal notranslate"><span class="pre">trigger_time</span></code> but
-different <code class="docutils literal notranslate"><span class="pre">start</span></code> and <code class="docutils literal notranslate"><span class="pre">end</span></code> times.</p>
+different <code class="docutils literal notranslate"><span class="pre">start</span></code> and <code class="docutils literal notranslate"><span class="pre">end</span></code> time values.</p>
 <p>However, if the failure is caused by any reason other than the actual command
-invocation, such as while invoking the command factory or output processors or
+execution, such as while invoking the command factory or output processors or
 pre/post run callbacks, a Python error will be raised which won’t be stored in DB.
 If any such error occurs while running the task in batch, it will be ignored with
-the traceback printed on stderr.</p>
+the traceback printed to stderr.</p>
 </li>
-<li><p><strong>meta:</strong> It is the same as the <code class="docutils literal notranslate"><span class="pre">meta</span></code> field in <a class="reference internal" href="viper.html#viper.Host" title="viper.Host"><code class="xref py py-class docutils literal notranslate"><span class="pre">Host</span></code></a>. It should
+<li><p><strong>meta:</strong> It is the same as the <code class="docutils literal notranslate"><span class="pre">meta</span></code> field in <a class="reference internal" href="viper.html#viper.Host" title="viper.Host"><code class="xref py py-class docutils literal notranslate"><span class="pre">Host</span></code></a>. The value should
 be generated only using the <a class="reference internal" href="viper.html#viper.meta" title="viper.meta"><code class="xref py py-func docutils literal notranslate"><span class="pre">viper.meta()</span></code></a> function.</p>
 <div class="admonition attention">
 <p class="admonition-title">Attention</p>

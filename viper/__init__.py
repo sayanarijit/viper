@@ -57,14 +57,12 @@ Installation
 Initialization
 ^^^^^^^^^^^^^^
 
+Viper needs to initialize a SQLite DB in the present working directory (the workspace).
+
 .. code-block:: bash
 
-    # (Optional) enable tab completion
+    # (Optional) enable tab auto completion
     eval "$(viper autocomplete $(basename $SHELL))"
-
-
-    # See the help menu
-    viper -h
 
 
     # Initialize SQLite DB
@@ -119,10 +117,10 @@ Define a task in ``task.py``:
 
 Perform the following actions:
 
-- Run the task on the set of hosts in parallel with 5 workers,
-- filter only the results where the task failed,
-- re-run the task on them,
-- store the results in DB
+- Run the ping task on the set of hosts in parallel with 5 workers
+- Then filter only the results where the task failed
+- Re-run the task on the filtered set of hosts
+- Store all the results
 
 .. code-block:: bash
 
@@ -132,7 +130,8 @@ Perform the following actions:
             | viper results:re-run --indent 4
 
 
-See the stdout of the final results from DB:
+The results are stored in the DB as history.
+To see the stdout of the final results from history:
 
 .. code-block:: bash
 
@@ -254,9 +253,10 @@ See the auto generated custom subcommands:
 .. code-block:: bash
 
     viper --help
+    # Will show the subcommands: "@foo:allhosts" and "@foo:remote_exec"
 
 
-Run the job:
+Run the job, export the results in a file, and format the output:
 
 .. code-block:: bash
 

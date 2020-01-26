@@ -19,7 +19,7 @@ Similarity Between the Python API and Command-line Interface
 
 The CLI interface closely follows the Python API. Each of the
 subcommands with a colon (``:``) represents a method of a class or
-object. When we run ``viper --help``, we can see the signature of
+object. When we run ``viper --help``, we can see the signatures of
 the methods/subcommands.
 
 For example, the subcommand ``viper hosts:from-file`` represents the
@@ -35,8 +35,7 @@ On the other hand, the ``results:order-by`` has the signature
 ``[Results -> Results]``. The subcommand represents the method
 :py:meth:`viper.Results.order_by` and the signature
 ``[Results -> Results]`` means that the subcommand expects the text
-(JSON) representation of a
-:py:class:`~viper.Results` object.
+(JSON) representation of a :py:class:`~viper.Results` object.
 
 
 Example: Output Piping as Method Chaining
@@ -231,7 +230,7 @@ Output: ::
     5
 
 
-.. note:: Here ``arg1`` recieves the second argument passed to ``hosts:pipe``.
+.. note:: Here ``arg1`` recieves the second argument passed to ``hosts:pipe`` i.e. "hosts".
 
 
 Similarly filters and sort keys can be defined using functions having

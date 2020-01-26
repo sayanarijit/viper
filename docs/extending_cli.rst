@@ -4,11 +4,11 @@ Extending the Command-line Interface (using ``viperfile.py``)
 Why and How
 ^^^^^^^^^^^
 
-The viper CLI can be easily extended to include your own custom subcommands using
-the :py:mod:`viper.projects` module.
+The viper CLI can easily be extended to include custom subcommands using
+the :py:mod:`viper.project` module.
 
 To do this, you have to create a file named ``viperfile.py`` in the root
-of your workspace. This file will contain the definition(s) of one of multiple
+of your workspace. This file will contain the definition(s) of one or multiple
 projects. A project works like a namespace for all the custom subcommands under it.
 
 

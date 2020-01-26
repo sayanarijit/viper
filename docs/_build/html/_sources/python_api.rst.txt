@@ -6,9 +6,9 @@ The Concept
 
 Viper provides a powerful collection of data types such as :py:class:`~viper.Hosts`,
 :py:class:`~viper.Runners`, :py:class:`~viper.Results` etc. and uses *method chaining*
-to perform different operations. The :py:mod:`viper.collection` module contains the
+to perform different operations. The :py:mod:`viper.collections` module contains the
 collection of such data types. These data types share some common properties as
-all the data types inherit from the :py:class:`~viper.collections.Collection` class.
+all they inherit from the :py:class:`~viper.collections.Collection` class.
 
 Example: Method Chaining
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -33,6 +33,7 @@ Example: Method Chaining
 
 Unit vs Container Types
 ^^^^^^^^^^^^^^^^^^^^^^^
+
 The above mentioned data types can be categorised as unit and container types.
 The unit ones inherit from the :py:class:`~viper.collections.Item` class, while the
 container types inherit from :py:class:`~viper.collections.Items` class.
@@ -52,7 +53,7 @@ Unit Types                  Container Types
 Useful Common Properties & Abilities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The properties mentioned below are common to both unit and composite type objects.
+The properties mentioned below are common to both unit and container type objects.
 
 - **Immutable:** All the datatypes are immutable i.e. they cannot be modified
   once initialized. This is to prevent any unexpected behaviour caused due to
@@ -63,9 +64,14 @@ The properties mentioned below are common to both unit and composite type object
   using the ``.to_json()`` method. This enables the objects to use a wide range of
   mediums such as the Unix pipes.
 
-- **.format():** The objects can be converted to a custom formatted
-  string using the ``.format()`` method. Example:
-  ``host.format("{ip} {hostname} {meta.tag}")``
+- **.format():** The objects can be converted to a string with a custof format
+  using the ``.format()`` method.
+
+  Example:
+
+  .. code-block:: bash
+
+    host.format("{ip} {hostname} {meta.tag}")
 
 
 Useful Abilities Common to the Unit Types
@@ -75,6 +81,7 @@ These abilities are common to :py:class:`~viper.Task`, :py:class:`~viper.Host`,
 :py:class:`~viper.Runner` and :py:class:`~viper.Result` unit type objects.
 
 - **.from_dict() and .to_dict():** Helps representing the objects as Python dictionaries.
+
 
 Useful Abilities Common to the Container Types
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -110,7 +117,7 @@ and :py:class:`~viper.Results` container type objects.
     ).to_items()
 
 
-- **.from_file() and to_file():** Container type objects can be initialized from text
+- **.from_file() and .to_file():** Container type objects can be initialized from text
   files and dumped back to text files with certain formats (currently supported `json`,
   `yml` and `csv`) using these methods.
 
@@ -135,14 +142,14 @@ and :py:class:`~viper.Results` container type objects.
     # Get the set of last 5 items from the set of first 10 items.
     hosts.head(10).tail(5)
 
-- **.range():** Similar to ``.head()`` or ``.tail()`` but enables us to define both the
-  limits (similar to Python's ``list[i:j]`` indexing).
+- **.range():** Similar to ``.head()`` or ``.tail()`` but enables us to define a range
+  (like Python's ``list[i:j]`` indexing).
 
   Example:
 
   .. code-block:: python
 
-    # Exclude the last item (similar to list[0:-1])
+    # Exclude the last item (like like Python's list[0:-1])
     hosts.range(0, -1)
 
 - **.sort():** Similar to Python's ``list.sort()`` but returns a new instance instead of
@@ -166,7 +173,7 @@ and :py:class:`~viper.Results` container type objects.
     hosts.order_by("ip", "hostname", reverse=True)
 
 - **.filter():** Similar to Python's ``filter()`` but returns an instance of the same
-  container type object containing the filteres items.
+  container type object containing the filtered items.
 
   Example:
 
@@ -175,14 +182,14 @@ and :py:class:`~viper.Results` container type objects.
     # Filter hosts where hostname starts with "foo"
     hosts.filter(lambda host: host.hostname.startswith("foo"))
 
-- **.where():** Similar to filter, but expects the and field name, condition
-  and value instead of a function. Inspired by SQL.
+- **.where():** Similar to filter, but expects the field name, the condition and the value
+  instead of a function. Inspired by SQL.
 
   Example:
 
   .. code-block:: python
 
-    # Filter hosts where hostname starts with "foo"
+    # Filter hosts where the hostname starts with "foo"
     hosts.where(
         "hostname", WhereConditions.startswith, ["foo"]
     )
@@ -191,11 +198,11 @@ and :py:class:`~viper.Results` container type objects.
 More on Task: Command Factories, Output Processors, Callbacks and ...
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The minimum requirements of defining a :py:class:`~viper.Task` requires is to define
-the task name and the command factory. Optionally, we can also define the stdout and
+The minimum requirements of defining a :py:class:`~viper.Task` is to pass
+the task name and the command factory. Optionally, we can also pass the stdout and
 stderr processors, and also the pre and post run callbacks.
 
-The command factory expects a :py:class:`~viper.Host` object and return a tuple of
+The command factory expects a :py:class:`~viper.Host` object and returns a tuple of
 string.
 
 Example:
@@ -232,7 +239,7 @@ Example:
         print("OK:" if result.ok() else "ERROR:", result.host.hostname, file=sys.stderr)
 
 
-.. note:: Logs are be printed to `stderr` as `stdout` is for the JSON encoded
+.. note:: Logs are being printed to `stderr` as `stdout` is for the JSON encoded
   :py:class:`~viper.Results` object.
 
 
@@ -279,15 +286,15 @@ Apart from these, a :py:class:`~viper.Task` also optionally expects ``timeout``,
   :py:meth:`~viper.Runner.run` method with the updated retry value if the
   command execution fails. The results generated for these retries will be stored
   in DB and will be available in history. They will have the same ``trigger_time`` but
-  different ``start`` and ``end`` times.
+  different ``start`` and ``end`` time values.
 
   However, if the failure is caused by any reason other than the actual command
-  invocation, such as while invoking the command factory or output processors or
+  execution, such as while invoking the command factory or output processors or
   pre/post run callbacks, a Python error will be raised which won't be stored in DB.
   If any such error occurs while running the task in batch, it will be ignored with
-  the traceback printed on stderr.
+  the traceback printed to stderr.
 
-- **meta:** It is the same as the ``meta`` field in :py:class:`~viper.Host`. It should
+- **meta:** It is the same as the ``meta`` field in :py:class:`~viper.Host`. The value should
   be generated only using the :py:func:`viper.meta` function.
 
   .. attention::

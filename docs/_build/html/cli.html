@@ -48,7 +48,7 @@ a Python shell.</p>
 <h2>Similarity Between the Python API and Command-line Interface<a class="headerlink" href="#similarity-between-the-python-api-and-command-line-interface" title="Permalink to this headline">¶</a></h2>
 <p>The CLI interface closely follows the Python API. Each of the
 subcommands with a colon (<code class="docutils literal notranslate"><span class="pre">:</span></code>) represents a method of a class or
-object. When we run <code class="docutils literal notranslate"><span class="pre">viper</span> <span class="pre">--help</span></code>, we can see the signature of
+object. When we run <code class="docutils literal notranslate"><span class="pre">viper</span> <span class="pre">--help</span></code>, we can see the signatures of
 the methods/subcommands.</p>
 <p>For example, the subcommand <code class="docutils literal notranslate"><span class="pre">viper</span> <span class="pre">hosts:from-file</span></code> represents the
 class method <a class="reference internal" href="viper.html#viper.Hosts.from_file" title="viper.Hosts.from_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">viper.Hosts.from_file()</span></code></a>,</p>
@@ -61,8 +61,7 @@ standard input.</p>
 <code class="docutils literal notranslate"><span class="pre">[Results</span> <span class="pre">-&gt;</span> <span class="pre">Results]</span></code>. The subcommand represents the method
 <a class="reference internal" href="viper.html#viper.Results.order_by" title="viper.Results.order_by"><code class="xref py py-meth docutils literal notranslate"><span class="pre">viper.Results.order_by()</span></code></a> and the signature
 <code class="docutils literal notranslate"><span class="pre">[Results</span> <span class="pre">-&gt;</span> <span class="pre">Results]</span></code> means that the subcommand expects the text
-(JSON) representation of a
-<a class="reference internal" href="viper.html#viper.Results" title="viper.Results"><code class="xref py py-class docutils literal notranslate"><span class="pre">Results</span></code></a> object.</p>
+(JSON) representation of a <a class="reference internal" href="viper.html#viper.Results" title="viper.Results"><code class="xref py py-class docutils literal notranslate"><span class="pre">Results</span></code></a> object.</p>
 </div>
 <div class="section" id="example-output-piping-as-method-chaining">
 <h2>Example: Output Piping as Method Chaining<a class="headerlink" href="#example-output-piping-as-method-chaining" title="Permalink to this headline">¶</a></h2>
@@ -221,7 +220,7 @@ all <a class="reference internal" href="viper.html#viper.collections.Items" titl
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Here <code class="docutils literal notranslate"><span class="pre">arg1</span></code> recieves the second argument passed to <code class="docutils literal notranslate"><span class="pre">hosts:pipe</span></code>.</p>
+<p>Here <code class="docutils literal notranslate"><span class="pre">arg1</span></code> recieves the second argument passed to <code class="docutils literal notranslate"><span class="pre">hosts:pipe</span></code> i.e. “hosts”.</p>
 </div>
 <p>Similarly filters and sort keys can be defined using functions having
 the first argument reserved for the object it will operate on, and the

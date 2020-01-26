@@ -52,7 +52,7 @@
 
 <span class="sd">The CLI interface closely follows the Python API. Each of the</span>
 <span class="sd">subcommands with a colon (``:``) represents a method of a class or</span>
-<span class="sd">object. When we run ``viper --help``, we can see the signature of</span>
+<span class="sd">object. When we run ``viper --help``, we can see the signatures of</span>
 <span class="sd">the methods/subcommands.</span>
 
 <span class="sd">For example, the subcommand ``viper hosts:from-file`` represents the</span>
@@ -68,8 +68,7 @@
 <span class="sd">``[Results -&gt; Results]``. The subcommand represents the method</span>
 <span class="sd">:py:meth:`viper.Results.order_by` and the signature</span>
 <span class="sd">``[Results -&gt; Results]`` means that the subcommand expects the text</span>
-<span class="sd">(JSON) representation of a</span>
-<span class="sd">:py:class:`~viper.Results` object.</span>
+<span class="sd">(JSON) representation of a :py:class:`~viper.Results` object.</span>
 
 
 <span class="sd">Example: Output Piping as Method Chaining</span>
@@ -264,7 +263,7 @@
 <span class="sd">    5</span>
 
 
-<span class="sd">.. note:: Here ``arg1`` recieves the second argument passed to ``hosts:pipe``.</span>
+<span class="sd">.. note:: Here ``arg1`` recieves the second argument passed to ``hosts:pipe`` i.e. &quot;hosts&quot;.</span>
 
 
 <span class="sd">Similarly filters and sort keys can be defined using functions having</span>

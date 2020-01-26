@@ -39,9 +39,9 @@
 
 <span class="sd">Viper provides a powerful collection of data types such as :py:class:`~viper.Hosts`,</span>
 <span class="sd">:py:class:`~viper.Runners`, :py:class:`~viper.Results` etc. and uses *method chaining*</span>
-<span class="sd">to perform different operations. The :py:mod:`viper.collection` module contains the</span>
+<span class="sd">to perform different operations. The :py:mod:`viper.collections` module contains the</span>
 <span class="sd">collection of such data types. These data types share some common properties as</span>
-<span class="sd">all the data types inherit from the :py:class:`~viper.collections.Collection` class.</span>
+<span class="sd">all they inherit from the :py:class:`~viper.collections.Collection` class.</span>
 
 <span class="sd">Example: Method Chaining</span>
 <span class="sd">^^^^^^^^^^^^^^^^^^^^^^^^</span>
@@ -66,6 +66,7 @@
 
 <span class="sd">Unit vs Container Types</span>
 <span class="sd">^^^^^^^^^^^^^^^^^^^^^^^</span>
+
 <span class="sd">The above mentioned data types can be categorised as unit and container types.</span>
 <span class="sd">The unit ones inherit from the :py:class:`~viper.collections.Item` class, while the</span>
 <span class="sd">container types inherit from :py:class:`~viper.collections.Items` class.</span>
@@ -85,7 +86,7 @@
 <span class="sd">Useful Common Properties &amp; Abilities</span>
 <span class="sd">^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
 
-<span class="sd">The properties mentioned below are common to both unit and composite type objects.</span>
+<span class="sd">The properties mentioned below are common to both unit and container type objects.</span>
 
 <span class="sd">- **Immutable:** All the datatypes are immutable i.e. they cannot be modified</span>
 <span class="sd">  once initialized. This is to prevent any unexpected behaviour caused due to</span>
@@ -96,9 +97,14 @@
 <span class="sd">  using the ``.to_json()`` method. This enables the objects to use a wide range of</span>
 <span class="sd">  mediums such as the Unix pipes.</span>
 
-<span class="sd">- **.format():** The objects can be converted to a custom formatted</span>
-<span class="sd">  string using the ``.format()`` method. Example:</span>
-<span class="sd">  ``host.format(&quot;{ip} {hostname} {meta.tag}&quot;)``</span>
+<span class="sd">- **.format():** The objects can be converted to a string with a custof format</span>
+<span class="sd">  using the ``.format()`` method.</span>
+
+<span class="sd">  Example:</span>
+
+<span class="sd">  .. code-block:: bash</span>
+
+<span class="sd">    host.format(&quot;{ip} {hostname} {meta.tag}&quot;)</span>
 
 
 <span class="sd">Useful Abilities Common to the Unit Types</span>
@@ -108,6 +114,7 @@
 <span class="sd">:py:class:`~viper.Runner` and :py:class:`~viper.Result` unit type objects.</span>
 
 <span class="sd">- **.from_dict() and .to_dict():** Helps representing the objects as Python dictionaries.</span>
+
 
 <span class="sd">Useful Abilities Common to the Container Types</span>
 <span class="sd">^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
@@ -143,7 +150,7 @@
 <span class="sd">    ).to_items()</span>
 
 
-<span class="sd">- **.from_file() and to_file():** Container type objects can be initialized from text</span>
+<span class="sd">- **.from_file() and .to_file():** Container type objects can be initialized from text</span>
 <span class="sd">  files and dumped back to text files with certain formats (currently supported `json`,</span>
 <span class="sd">  `yml` and `csv`) using these methods.</span>
 
@@ -168,14 +175,14 @@
 <span class="sd">    # Get the set of last 5 items from the set of first 10 items.</span>
 <span class="sd">    hosts.head(10).tail(5)</span>
 
-<span class="sd">- **.range():** Similar to ``.head()`` or ``.tail()`` but enables us to define both the</span>
-<span class="sd">  limits (similar to Python&#39;s ``list[i:j]`` indexing).</span>
+<span class="sd">- **.range():** Similar to ``.head()`` or ``.tail()`` but enables us to define a range</span>
+<span class="sd">  (like Python&#39;s ``list[i:j]`` indexing).</span>
 
 <span class="sd">  Example:</span>
 
 <span class="sd">  .. code-block:: python</span>
 
-<span class="sd">    # Exclude the last item (similar to list[0:-1])</span>
+<span class="sd">    # Exclude the last item (like like Python&#39;s list[0:-1])</span>
 <span class="sd">    hosts.range(0, -1)</span>
 
 <span class="sd">- **.sort():** Similar to Python&#39;s ``list.sort()`` but returns a new instance instead of</span>
@@ -199,7 +206,7 @@
 <span class="sd">    hosts.order_by(&quot;ip&quot;, &quot;hostname&quot;, reverse=True)</span>
 
 <span class="sd">- **.filter():** Similar to Python&#39;s ``filter()`` but returns an instance of the same</span>
-<span class="sd">  container type object containing the filteres items.</span>
+<span class="sd">  container type object containing the filtered items.</span>
 
 <span class="sd">  Example:</span>
 
@@ -208,14 +215,14 @@
 <span class="sd">    # Filter hosts where hostname starts with &quot;foo&quot;</span>
 <span class="sd">    hosts.filter(lambda host: host.hostname.startswith(&quot;foo&quot;))</span>
 
-<span class="sd">- **.where():** Similar to filter, but expects the and field name, condition</span>
-<span class="sd">  and value instead of a function. Inspired by SQL.</span>
+<span class="sd">- **.where():** Similar to filter, but expects the field name, the condition and the value</span>
+<span class="sd">  instead of a function. Inspired by SQL.</span>
 
 <span class="sd">  Example:</span>
 
 <span class="sd">  .. code-block:: python</span>
 
-<span class="sd">    # Filter hosts where hostname starts with &quot;foo&quot;</span>
+<span class="sd">    # Filter hosts where the hostname starts with &quot;foo&quot;</span>
 <span class="sd">    hosts.where(</span>
 <span class="sd">        &quot;hostname&quot;, WhereConditions.startswith, [&quot;foo&quot;]</span>
 <span class="sd">    )</span>
@@ -224,11 +231,11 @@
 <span class="sd">More on Task: Command Factories, Output Processors, Callbacks and ...</span>
 <span class="sd">^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
 
-<span class="sd">The minimum requirements of defining a :py:class:`~viper.Task` requires is to define</span>
-<span class="sd">the task name and the command factory. Optionally, we can also define the stdout and</span>
+<span class="sd">The minimum requirements of defining a :py:class:`~viper.Task` is to pass</span>
+<span class="sd">the task name and the command factory. Optionally, we can also pass the stdout and</span>
 <span class="sd">stderr processors, and also the pre and post run callbacks.</span>
 
-<span class="sd">The command factory expects a :py:class:`~viper.Host` object and return a tuple of</span>
+<span class="sd">The command factory expects a :py:class:`~viper.Host` object and returns a tuple of</span>
 <span class="sd">string.</span>
 
 <span class="sd">Example:</span>
@@ -265,7 +272,7 @@
 <span class="sd">        print(&quot;OK:&quot; if result.ok() else &quot;ERROR:&quot;, result.host.hostname, file=sys.stderr)</span>
 
 
-<span class="sd">.. note:: Logs are be printed to `stderr` as `stdout` is for the JSON encoded</span>
+<span class="sd">.. note:: Logs are being printed to `stderr` as `stdout` is for the JSON encoded</span>
 <span class="sd">  :py:class:`~viper.Results` object.</span>
 
 
@@ -312,15 +319,15 @@
 <span class="sd">  :py:meth:`~viper.Runner.run` method with the updated retry value if the</span>
 <span class="sd">  command execution fails. The results generated for these retries will be stored</span>
 <span class="sd">  in DB and will be available in history. They will have the same ``trigger_time`` but</span>
-<span class="sd">  different ``start`` and ``end`` times.</span>
+<span class="sd">  different ``start`` and ``end`` time values.</span>
 
 <span class="sd">  However, if the failure is caused by any reason other than the actual command</span>
-<span class="sd">  invocation, such as while invoking the command factory or output processors or</span>
+<span class="sd">  execution, such as while invoking the command factory or output processors or</span>
 <span class="sd">  pre/post run callbacks, a Python error will be raised which won&#39;t be stored in DB.</span>
 <span class="sd">  If any such error occurs while running the task in batch, it will be ignored with</span>
-<span class="sd">  the traceback printed on stderr.</span>
+<span class="sd">  the traceback printed to stderr.</span>
 
-<span class="sd">- **meta:** It is the same as the ``meta`` field in :py:class:`~viper.Host`. It should</span>
+<span class="sd">- **meta:** It is the same as the ``meta`` field in :py:class:`~viper.Host`. The value should</span>
 <span class="sd">  be generated only using the :py:func:`viper.meta` function.</span>
 
 <span class="sd">  .. attention::</span>
