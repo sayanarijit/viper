@@ -19,7 +19,7 @@ The User Guide
    extending_cli.rst
    footnotes.rst
 
-Indices and tables
+Indices and Tables
 ==================
 
 * :ref:`genindex`
