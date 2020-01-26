@@ -21,6 +21,6 @@
     :target: https://github.com/python/black
     :alt:
 
-.. image:: https://readthedocs.org/projects/viper-infrastructure-commander/badge/?version=latest
-    :target: https://viper-infrastructure-commander.readthedocs.io
+.. image:: https://api.netlify.com/api/v1/badges/0db61034-0e28-4ce2-84e2-767d413a760b/deploy-status
+    :target: https://app.netlify.com/sites/viper-infra-commander/deploys
     :alt:
